@@ -3,6 +3,5 @@ import { RoleService } from '../services/role.service';
 
 @Controller('api/roles')
 export class RoleController {
-  @Inject()
-  private roleService: RoleService;
+  constructor(private roleService: RoleService) {}
 }

@@ -13,6 +13,8 @@ import {
 import { UserService } from '../services/user.service';
 import { IsString, IsNumberString, IsOptional } from 'class-validator';
 import { Perms } from '../../user/perm.decorator';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 class CreateUserDTO {
   @IsString()
@@ -34,11 +36,13 @@ class GetUsersDTO {
 
 @Controller('api/users')
 export class UserController {
-  @Inject()
-  private userService: UserService;
+  constructor(
+    private userService: UserService,
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
+  ) {}
 
-  // @Authorized(["admin.user.browse", "common.user.browse"])
-  @Perms("admin.user.browse", "common.user.browse")
+  @Perms('admin.user.browse', 'common.user.browse')
   @Get('/:id')
   async getUser(@Param('id') id: number) {
     const user = await this.userService.getUser(id);

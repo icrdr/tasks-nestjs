@@ -1,4 +1,10 @@
-import { Controller, Inject, Post, Body, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Inject,
+  Post,
+  Body,
+  NotFoundException,
+} from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
 import { IsString } from 'class-validator';
 
@@ -12,8 +18,7 @@ class AuthUserDTO {
 
 @Controller('api/auth')
 export class AuthController {
-  @Inject()
-  private authService: AuthService;
+  constructor(private authService: AuthService) {}
 
   @Post()
   async authUser(@Body() body: AuthUserDTO) {

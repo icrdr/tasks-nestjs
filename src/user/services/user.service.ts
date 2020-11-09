@@ -8,20 +8,13 @@ import { RoleService } from './role.service';
 
 @Injectable()
 export class UserService {
-  @Inject()
-  private optionService: OptionService;
-
-  @Inject()
-  private roleService: RoleService;
-
-  @Inject()
-  private utilityService: UtilityService;
-
-  @Inject()
-  private typeGuardService: TypeGuardService;
-
-  @Inject()
-  private manager: EntityManager;
+  constructor(
+    private optionService: OptionService,
+    private roleService: RoleService,
+    private utilityService: UtilityService,
+    private typeGuardService: TypeGuardService,
+    private manager: EntityManager,
+  ) {}
 
   async getUser(identify: string | number): Promise<User | undefined> {
     return typeof identify === 'string'

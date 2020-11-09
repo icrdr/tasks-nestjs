@@ -5,10 +5,16 @@ import { UtilityService } from './utility.service';
 import * as jwt from 'jsonwebtoken';
 import * as faker from 'faker';
 import { TypeGuardService } from './typeGuard.service';
+import * as chalk from 'chalk';
 
 export const pathProvider = {
   provide: 'PATH_LIB',
   useValue: path,
+};
+
+export const chalkProvider = {
+  provide: 'CHALK_LIB',
+  useValue: chalk,
 };
 
 export const cryptoProvider = {
@@ -28,6 +34,7 @@ export const fakerProvider = {
 
 @Module({
   providers: [
+    chalkProvider,
     pathProvider,
     cryptoProvider,
     jwtProvider,
@@ -36,6 +43,7 @@ export const fakerProvider = {
     TypeGuardService,
   ],
   exports: [
+    chalkProvider,
     pathProvider,
     cryptoProvider,
     jwtProvider,

@@ -4,8 +4,7 @@ import { Option } from './option.entity';
 
 @Injectable()
 export class OptionService {
-  @Inject()
-  private manager: EntityManager;
+  constructor(private manager: EntityManager) {}
 
   async createOption(name: string, value: string) {
     const option = new Option();

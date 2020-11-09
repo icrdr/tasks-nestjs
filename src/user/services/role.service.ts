@@ -5,11 +5,10 @@ import { Role, Perm } from '../entities/user.entity';
 
 @Injectable()
 export class RoleService {
-  @Inject()
-  private manager: EntityManager;
-
-  @Inject()
-  private typeGuardService: TypeGuardService;
+  constructor(
+    private manager: EntityManager,
+    private typeGuardService: TypeGuardService,
+  ) {}
 
   async getRole(identify: string | number): Promise<Role | undefined> {
     return typeof identify === 'string'

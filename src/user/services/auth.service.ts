@@ -7,17 +7,13 @@ import { User, Perm } from '../entities/user.entity';
 
 @Injectable()
 export class AuthService {
-  @Inject('JWT_LIB')
-  private jwt: any;
-
-  @Inject()
-  private configService: ConfigService;
-
-  @Inject()
-  private manager: EntityManager;
-
-  @Inject()
-  private utilityService: UtilityService;
+  constructor(
+    @Inject('JWT_LIB')
+    private jwt: any,
+    private configService: ConfigService,
+    private manager: EntityManager,
+    private utilityService: UtilityService,
+  ) {}
 
   async authUser(username: string, password: string) {
     const user = await this.manager.findOne(User, {

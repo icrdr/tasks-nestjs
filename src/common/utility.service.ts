@@ -2,9 +2,10 @@ import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class UtilityService {
-  @Inject('CRYPTO_LIB')
-  private crypto: any;
-
+  constructor(
+    @Inject('CRYPTO_LIB')
+    private crypto: any,
+  ) {}
 
   hash(string: string) {
     const hash = this.crypto.createHash('md5');

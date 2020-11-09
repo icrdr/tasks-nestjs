@@ -31,7 +31,7 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
       username: this.configService.get('dbUsername'),
       password: this.configService.get('dbPassword'),
       database: this.configService.get('dbDatabase'),
-      entities: [this.path.join(__dirname, '../**/*.entity.ts')],
+      entities: [this.path.join(__dirname, '../**/*.entity{.ts,.js}')],
       namingStrategy: new SnakeNamingStrategy(),
       synchronize: true,
     };
