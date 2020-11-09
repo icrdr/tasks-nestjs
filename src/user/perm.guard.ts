@@ -9,20 +9,17 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { tokenPayload, currentUser } from '../common/common.interface';
 import { UtilityService } from '../common/utility.service';
+import { APP_GUARD } from '@nestjs/core';
 
 @Injectable()
 export class PermGuard implements CanActivate {
-  @Inject()
-  private reflector: Reflector;
-
-  @Inject()
-  private configService: ConfigService;
-
-  @Inject()
-  private utilityService: UtilityService;
-
-  @Inject('JWT_LIB')
-  private jwt: any;
+  constructor(
+    private reflector: Reflector,
+    private configService: ConfigService,
+    private utilityService: UtilityService,
+    @Inject('JWT_LIB')
+    private jwt: any,
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const neededPerms = this.reflector.get<string[]>(
@@ -61,3 +58,8 @@ export class PermGuard implements CanActivate {
     return true;
   }
 }
+
+export const permGuard = {
+  provide: APP_GUARD,
+  useClass: PermGuard,
+};

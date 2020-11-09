@@ -9,7 +9,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
 @Injectable()
-export class LoggerMiddleware implements NestMiddleware {
+export class requestLogger implements NestMiddleware {
   // private readonly logger = new Logger('Http');
 
   constructor(

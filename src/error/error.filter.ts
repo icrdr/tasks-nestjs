@@ -10,13 +10,13 @@ import {
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 
 @Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
+export class ErrorHandler implements ExceptionFilter {
   // private readonly logger = new Logger();
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER)
     private readonly logger: Logger,
   ) {}
-  
+
   catch(exception: Error, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse();
