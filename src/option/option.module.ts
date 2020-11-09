@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
-import { OptionController } from './option.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { OptionService } from './option.service';
+import { Option } from './option.entity';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
-  controllers: [OptionController],
-  providers: [OptionService]
+  providers: [OptionService],
+  exports: [OptionService],
 })
 export class OptionModule {}

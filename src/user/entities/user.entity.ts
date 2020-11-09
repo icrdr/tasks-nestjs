@@ -1,24 +1,12 @@
+import { BaseEntity } from '../../common/common.entity';
 import {
   Entity,
   Column,
   JoinTable,
   ManyToMany,
   DeleteDateColumn,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
 } from 'typeorm';
-
-export abstract class BaseEntity {
-  @PrimaryGeneratedColumn()
-  id!: number;
-
-  @CreateDateColumn()
-  createAt!: Date;
-
-  @UpdateDateColumn()
-  updateAt!: Date;
-}
+import { Exclude } from 'class-transformer';
 
 export enum UserGender {
   male = 'male',
@@ -28,40 +16,42 @@ export enum UserGender {
 @Entity()
 export class User extends BaseEntity {
   @Column({ unique: true })
-  username!: string;
+  username: string;
 
   @Column()
-  password!: string;
+  @Exclude()
+  password: string;
 
   @Column({ nullable: true })
-  fullName!: string;
+  fullName: string;
 
   @Column({ nullable: true })
-  email!: string;
+  email: string;
 
   @Column({ nullable: true })
-  mobile!: string;
+  mobile: string;
 
   @Column({
     type: 'enum',
     enum: UserGender,
     nullable: true,
   })
-  gender!: UserGender;
+  gender: UserGender;
 
   @Column({ nullable: true })
-  idNumber!: string;
+  idNumber: string;
 
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable()
-  roles!: Role[];
+  roles: Role[];
 
   @ManyToMany(() => Perm, (perm) => perm.users)
   @JoinTable()
-  perms!: Perm[];
+  perms: Perm[];
 
   @DeleteDateColumn()
-  deleteAt!: Date;
+  @Exclude()
+  deleteAt: Date;
 }
 
 export enum ThirdAuthType {
@@ -74,36 +64,36 @@ export class ThirdAuth extends BaseEntity {
     type: 'enum',
     enum: ThirdAuthType,
   })
-  type!: string;
+  type: string;
 
   @Column()
-  uid!: string;
+  uid: string;
 }
 
 @Entity()
 export class Role extends BaseEntity {
   @Column({ unique: true })
-  name!: string;
+  name: string;
 
   @Column({ nullable: true })
-  description!: string;
+  description: string;
 
   @ManyToMany(() => Perm, (perm) => perm.roles)
   @JoinTable()
-  perms!: Perm[];
+  perms: Perm[];
 
   @ManyToMany(() => User, (user) => user.roles)
-  users!: User[];
+  users: User[];
 }
 
 @Entity()
 export class Perm extends BaseEntity {
   @Column({ unique: true })
-  code!: string;
+  code: string;
 
   @ManyToMany(() => Role, (role) => role.perms)
-  roles!: Role[];
+  roles: Role[];
 
   @ManyToMany(() => User, (user) => user.perms)
-  users!: User[];
+  users: User[];
 }
