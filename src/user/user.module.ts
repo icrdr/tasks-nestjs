@@ -11,11 +11,9 @@ import { RoleService } from './services/role.service';
 import { UserService } from './services/user.service';
 
 @Module({
-  imports: [
-    CommonModule,
-    OptionModule,
-  ],
+  imports: [CommonModule, OptionModule],
   controllers: [UserController, RoleController, AuthController],
   providers: [UserService, RoleService, AuthService],
+  exports: [UserService],
 })
 export class UserModule {}

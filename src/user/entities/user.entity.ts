@@ -5,12 +5,14 @@ import {
   JoinTable,
   ManyToMany,
   DeleteDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { PassRequest, Task } from '../../task/task.entity';
 
 export enum UserGender {
-  male = 'male',
-  female = 'female',
+  MALE = 'male',
+  FEMALE = 'female',
 }
 
 @Entity()
@@ -41,6 +43,15 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   idNumber: string;
 
+  @ManyToMany(() => Task, (task) => task.performers)
+  tasks: Task[];
+
+  @OneToMany(() => PassRequest, (passRequest) => passRequest.submitter)
+  passRequestsAsSubmitter: PassRequest[];
+
+  @OneToMany(() => PassRequest, (passRequest) => passRequest.responder)
+  passRequestsAsResponder: PassRequest[];
+
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable()
   roles: Role[];
@@ -55,7 +66,7 @@ export class User extends BaseEntity {
 }
 
 export enum ThirdAuthType {
-  wechat = 'wechat',
+  WECHAT = 'wechat',
 }
 
 @Entity()

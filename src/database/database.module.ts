@@ -13,7 +13,6 @@ import { UserService } from '../user/services/user.service';
 import { OptionService } from '../option/option.service';
 import { RoleService } from '../user/services/role.service';
 import { PlatformPath } from 'path';
-import { ColumnMetadata } from 'typeorm/metadata/ColumnMetadata';
 
 @Injectable()
 class TypeOrmConfigService implements TypeOrmOptionsFactory {

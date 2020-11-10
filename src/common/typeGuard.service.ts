@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Perm, Role } from '../user/entities/user.entity';
+import { Perm, Role, User } from '../user/entities/user.entity';
 
 @Injectable()
 export class TypeGuardService {
@@ -13,5 +13,9 @@ export class TypeGuardService {
 
   isRoleArray(array: any[]): array is Role[] {
     return array[0] instanceof Role;
+  }
+
+  isUserArray(array: any[]): array is User[] {
+    return array[0] instanceof User;
   }
 }

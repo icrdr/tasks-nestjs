@@ -10,7 +10,7 @@ export class RoleService {
     private typeGuardService: TypeGuardService,
   ) {}
 
-  async getRole(identify: string | number): Promise<Role | undefined> {
+  async getRole(identify: string | number) {
     return typeof identify === 'string'
       ? await this.manager.findOne(Role, { name: identify })
       : await this.manager.findOne(Role, identify);
@@ -21,24 +21,26 @@ export class RoleService {
     role?: Role | number | string;
     perms?: Perm[] | number[] | string[];
   }) {
-    let _perms: Perm[] = [];
-    if (!options.perms) {
-    } else if (!this.typeGuardService.isPermArray(options.perms)) {
-      for (const identify of options.perms) {
-        _perms.push((await this.loadPerm(identify))!);
+    const role = new Role();
+    const perms = options.perms;
+    if (!perms) {
+      if (!this.typeGuardService.isPermArray(perms)) {
+        let _perms: Perm[] = [];
+        for (const identify of perms) {
+          _perms.push((await this.loadPerm(identify))!);
+        }
+        role.perms = _perms;
+      } else {
+        role.perms = perms;
       }
-    } else {
-      _perms = options.perms;
     }
 
-    const role = new Role();
     role.name = options.name;
-    role.perms = _perms;
     await this.manager.save(role);
     return role;
   }
 
-  async loadPerm(identify: string | number): Promise<Perm | undefined> {
+  async loadPerm(identify: string | number) {
     return typeof identify === 'string'
       ? (await this.manager.findOne(Perm, { code: identify })) ||
           (await this.manager.save(

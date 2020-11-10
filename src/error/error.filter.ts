@@ -4,22 +4,21 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
-  Logger,
   Inject,
 } from '@nestjs/common';
+import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Response } from 'express';
 
 @Catch()
 export class ErrorHandler implements ExceptionFilter {
-  // private readonly logger = new Logger();
   constructor(
     @Inject(WINSTON_MODULE_PROVIDER)
     private readonly logger: Logger,
   ) {}
 
   catch(exception: Error, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const res = ctx.getResponse();
+    const res: Response = host.switchToHttp().getResponse();
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
@@ -34,7 +33,7 @@ export class ErrorHandler implements ExceptionFilter {
             stack: exception.stack,
           };
 
-    if (status >= 500) this.logger.error(exception.message, exception.stack);
+    if (status >= 500) this.logger.error(exception);
     res.status(status).json(body);
   }
 }

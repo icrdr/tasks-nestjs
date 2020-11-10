@@ -7,23 +7,15 @@ import { UserService } from '../user/services/user.service';
 
 @Injectable()
 export class DatabaseService {
-  @Inject()
-  private roleService: RoleService;
-
-  @Inject()
-  private optionService: OptionService;
-
-  @Inject()
-  private connection: Connection;
-
-  @Inject()
-  private userService: UserService;
-
-  @Inject()
-  private configService: ConfigService;
-
-  @Inject('FAKER_LIB')
-  private faker: any;
+  constructor(
+    private roleService: RoleService,
+    private optionService: OptionService,
+    private connection: Connection,
+    private userService: UserService,
+    private configService: ConfigService,
+    @Inject('FAKER_LIB')
+    private faker: Faker.FakerStatic,
+  ) {}
 
   async createFakeUsers(number: number) {
     const users = [];

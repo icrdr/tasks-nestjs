@@ -13,9 +13,10 @@ import { DatabaseModule } from './database/database.module';
 import { CommonModule } from './common/common.module';
 
 import { permGuard } from './user/perm.guard';
-import { requestLogger } from './logger/logger.middleware';
 import { configModule } from './config/config.module';
 import { LoggerModule } from 'src/logger/logger.module';
+import { TaskModule } from './task/task.module';
+import { TagModule } from './tag/tag.module';
 
 @Module({
   imports: [
@@ -25,11 +26,9 @@ import { LoggerModule } from 'src/logger/logger.module';
     DatabaseModule,
     UserModule,
     OptionModule,
+    TaskModule,
+    TagModule,
   ],
   providers: [permGuard],
 })
-export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer.apply(requestLogger).forRoutes('*');
-  }
-}
+export class AppModule {}

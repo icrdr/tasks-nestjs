@@ -16,7 +16,7 @@ export class UserService {
     private manager: EntityManager,
   ) {}
 
-  async getUser(identify: string | number): Promise<User | undefined> {
+  async getUser(identify: string | number) {
     return typeof identify === 'string'
       ? await this.manager.findOne(User, { username: identify })
       : await this.manager.findOne(User, identify);
@@ -37,20 +37,24 @@ export class UserService {
     mobile?: string | undefined;
     roles?: Role[] | number[] | string[];
   }) {
-    let _roles: Role[] = [];
-    if (!options.roles) {
-      const defaultRole = (await this.optionService.getOption('defaultRole'))!
-        .value;
-      _roles.push((await this.roleService.getRole(defaultRole))!);
-    } else if (!this.typeGuardService.isRoleArray(options.roles)) {
-      for (const identify of options.roles) {
-        _roles.push((await this.roleService.getRole(identify))!);
+    const user = new User();
+    const roles = options.roles;
+    if (roles) {
+      if (!this.typeGuardService.isRoleArray(roles)) {
+        let _roles: Role[] = [];
+        for (const identify of roles) {
+          _roles.push((await this.roleService.getRole(identify))!);
+        }
+        user.roles = _roles;
+      } else {
+        user.roles = roles;
       }
     } else {
-      _roles = options.roles;
+      const defaultRole = (await this.optionService.getOption('defaultRole'))!
+        .value;
+      user.roles = [(await this.roleService.getRole(defaultRole))!];
     }
 
-    const user = new User();
     user.username = options.username;
     user.password = this.utilityService.hash(
       options.username + options.password,
@@ -58,7 +62,6 @@ export class UserService {
     if (options.fullName) user.fullName = options.fullName;
     if (options.email) user.email = options.email;
     if (options.mobile) user.mobile = options.mobile;
-    user.roles = _roles;
     await this.manager.save(user);
     return user;
   }

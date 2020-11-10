@@ -28,15 +28,22 @@ export class PermGuard implements CanActivate {
     );
     if (!neededPerms) return true;
 
-    const request = context.switchToHttp().getRequest();
-    const authorization = request.headers['authorization'];
+    const res = context.switchToHttp().getRequest();
+    const authorization = res.headers['authorization'];
     if (!authorization)
       throw new UnauthorizedException('no authorization is found');
-    const token = authorization.split(' ')[1];
-    const decodedToken = this.jwt.verify(
-      token,
-      this.configService.get('jwtSecret'),
-    ) as tokenPayload;
+
+    let decodedToken: tokenPayload;
+    try {
+      const token = authorization.split(' ')[1];
+      decodedToken = this.jwt.verify(
+        token,
+        this.configService.get('jwtSecret'),
+      ) as tokenPayload;
+    } catch (error) {
+      throw new UnauthorizedException('bad token');
+    }
+
     const ownedPerms = decodedToken.perms;
     const validated: string[] = [];
     for (const neededPerm of neededPerms) {
@@ -54,7 +61,7 @@ export class PermGuard implements CanActivate {
       perms: validated,
     };
 
-    request.currentUser = currentUser;
+    res.currentUser = currentUser;
     return true;
   }
 }

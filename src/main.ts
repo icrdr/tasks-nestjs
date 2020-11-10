@@ -1,16 +1,21 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
-import { WINSTON_MODULE_NEST_PROVIDER } from 'nest-winston';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { ErrorHandler } from './error/error.filter';
+import { RequestLoggerInterceptor } from './logger/logger.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const winston = app.get(WINSTON_MODULE_PROVIDER);
+  const reflector = app.get(Reflector);
 
-  app.useGlobalFilters(new ErrorHandler(app.get(WINSTON_MODULE_NEST_PROVIDER)));
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-  
+  app.useGlobalInterceptors(
+    new RequestLoggerInterceptor(winston),
+    new ClassSerializerInterceptor(reflector),
+  );
+  app.useGlobalFilters(new ErrorHandler(winston));
   await app.listen(3000);
 }
 bootstrap();
