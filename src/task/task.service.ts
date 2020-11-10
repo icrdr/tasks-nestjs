@@ -3,7 +3,7 @@ import { EntityManager } from 'typeorm';
 import { TypeGuardService } from '../common/typeGuard.service';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/services/user.service';
-import { PassRequest, Task } from './task.entity';
+import { PassRequest, Task, TaskState } from './task.entity';
 
 @Injectable()
 export class TaskService {
@@ -14,14 +14,23 @@ export class TaskService {
   ) {}
 
   async getTask(identify: number) {
-    return await this.manager.findOne(Task, identify);
+    return await this.manager.findOne(Task, identify, {
+      relations: ['performers', 'requests'],
+    });
   }
 
   async getTasks(options: { perPage: number; page: number }) {
     return await this.manager.findAndCount(Task, {
       take: options.perPage,
       skip: options.page,
+      relations: ['performers', 'requests'],
     });
+  }
+
+  async startTask(task: Task | number) {
+    if (!(task instanceof Task)) task = await this.getTask(task);
+    task.state = TaskState.IN_PROGRESS;
+    return await this.manager.save(task);
   }
 
   async submitRequest(options: {
@@ -30,9 +39,21 @@ export class TaskService {
     submitContent?: string;
   }) {
     const request = new PassRequest();
+    const task =
+      options.task instanceof Task
+        ? options.task
+        : await this.getTask(options.task);
 
-    await this.manager.save(request);
-    return request;
+    request.submitter =
+      options.submitter instanceof User
+        ? options.submitter
+        : await this.userService.getUser(options.submitter);
+
+    if (options.submitContent) request.submitContent = options.submitContent;
+
+    await this.manager.save(request)
+    task.requests.push(request);
+    return await this.manager.save(task);
   }
 
   async createTask(options: {
@@ -58,7 +79,6 @@ export class TaskService {
     task.name = options.name;
     if (options.description) task.description = options.description;
 
-    await this.manager.save(task);
-    return task;
+    return await this.manager.save(task);
   }
 }

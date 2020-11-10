@@ -3,10 +3,10 @@ import { DatabaseModule } from './database/database.module';
 import { DatabaseService } from './database/database.service';
 
 async function initDb() {
-  const app = await NestFactory.create(DatabaseModule, {
+  const contrainer = await NestFactory.create(DatabaseModule, {
     logger: false,
   });
-  const databaseService = app.get(DatabaseService);
+  const databaseService = contrainer.get(DatabaseService);
   console.log('Dropping tables...');
   await databaseService.clear();
 

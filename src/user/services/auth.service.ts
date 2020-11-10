@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { tokenPayload } from '../../common/common.interface';
+import { tokenPayload } from '../user.interface';
 import { UtilityService } from '../../common/utility.service';
 import { EntityManager } from 'typeorm';
 import { User, Perm } from '../entities/user.entity';

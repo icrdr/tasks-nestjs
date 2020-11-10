@@ -18,7 +18,7 @@ export default () => ({
   jwtSecret: process.env.JWT_SECRET || 'app',
   logLevel: process.env.NODE_ENV === 'prod' ? 'http' : 'debug',
   logSilent: process.env.NODE_ENV === 'test',
-  defaultRole: {
+  defaultRoles: {
     admin: ['*'],
     user: ['common.*', 'common.user.*'],
   },

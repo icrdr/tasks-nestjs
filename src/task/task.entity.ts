@@ -59,7 +59,7 @@ export class Task extends BaseEntity {
 @Entity()
 export class PassRequest extends BaseEntity {
   @ManyToOne(() => Task, (task) => task.requests)
-  task: string;
+  task: Task;
 
   @ManyToOne(() => User, (user) => user.passRequestsAsSubmitter)
   submitter: User;
@@ -69,7 +69,7 @@ export class PassRequest extends BaseEntity {
   })
   responder: User;
 
-  @Column()
+  @Column({ nullable: true })
   submitContent: string;
 
   @Column({ nullable: true })

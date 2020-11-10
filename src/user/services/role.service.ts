@@ -23,7 +23,7 @@ export class RoleService {
   }) {
     const role = new Role();
     const perms = options.perms;
-    if (!perms) {
+    if (perms) {
       if (!this.typeGuardService.isPermArray(perms)) {
         let _perms: Perm[] = [];
         for (const identify of perms) {
@@ -34,7 +34,6 @@ export class RoleService {
         role.perms = perms;
       }
     }
-
     role.name = options.name;
     await this.manager.save(role);
     return role;

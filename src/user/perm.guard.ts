@@ -7,9 +7,10 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { tokenPayload, currentUser } from '../common/common.interface';
+import { tokenPayload, currentUser } from './user.interface';
 import { UtilityService } from '../common/utility.service';
 import { APP_GUARD } from '@nestjs/core';
+import { Request } from 'express';
 
 @Injectable()
 export class PermGuard implements CanActivate {
@@ -28,8 +29,8 @@ export class PermGuard implements CanActivate {
     );
     if (!neededPerms) return true;
 
-    const res = context.switchToHttp().getRequest();
-    const authorization = res.headers['authorization'];
+    const req: Request = context.switchToHttp().getRequest();
+    const authorization = req.headers['authorization'];
     if (!authorization)
       throw new UnauthorizedException('no authorization is found');
 
@@ -43,7 +44,7 @@ export class PermGuard implements CanActivate {
     } catch (error) {
       throw new UnauthorizedException('bad token');
     }
-
+    
     const ownedPerms = decodedToken.perms;
     const validated: string[] = [];
     for (const neededPerm of neededPerms) {
@@ -54,14 +55,14 @@ export class PermGuard implements CanActivate {
         }
       }
     }
-    if (!validated) return false;
+    if (validated.length === 0) return false;
 
     const currentUser: currentUser = {
       id: decodedToken.id,
       perms: validated,
     };
 
-    res.currentUser = currentUser;
+    req['currentUser'] = currentUser;
     return true;
   }
 }
