@@ -75,7 +75,7 @@ class WinstonConfigService {
         new transports.DailyRotateFile({
           format: format.combine(this.loggerContent(false)),
           filename: '%DATE%.log',
-          dirname: 'log',
+          dirname: 'logs',
           datePattern: 'YYYY-MM-DD',
           level: 'http',
         }),
