@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -10,7 +11,15 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { IsString, IsOptional, IsNumberString } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsString,
+  IsOptional,
+  IsNumberString,
+  IsBoolean,
+  IsBooleanString,
+  IsNumber,
+} from 'class-validator';
 import { Request, Response } from 'express';
 import { Perms } from 'src/user/perm.decorator';
 import { PermGuard } from 'src/user/perm.guard';
@@ -30,16 +39,25 @@ class CreateTaskDTO {
 }
 
 class GetTasksDTO {
-  @IsNumberString()
+  @IsNumber()
   @IsOptional()
   perPage: number;
 
-  @IsNumberString()
+  @IsNumber()
   @IsOptional()
   page: number;
 }
 
 class SubmitRequestDTO {
+  @IsString()
+  @IsOptional()
+  content: string;
+}
+
+class RespondRequestDTO {
+  @IsBooleanString()
+  isConfirmed: string;
+
   @IsString()
   @IsOptional()
   content: string;
@@ -58,10 +76,8 @@ export class TaskController {
     @Body() body: CreateTaskDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    return this.taskService.createTask({
-      name: body.name,
+    return this.taskService.createTask(body.name, [currentUser.id], {
       description: body.description,
-      performers: [currentUser.id],
     });
   }
 
@@ -69,7 +85,6 @@ export class TaskController {
   @Get('/:id')
   async getTask(@Param('id') id: number) {
     const task = await this.taskService.getTask(id);
-    if (!task) throw new NotFoundException('Task was not found.');
     return task;
   }
 
@@ -83,6 +98,26 @@ export class TaskController {
     return tasks;
   }
 
+  @Perms('common.task.start')
+  @Put('/:id/start')
+  async startTask(
+    @Param('id') id: number,
+    @CurrentUser() currentUser: currentUser,
+  ) {
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    return await this.taskService.startTask(task);
+  }
+
+  @Perms('common.task.complete')
+  @Put('/:id/complete')
+  async completeTask(
+    @Param('id') id: number,
+    @CurrentUser() currentUser: currentUser,
+  ) {
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    return await this.taskService.completeTask(task);
+  }
+
   @Perms('common.task.submitRequest')
   @Put('/:id/submit')
   async submitRequest(
@@ -90,38 +125,38 @@ export class TaskController {
     @Body() body: SubmitRequestDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.getTask(id);
-    if (!task) throw new NotFoundException('Task was not found.');
-
-    const performerIds = task.performers.map((item) => item.id);
-    if (!performerIds.includes(currentUser.id))
-      throw new NotFoundException("You are not task's performer");
-    if (task.state !== TaskState.IN_PROGRESS)
-      throw new NotFoundException('Task is not in progress.');
-
-    return await this.taskService.submitRequest({
-      task: task,
-      submitter: currentUser.id,
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    return await this.taskService.submitRequest(task, currentUser.id, {
       submitContent: body.content,
     });
   }
 
-  @Perms('common.task.start')
-  @Put('/:id/start')
-  async startTask(
+  @Perms('common.task.respondRequest')
+  @Put('/:id/respond')
+  async respondRequest(
     @Param('id') id: number,
+    @Body() body: RespondRequestDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.getTask(id);
-    if (!task) throw new NotFoundException('Task was not found.');
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    return await this.taskService.respondRequest(
+      task,
+      body.isConfirmed === 'true',
+      currentUser.id,
+      { responseContent: body.content },
+    );
+  }
 
-    const performerIds = task.performers.map((item) => item.id);
-    if (!performerIds.includes(currentUser.id))
-      throw new NotFoundException("You are not task's performer");
-
-    if (task.state !== TaskState.SUSPENDED)
-      throw new NotFoundException('Task is not suspended.');
-
-    return await this.taskService.startTask(task);
+  @Perms('common.task.create')
+  @Post('/:id')
+  async createSubTask(
+    @Param('id') id: number,
+    @Body() body: CreateTaskDTO,
+    @CurrentUser() currentUser: currentUser,
+  ) {
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    return this.taskService.createSubTask(task, body.name, [currentUser.id], {
+      description: body.description,
+    });
   }
 }

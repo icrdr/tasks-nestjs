@@ -5,17 +5,22 @@ import {
   ForbiddenException,
   Get,
   Inject,
-  InternalServerErrorException,
   NotFoundException,
   Param,
   Post,
   Query,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { IsString, IsNumberString, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNumberString,
+  IsOptional,
+  IsNumber,
+} from 'class-validator';
 import { Perms } from '../../user/perm.decorator';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
+import { Type } from 'class-transformer';
 
 class CreateUserDTO {
   @IsString()
@@ -26,11 +31,11 @@ class CreateUserDTO {
 }
 
 class GetUsersDTO {
-  @IsNumberString()
+  @IsNumber()
   @IsOptional()
   perPage: number;
 
-  @IsNumberString()
+  @IsNumber()
   @IsOptional()
   page: number;
 }
@@ -47,7 +52,6 @@ export class UserController {
   @Get('/:id')
   async getUser(@Param('id') id: number) {
     const user = await this.userService.getUser(id);
-    if (!user) throw new NotFoundException('User was not found.');
     return user;
   }
 
@@ -62,20 +66,11 @@ export class UserController {
 
   @Post()
   async createUser(@Body() body: CreateUserDTO) {
-    const user = await this.userService.getUser(body.username);
-    if (user) throw new ForbiddenException('Username existed');
-
-    return this.userService.createUser({
-      username: body.username,
-      password: body.password,
-    });
+    return this.userService.createUser(body.username, body.password);
   }
 
   @Delete('/:id')
   async deleteUser(@Param('id') id: number) {
-    const user = await this.userService.getUser(id);
-    if (!user) throw new NotFoundException('User was not found.');
-
     await this.userService.deleteUser(id);
     return { message: 'Deleted' };
   }

@@ -1,4 +1,9 @@
-import { Inject, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { TypeGuardService } from '../../common/typeGuard.service';
 import { UtilityService } from '../../common/utility.service';
 import { OptionService } from '../../option/option.service';
@@ -15,11 +20,18 @@ export class UserService {
     private typeGuardService: TypeGuardService,
     private manager: EntityManager,
   ) {}
+  async isUsernameAvailable(username: string) {
+    const user = await this.manager.findOne(User, { username: username });
+    if (user) throw new ForbiddenException('Username existed');
+  }
 
   async getUser(identify: string | number) {
-    return typeof identify === 'string'
-      ? await this.manager.findOne(User, { username: identify })
-      : await this.manager.findOne(User, identify);
+    const user =
+      typeof identify === 'string'
+        ? await this.manager.findOne(User, { username: identify })
+        : await this.manager.findOne(User, identify);
+    if (!user) throw new NotFoundException('User was not found.');
+    return user;
   }
 
   async getUsers(options: { perPage: number; page: number }) {
@@ -29,14 +41,18 @@ export class UserService {
     });
   }
 
-  async createUser(options: {
-    username: string;
-    password: string;
-    fullName?: string;
-    email?: string;
-    mobile?: string | undefined;
-    roles?: Role[] | number[] | string[];
-  }) {
+  async createUser(
+    username: string,
+    password: string,
+    options?: {
+      fullName?: string;
+      email?: string;
+      mobile?: string | undefined;
+      roles?: Role[] | number[] | string[];
+    },
+  ) {
+    await this.isUsernameAvailable(username);
+
     const user = new User();
     const roles = options.roles;
     if (roles) {
@@ -55,10 +71,8 @@ export class UserService {
       user.roles = [(await this.roleService.getRole(defaultRole))!];
     }
 
-    user.username = options.username;
-    user.password = this.utilityService.hash(
-      options.username + options.password,
-    );
+    user.username = username;
+    user.password = this.utilityService.hash(username + password);
     if (options.fullName) user.fullName = options.fullName;
     if (options.email) user.email = options.email;
     if (options.mobile) user.mobile = options.mobile;
@@ -67,8 +81,7 @@ export class UserService {
   }
 
   async deleteUser(identify: string | number): Promise<void> {
-    typeof identify === 'string'
-      ? await this.manager.softDelete(User, { username: identify })
-      : await this.manager.softDelete(User, identify);
+    const user = await this.getUser(identify);
+    await this.manager.softDelete(User, user);
   }
 }

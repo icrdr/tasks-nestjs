@@ -21,10 +21,10 @@ export class DatabaseService {
     const users = [];
 
     for (const {} of Array(number)) {
-      const user = await this.userService.createUser({
-        username: this.faker.internet.userName(),
-        password: this.faker.internet.password(),
-      });
+      const user = await this.userService.createUser(
+        this.faker.internet.userName(),
+        this.faker.internet.password(),
+      );
       users.push(user);
     }
     return users;
@@ -35,14 +35,13 @@ export class DatabaseService {
   }
 
   async createDefault() {
-    
     const defaultOptions = this.configService.get('defaultOptions') as {
       [key: string]: string;
     };
     const defaultRoles = this.configService.get('defaultRoles') as {
       [key: string]: string[];
     };
-    
+
     // create default options
     for (const key in defaultOptions) {
       const value: string = defaultOptions[key];
@@ -51,18 +50,19 @@ export class DatabaseService {
 
     // create default roles
     for (const key in defaultRoles) {
-      await this.roleService.createRole({
-        name: key,
+      await this.roleService.createRole(key, {
         perms: defaultRoles[key],
       });
     }
 
     //create default user (admin)
-    await this.userService.createUser({
-      username: this.configService.get('adminUsername'),
-      password: this.configService.get('adminPassword'),
-      roles: ['admin'],
-    });
+    await this.userService.createUser(
+      this.configService.get('adminUsername'),
+      this.configService.get('adminPassword'),
+      {
+        roles: ['admin'],
+      },
+    );
   }
 
   async close() {

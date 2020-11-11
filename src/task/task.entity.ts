@@ -47,6 +47,13 @@ export class Task extends BaseEntity {
   @OneToMany(() => PassRequest, (passRequest) => passRequest.task)
   requests: PassRequest[];
 
+  @ManyToOne(() => Task, (task) => task.subTasks)
+  parentTask: Task;
+
+  @OneToMany(() => Task, (task) => task.parentTask)
+  subTasks: Task[];
+
+
   @ManyToMany(() => Tag, (tag) => tag.tasks)
   @JoinTable()
   tags: Tag[];

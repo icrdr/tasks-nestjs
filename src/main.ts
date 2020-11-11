@@ -10,7 +10,16 @@ async function bootstrap() {
   const winston = app.get(WINSTON_MODULE_PROVIDER);
   const reflector = app.get(Reflector);
 
-  app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      transformOptions: {
+        //FIXME: auto transform type. but boolean not working
+        enableImplicitConversion: true, 
+      },
+    }),
+  );
   app.useGlobalInterceptors(
     new RequestLoggerInterceptor(winston),
     new ClassSerializerInterceptor(reflector),

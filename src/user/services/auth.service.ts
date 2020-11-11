@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { tokenPayload } from '../user.interface';
 import { UtilityService } from '../../common/utility.service';
@@ -21,7 +21,8 @@ export class AuthService {
       password: this.utilityService.hash(username + password),
     });
 
-    if (!user) return undefined;
+    if (!user) throw new NotFoundException('Auth Fail');
+
     const perms = await this.manager
       .createQueryBuilder(Perm, 'perm')
       .leftJoin('perm.users', 'user')

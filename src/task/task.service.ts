@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { TypeGuardService } from '../common/typeGuard.service';
 import { User } from '../user/entities/user.entity';
@@ -13,56 +13,109 @@ export class TaskService {
     private manager: EntityManager,
   ) {}
 
-  async getTask(identify: number) {
-    return await this.manager.findOne(Task, identify, {
-      relations: ['performers', 'requests'],
-    });
+  async isUserThePerformer(task: Task | number, user: User | number) {
+    if (!(task instanceof Task)) task = await this.getTask(task);
+    const userId = user instanceof User ? user.id : user;
+    const performerIds = task.performers.map((item) => item.id);
+    if (!performerIds.includes(userId))
+      throw new ForbiddenException("You are not task's performer");
+    return task;
   }
 
-  async getTasks(options: { perPage: number; page: number }) {
+  async getTask(identify: number) {
+    const task = await this.manager.findOne(Task, identify, {
+      relations: ['performers', 'requests', 'subTasks'],
+    });
+    if (!task) throw new ForbiddenException('Task was not found.');
+    return task;
+  }
+
+  async getTasks(options?: { perPage: number; page: number }) {
     return await this.manager.findAndCount(Task, {
       take: options.perPage,
       skip: options.page,
-      relations: ['performers', 'requests'],
+      relations: ['performers', 'requests', 'subTasks'],
     });
   }
 
   async startTask(task: Task | number) {
     if (!(task instanceof Task)) task = await this.getTask(task);
+    if (task.state !== TaskState.SUSPENDED)
+      throw new ForbiddenException('Task is not suspended.');
     task.state = TaskState.IN_PROGRESS;
     return await this.manager.save(task);
   }
 
-  async submitRequest(options: {
-    task: Task | number;
-    submitter: User | number | string;
-    submitContent?: string;
-  }) {
+  async completeTask(task: Task | number) {
+    if (!(task instanceof Task)) task = await this.getTask(task);
+    if (task.state === TaskState.COMPLETED)
+      throw new ForbiddenException('Task is already completed.');
+    task.state = TaskState.COMPLETED;
+    return await this.manager.save(task);
+  }
+
+  async submitRequest(
+    task: Task | number,
+    submitter: User | number | string,
+    options?: {
+      submitContent?: string;
+    },
+  ) {
     const request = new PassRequest();
-    const task =
-      options.task instanceof Task
-        ? options.task
-        : await this.getTask(options.task);
+    task = task instanceof Task ? task : await this.getTask(task);
+    if (task.state !== TaskState.IN_PROGRESS)
+      throw new ForbiddenException('Task is not in progress.');
 
     request.submitter =
-      options.submitter instanceof User
-        ? options.submitter
-        : await this.userService.getUser(options.submitter);
+      submitter instanceof User
+        ? submitter
+        : await this.userService.getUser(submitter);
 
     if (options.submitContent) request.submitContent = options.submitContent;
 
-    await this.manager.save(request)
+    await this.manager.save(request);
+    task.state = TaskState.UNCONFIRMED;
     task.requests.push(request);
     return await this.manager.save(task);
   }
 
-  async createTask(options: {
-    name: string;
-    description?: string;
-    performers?: User[] | number[] | string[];
-  }) {
+  async respondRequest(
+    task: Task | number,
+    isConfirmed: boolean,
+    responder: User | number | string,
+    options?: {
+      responseContent?: string;
+    },
+  ) {
+    task = task instanceof Task ? task : await this.getTask(task);
+    if (task.state !== TaskState.UNCONFIRMED)
+      throw new ForbiddenException('Task does not wait for comfirmtion.');
+
+    const request = task.requests[task.requests.length - 1];
+    request.responder =
+      responder instanceof User
+        ? responder
+        : await this.userService.getUser(responder);
+
+    if (options.responseContent)
+      request.responseContent = options.responseContent;
+
+    request.respondAt = new Date();
+    await this.manager.save(request);
+
+    task.state = isConfirmed ? TaskState.COMPLETED : TaskState.IN_PROGRESS;
+
+    return await this.manager.save(task);
+  }
+
+  async createTask(
+    name: string,
+    performers: User[] | number[] | string[],
+    options?: {
+      description?: string;
+    },
+  ) {
     const task = new Task();
-    const performers = options.performers;
 
     if (performers) {
       if (!this.typeGuardService.isUserArray(performers)) {
@@ -76,9 +129,23 @@ export class TaskService {
       }
     }
 
-    task.name = options.name;
+    task.name = name;
     if (options.description) task.description = options.description;
 
+    return await this.manager.save(task);
+  }
+
+  async createSubTask(
+    task: Task | number,
+    name: string,
+    performers: User[] | number[] | string[],
+    options?: {
+      description?: string;
+    },
+  ) {
+    task = task instanceof Task ? task : await this.getTask(task);
+    const subTask = await this.createTask(name, performers, options);
+    task.subTasks.push(subTask);
     return await this.manager.save(task);
   }
 }

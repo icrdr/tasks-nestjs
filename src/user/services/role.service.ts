@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { TypeGuardService } from '../../common/typeGuard.service';
 import { EntityManager } from 'typeorm';
 import { Role, Perm } from '../entities/user.entity';
@@ -11,16 +11,21 @@ export class RoleService {
   ) {}
 
   async getRole(identify: string | number) {
-    return typeof identify === 'string'
-      ? await this.manager.findOne(Role, { name: identify })
-      : await this.manager.findOne(Role, identify);
+    const role =
+      typeof identify === 'string'
+        ? await this.manager.findOne(Role, { name: identify })
+        : await this.manager.findOne(Role, identify);
+    if (!role) throw new NotFoundException('User was not found.');
+    return role;
   }
 
-  async createRole(options: {
-    name: string;
-    role?: Role | number | string;
-    perms?: Perm[] | number[] | string[];
-  }) {
+  async createRole(
+    name: string,
+    options: {
+      role?: Role | number | string;
+      perms?: Perm[] | number[] | string[];
+    },
+  ) {
     const role = new Role();
     const perms = options.perms;
     if (perms) {
@@ -34,7 +39,7 @@ export class RoleService {
         role.perms = perms;
       }
     }
-    role.name = options.name;
+    role.name = name;
     await this.manager.save(role);
     return role;
   }

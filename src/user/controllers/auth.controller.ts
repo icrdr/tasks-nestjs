@@ -23,8 +23,6 @@ export class AuthController {
   @Post()
   async authUser(@Body() body: AuthUserDTO) {
     const token = await this.authService.authUser(body.username, body.password);
-    if (!token) throw new NotFoundException('Auth Fail');
-
     return { token: token };
   }
 }
