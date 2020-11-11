@@ -125,7 +125,11 @@ export class TaskController {
     @Body() body: SubmitRequestDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    const task = await this.taskService.isUserThePerformer(
+      id,
+      currentUser.id,
+      false,
+    );
     return await this.taskService.submitRequest(task, currentUser.id, {
       submitContent: body.content,
     });
@@ -154,7 +158,11 @@ export class TaskController {
     @Body() body: CreateTaskDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    const task = await this.taskService.isUserThePerformer(
+      id,
+      currentUser.id,
+      false,
+    );
     return this.taskService.createSubTask(task, body.name, [currentUser.id], {
       description: body.description,
     });

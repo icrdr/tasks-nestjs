@@ -44,12 +44,12 @@ export class UserService {
   async createUser(
     username: string,
     password: string,
-    options?: {
+    options: {
       fullName?: string;
       email?: string;
       mobile?: string | undefined;
       roles?: Role[] | number[] | string[];
-    },
+    } = {},
   ) {
     await this.isUsernameAvailable(username);
 

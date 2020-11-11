@@ -24,6 +24,9 @@ export class Task extends BaseEntity {
   @Column()
   name: string;
 
+  @Column({default:false})
+  isMandatory:boolean
+
   @Column()
   description: string;
 

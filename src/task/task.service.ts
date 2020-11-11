@@ -13,11 +13,30 @@ export class TaskService {
     private manager: EntityManager,
   ) {}
 
-  async isUserThePerformer(task: Task | number, user: User | number) {
+  async isUserThePerformer(
+    task: Task | number,
+    user: User | number,
+    mandatoryCheck: boolean = true,
+  ) {
     if (!(task instanceof Task)) task = await this.getTask(task);
     const userId = user instanceof User ? user.id : user;
-    const performerIds = task.performers.map((item) => item.id);
-    if (!performerIds.includes(userId))
+    let performerIdWhitelist = [];
+    let parentTask = task.parentTask;
+
+    while (parentTask) {
+      performerIdWhitelist = performerIdWhitelist.concat(
+        parentTask.performers.map((item) => item.id),
+      );
+      parentTask = parentTask.parentTask;
+    }
+
+    if (!mandatoryCheck || !task.isMandatory) {
+      performerIdWhitelist = performerIdWhitelist.concat(
+        task.performers.map((item) => item.id),
+      );
+    }
+
+    if (!performerIdWhitelist.includes(userId))
       throw new ForbiddenException("You are not task's performer");
     return task;
   }
@@ -30,7 +49,7 @@ export class TaskService {
     return task;
   }
 
-  async getTasks(options?: { perPage: number; page: number }) {
+  async getTasks(options: { perPage?: number; page?: number } = {}) {
     return await this.manager.findAndCount(Task, {
       take: options.perPage,
       skip: options.page,
@@ -57,9 +76,9 @@ export class TaskService {
   async submitRequest(
     task: Task | number,
     submitter: User | number | string,
-    options?: {
+    options: {
       submitContent?: string;
-    },
+    } = {},
   ) {
     const request = new PassRequest();
     task = task instanceof Task ? task : await this.getTask(task);
@@ -83,9 +102,9 @@ export class TaskService {
     task: Task | number,
     isConfirmed: boolean,
     responder: User | number | string,
-    options?: {
+    options: {
       responseContent?: string;
-    },
+    } = {},
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.UNCONFIRMED)
@@ -111,9 +130,9 @@ export class TaskService {
   async createTask(
     name: string,
     performers: User[] | number[] | string[],
-    options?: {
+    options: {
       description?: string;
-    },
+    } = {},
   ) {
     const task = new Task();
 
@@ -139,9 +158,9 @@ export class TaskService {
     task: Task | number,
     name: string,
     performers: User[] | number[] | string[],
-    options?: {
+    options: {
       description?: string;
-    },
+    } = {},
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
     const subTask = await this.createTask(name, performers, options);
