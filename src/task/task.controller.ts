@@ -1,32 +1,14 @@
-import {
-  Body,
-  Controller,
-  ForbiddenException,
-  Get,
-  NotFoundException,
-  Param,
-  Post,
-  Put,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
-import { Transform, Type } from 'class-transformer';
+import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import {
   IsString,
   IsOptional,
-  IsNumberString,
-  IsBoolean,
   IsBooleanString,
   IsNumber,
 } from 'class-validator';
-import { Request, Response } from 'express';
 import { Perms } from 'src/user/perm.decorator';
-import { PermGuard } from 'src/user/perm.guard';
 import { UserService } from '../user/services/user.service';
 import { CurrentUser } from '../user/user.decorator';
 import { currentUser } from '../user/user.interface';
-import { TaskState } from './task.entity';
 import { TaskService } from './task.service';
 
 class CreateTaskDTO {
@@ -36,6 +18,16 @@ class CreateTaskDTO {
   @IsString()
   @IsOptional()
   description: string;
+}
+
+class CreateSubTaskDTO extends CreateTaskDTO {
+  @IsNumber()
+  @IsOptional()
+  userId: number;
+
+  @IsBooleanString()
+  @IsOptional()
+  isMandatory: string;
 }
 
 class GetTasksDTO {
@@ -65,10 +57,7 @@ class RespondRequestDTO {
 
 @Controller('api/tasks')
 export class TaskController {
-  constructor(
-    private taskService: TaskService,
-    private userService: UserService,
-  ) {}
+  constructor(private taskService: TaskService) {}
 
   @Perms('common.task.create')
   @Post()
@@ -104,8 +93,26 @@ export class TaskController {
     @Param('id') id: number,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.isUserThePerformer(id, currentUser.id);
+    const task = await this.taskService.isUserThePerformer(
+      id,
+      currentUser.id,
+      false,
+    );
     return await this.taskService.startTask(task);
+  }
+
+  @Perms('common.task.suspend')
+  @Put('/:id/suspend')
+  async suspendTask(
+    @Param('id') id: number,
+    @CurrentUser() currentUser: currentUser,
+  ) {
+    const task = await this.taskService.isUserThePerformer(
+      id,
+      currentUser.id,
+      false,
+    );
+    return await this.taskService.suspendTask(task);
   }
 
   @Perms('common.task.complete')
@@ -145,7 +152,7 @@ export class TaskController {
     const task = await this.taskService.isUserThePerformer(id, currentUser.id);
     return await this.taskService.respondRequest(
       task,
-      body.isConfirmed === 'true',
+      body.isConfirmed === 'true', //default is false
       currentUser.id,
       { responseContent: body.content },
     );
@@ -155,7 +162,7 @@ export class TaskController {
   @Post('/:id')
   async createSubTask(
     @Param('id') id: number,
-    @Body() body: CreateTaskDTO,
+    @Body() body: CreateSubTaskDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
     const task = await this.taskService.isUserThePerformer(
@@ -163,8 +170,15 @@ export class TaskController {
       currentUser.id,
       false,
     );
-    return this.taskService.createSubTask(task, body.name, [currentUser.id], {
-      description: body.description,
-    });
+    const subTaskPerformerId = body.userId ? body.userId : currentUser.id;
+    return this.taskService.createSubTask(
+      task,
+      body.name,
+      [subTaskPerformerId],
+      {
+        description: body.description,
+        isMandatory: !(body.isMandatory === 'false'), //default is true
+      },
+    );
   }
 }
