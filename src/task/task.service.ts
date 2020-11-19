@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { TypeGuardService } from '../common/typeGuard.service';
+import { isUserArray } from '../typeGuard';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/services/user.service';
 import { PassRequest, Task, TaskState } from './task.entity';
@@ -8,7 +8,6 @@ import { PassRequest, Task, TaskState } from './task.entity';
 @Injectable()
 export class TaskService {
   constructor(
-    private typeGuardService: TypeGuardService,
     private userService: UserService,
     private manager: EntityManager,
   ) {}
@@ -66,7 +65,7 @@ export class TaskService {
     const task = new Task();
 
     if (performers) {
-      if (!this.typeGuardService.isUserArray(performers)) {
+      if (!isUserArray(performers)) {
         let _performers: User[] = [];
         for (const identify of performers) {
           _performers.push((await this.userService.getUser(identify))!);

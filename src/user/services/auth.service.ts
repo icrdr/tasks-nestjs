@@ -1,24 +1,22 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { tokenPayload } from '../user.interface';
-import { UtilityService } from '../../common/utility.service';
 import { EntityManager } from 'typeorm';
 import { User, Perm } from '../entities/user.entity';
+import { sign } from 'jsonwebtoken';
+import { hash } from '../../utils';
 
 @Injectable()
 export class AuthService {
   constructor(
-    @Inject('JWT_LIB')
-    private jwt: any,
     private configService: ConfigService,
     private manager: EntityManager,
-    private utilityService: UtilityService,
   ) {}
 
   async authUser(username: string, password: string) {
     const user = await this.manager.findOne(User, {
       username: username,
-      password: this.utilityService.hash(username + password),
+      password: hash(username + password),
     });
 
     if (!user) throw new NotFoundException('Auth Fail');
@@ -36,7 +34,7 @@ export class AuthService {
       id: user.id,
       perms: perms.map((item) => item.code),
     };
-    return this.jwt.sign(payload, this.configService.get('jwtSecret'), {
+    return sign(payload, this.configService.get('jwtSecret'), {
       expiresIn: '24h',
     });
   }

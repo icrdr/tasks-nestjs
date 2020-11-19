@@ -8,18 +8,16 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { tokenPayload, currentUser } from './user.interface';
-import { UtilityService } from '../common/utility.service';
 import { APP_GUARD } from '@nestjs/core';
 import { Request } from 'express';
+import { verify } from 'jsonwebtoken';
+import { stringMatch } from '../utils';
 
 @Injectable()
 export class PermGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private configService: ConfigService,
-    private utilityService: UtilityService,
-    @Inject('JWT_LIB')
-    private jwt: any,
   ) {}
 
   canActivate(context: ExecutionContext): boolean {
@@ -37,19 +35,19 @@ export class PermGuard implements CanActivate {
     let decodedToken: tokenPayload;
     try {
       const token = authorization.split(' ')[1];
-      decodedToken = this.jwt.verify(
+      decodedToken = verify(
         token,
         this.configService.get('jwtSecret'),
       ) as tokenPayload;
     } catch (error) {
       throw new UnauthorizedException('bad token');
     }
-    
+
     const ownedPerms = decodedToken.perms;
     const validated: string[] = [];
     for (const neededPerm of neededPerms) {
       for (const ownedPerm of ownedPerms) {
-        if (this.utilityService.stringMatch(neededPerm, ownedPerm)) {
+        if (stringMatch(neededPerm, ownedPerm)) {
           validated.push(neededPerm);
           break; //break nested loop
         }

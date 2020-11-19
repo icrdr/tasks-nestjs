@@ -8,19 +8,15 @@ import {
 import { configModule } from '../config/config.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { DatabaseService } from './database.service';
-import { CommonModule, pathProvider } from '../common/common.module';
 import { UserService } from '../user/services/user.service';
 import { OptionService } from '../option/option.service';
 import { RoleService } from '../user/services/role.service';
-import { PlatformPath } from 'path';
+import { join } from 'path';
 
 @Injectable()
 class TypeOrmConfigService implements TypeOrmOptionsFactory {
   @Inject()
   private configService: ConfigService;
-
-  @Inject('PATH_LIB')
-  private path: PlatformPath;
 
   createTypeOrmOptions(): TypeOrmModuleOptions {
     return {
@@ -30,7 +26,7 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
       username: this.configService.get('dbUsername'),
       password: this.configService.get('dbPassword'),
       database: this.configService.get('dbDatabase'),
-      entities: [this.path.join(__dirname, '../**/*.entity{.ts,.js}')],
+      entities: [join(__dirname, '../**/*.entity{.ts,.js}')],
       namingStrategy: new SnakeNamingStrategy(),
       synchronize: true,
     };
@@ -39,10 +35,8 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
 
 @Module({
   imports: [
-    CommonModule,
     configModule,
     TypeOrmModule.forRootAsync({
-      imports: [CommonModule],
       useClass: TypeOrmConfigService,
     }),
   ],

@@ -1,13 +1,12 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { TypeGuardService } from '../../common/typeGuard.service';
 import { EntityManager } from 'typeorm';
+import { isPermArray } from '../../typeGuard';
 import { Role, Perm } from '../entities/user.entity';
 
 @Injectable()
 export class RoleService {
   constructor(
     private manager: EntityManager,
-    private typeGuardService: TypeGuardService,
   ) {}
 
   async getRole(identify: string | number) {
@@ -29,7 +28,7 @@ export class RoleService {
     const role = new Role();
     const perms = options.perms;
     if (perms) {
-      if (!this.typeGuardService.isPermArray(perms)) {
+      if (!isPermArray(perms)) {
         let _perms: Perm[] = [];
         for (const identify of perms) {
           _perms.push((await this.loadPerm(identify))!);

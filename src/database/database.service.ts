@@ -4,6 +4,7 @@ import { Connection } from 'typeorm';
 import { OptionService } from '../option/option.service';
 import { RoleService } from '../user/services/role.service';
 import { UserService } from '../user/services/user.service';
+import { internet } from 'faker';
 
 @Injectable()
 export class DatabaseService {
@@ -13,8 +14,6 @@ export class DatabaseService {
     private connection: Connection,
     private userService: UserService,
     private configService: ConfigService,
-    @Inject('FAKER_LIB')
-    private faker: Faker.FakerStatic,
   ) {}
 
   async createFakeUsers(number: number) {
@@ -22,8 +21,8 @@ export class DatabaseService {
 
     for (const {} of Array(number)) {
       const user = await this.userService.createUser(
-        this.faker.internet.userName(),
-        this.faker.internet.password(),
+        internet.userName(),
+        internet.password(),
       );
       users.push(user);
     }

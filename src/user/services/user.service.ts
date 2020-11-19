@@ -4,20 +4,18 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { TypeGuardService } from '../../common/typeGuard.service';
-import { UtilityService } from '../../common/utility.service';
 import { OptionService } from '../../option/option.service';
 import { EntityManager } from 'typeorm';
 import { User, Role } from '../entities/user.entity';
 import { RoleService } from './role.service';
+import { isRoleArray } from '../../typeGuard';
+import { hash } from '../../utils';
 
 @Injectable()
 export class UserService {
   constructor(
     private optionService: OptionService,
     private roleService: RoleService,
-    private utilityService: UtilityService,
-    private typeGuardService: TypeGuardService,
     private manager: EntityManager,
   ) {}
   async isUsernameAvailable(username: string) {
@@ -56,7 +54,7 @@ export class UserService {
     const user = new User();
     const roles = options.roles;
     if (roles) {
-      if (!this.typeGuardService.isRoleArray(roles)) {
+      if (!isRoleArray(roles)) {
         let _roles: Role[] = [];
         for (const identify of roles) {
           _roles.push((await this.roleService.getRole(identify))!);
@@ -72,7 +70,7 @@ export class UserService {
     }
 
     user.username = username;
-    user.password = this.utilityService.hash(username + password);
+    user.password = hash(username + password);
     if (options.fullName) user.fullName = options.fullName;
     if (options.email) user.email = options.email;
     if (options.mobile) user.mobile = options.mobile;

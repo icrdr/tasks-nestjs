@@ -1,33 +1,27 @@
 import { WinstonModuleOptions } from 'nest-winston';
 import { transports, format } from 'winston';
 import 'winston-daily-rotate-file';
-import { Chalk } from 'chalk';
+import {
+  red,
+  bgRed,
+  bgYellow,
+  yellow,
+  bgGreen,
+  green,
+  bgGrey,
+  grey,
+  bgCyan,
+  cyan,
+} from 'chalk';
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class WinstonConfigService {
-  constructor(
-    private configService: ConfigService,
-
-    @Inject('CHALK_LIB')
-    private chalk: Chalk,
-  ) {}
+  constructor(private configService: ConfigService) {}
 
   loggerContent(isColored: boolean) {
     return format.printf(({ timestamp, level, message, stack }) => {
-      const {
-        red,
-        bgRed,
-        bgYellow,
-        yellow,
-        bgGreen,
-        green,
-        bgGrey,
-        grey,
-        bgCyan,
-        cyan,
-      } = this.chalk;
       const prefix = `${grey(timestamp)} `;
       level = level.toUpperCase();
       let suffix: string;
