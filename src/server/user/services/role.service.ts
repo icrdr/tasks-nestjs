@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { isPermArray } from '../../typeGuard';
+import { isPermArray } from '../../../utils/typeGuard';
 import { Role, Perm } from '../entities/user.entity';
 
 @Injectable()

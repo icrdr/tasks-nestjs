@@ -38,3 +38,5 @@ log
 
 .next
 app
+*/.umi
+build

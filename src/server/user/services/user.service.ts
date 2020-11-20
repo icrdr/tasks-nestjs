@@ -8,8 +8,8 @@ import { OptionService } from '../../option/option.service';
 import { EntityManager } from 'typeorm';
 import { User, Role } from '../entities/user.entity';
 import { RoleService } from './role.service';
-import { isRoleArray } from '../../typeGuard';
-import { hash } from '../../utils';
+import { isRoleArray } from '../../../utils/typeGuard';
+import { hash } from '../../../utils/utils';
 
 @Injectable()
 export class UserService {

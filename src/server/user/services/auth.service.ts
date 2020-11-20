@@ -4,7 +4,7 @@ import { tokenPayload } from '../user.interface';
 import { EntityManager } from 'typeorm';
 import { User, Perm } from '../entities/user.entity';
 import { sign } from 'jsonwebtoken';
-import { hash } from '../../utils';
+import { hash } from  '../../../utils/utils';
 
 @Injectable()
 export class AuthService {

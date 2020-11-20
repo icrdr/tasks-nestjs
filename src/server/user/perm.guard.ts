@@ -11,7 +11,7 @@ import { tokenPayload, currentUser } from './user.interface';
 import { APP_GUARD } from '@nestjs/core';
 import { Request } from 'express';
 import { verify } from 'jsonwebtoken';
-import { stringMatch } from '../utils';
+import { stringMatch } from '../../utils/utils';
 
 @Injectable()
 export class PermGuard implements CanActivate {

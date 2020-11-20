@@ -1,4 +1,4 @@
-import { Perm, Role, User } from './user/entities/user.entity';
+import { Perm, Role, User } from '../server/user/entities/user.entity';
 
 export function isStringArray(array: any[]): array is string[] {
   return typeof array[0] === 'string';

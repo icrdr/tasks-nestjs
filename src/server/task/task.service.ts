@@ -1,6 +1,6 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
-import { isUserArray } from '../typeGuard';
+import { isUserArray } from '../../utils/typeGuard';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/services/user.service';
 import { PassRequest, Task, TaskState } from './task.entity';
