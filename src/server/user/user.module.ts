@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CommonModule } from 'src/common/common.module';
-import { OptionModule } from 'src/option/option.module';
+import { CommonModule } from '../common/common.module';
+import { OptionModule } from '../option/option.module';
 import { AuthController } from './controllers/auth.controller';
 import { RoleController } from './controllers/role.controller';
 import { UserController } from './controllers/user.controller';

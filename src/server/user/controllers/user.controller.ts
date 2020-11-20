@@ -17,7 +17,7 @@ import {
   IsOptional,
   IsNumber,
 } from 'class-validator';
-import { Perms } from '../../user/perm.decorator';
+import { Perms } from '../perm.decorator';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { Type } from 'class-transformer';

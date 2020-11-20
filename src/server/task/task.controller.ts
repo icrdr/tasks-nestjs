@@ -5,7 +5,7 @@ import {
   IsBooleanString,
   IsNumber,
 } from 'class-validator';
-import { Perms } from 'src/user/perm.decorator';
+import { Perms } from '../user/perm.decorator';
 import { UserService } from '../user/services/user.service';
 import { CurrentUser } from '../user/user.decorator';
 import { currentUser } from '../user/user.interface';

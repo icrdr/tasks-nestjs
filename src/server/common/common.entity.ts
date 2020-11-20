@@ -7,13 +7,13 @@ import {
 
 export abstract class BaseEntity {
   @PrimaryGeneratedColumn()
-  id!: number;
+  id: number;
 
   @CreateDateColumn()
   @Exclude()
-  createAt!: Date;
+  createAt: Date;
 
   @UpdateDateColumn()
   @Exclude()
-  updateAt!: Date;
+  updateAt: Date;
 }

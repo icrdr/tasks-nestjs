@@ -1,7 +1,7 @@
-import crypto from 'crypto';
+import { createHash } from 'crypto';
 
 export function hash(string: string) {
-  const hash = crypto.createHash('md5');
+  const hash = createHash('md5');
   return hash.update(string).digest('hex');
 }
 
