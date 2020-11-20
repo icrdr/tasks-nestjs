@@ -14,7 +14,7 @@ import { join } from 'path';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'out'),
+      rootPath: join(__dirname, '..', 'app'),
     }),
     CommonModule,
     configModule,
