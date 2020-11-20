@@ -9,8 +9,8 @@
     "allowSyntheticDefaultImports": true,
     "target": "es2017",
     "sourceMap": true,
-    "outDir": "./build",
-    "baseUrl": ".",
+    "outDir": "./dist",
+    "baseUrl": "./",
     "paths": {
       "@/*": ["./src/*"],
       "@@/*": ["./src/.umi/*"]

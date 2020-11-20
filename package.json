@@ -11,8 +11,8 @@
     "debug:server": "nest start --debug --watch",
     "build:server": "nest build",
     "prod:server": "node dist/main",
-    "dev:app": "umi dev",
-    "start:app": "umi start",
+    "dev:app": "MOCK=none umi dev",
+    "dev:app-no-mock": "MOCK=none umi dev & npm run dev:server",
     "build:app": "umi build"
   },
   "dependencies": {
