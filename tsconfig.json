@@ -16,5 +16,5 @@
       "@@/*": ["./src/.umi/*"]
     }
   },
-  "include": ["src", "scripts/initDatabase.ts"]
+  "include": ["src", "scripts"]
 }
