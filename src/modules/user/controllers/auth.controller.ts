@@ -16,7 +16,7 @@ class AuthUserDTO {
   password: string;
 }
 
-@Controller('api/auth')
+@Controller('api/login')
 export class AuthController {
   constructor(private authService: AuthService) {}
 

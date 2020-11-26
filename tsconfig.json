@@ -16,5 +16,4 @@
       "@@/*": ["./src/.umi/*"]
     }
   },
-  "include": ["src", "scripts"]
 }
