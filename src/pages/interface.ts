@@ -1,5 +1,3 @@
-import { Settings as LayoutSettings } from '@ant-design/pro-layout';
-
 export interface currentUser {
   avatar?: string;
   name?: string;
@@ -16,6 +14,5 @@ export interface currentUser {
 }
 
 export interface initialState {
-  settings?: LayoutSettings;
   currentUser?: currentUser;
 }

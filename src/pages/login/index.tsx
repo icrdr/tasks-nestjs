@@ -5,7 +5,7 @@ import { LockTwoTone, SmileTwoTone, WechatOutlined } from '@ant-design/icons';
 import ProForm, { ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
 import { login, loginParams } from './service';
 import Access from '@/components/Access';
-import { getCurrentUser } from '../../service';
+import { getCurrentUser } from '../service';
 import Cookies from 'js-cookie'
 
 const { Title } = Typography;

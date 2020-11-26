@@ -1,4 +1,4 @@
-import configuration  from '../configuration';
+import configuration  from '../../../.servec';
 import { ConfigModule } from '@nestjs/config';
 
 export const configModule = ConfigModule.forRoot({

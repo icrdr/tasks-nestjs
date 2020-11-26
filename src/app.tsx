@@ -3,9 +3,8 @@ import { BasicLayoutProps, Settings as LayoutSettings, PageLoading } from '@ant-
 import { notification } from 'antd';
 import { history, RequestConfig } from 'umi';
 import { ResponseError } from 'umi-request';
-import { getCurrentUser } from '@/service';
-import defaultSettings from '../config/defaultSettings';
-import { initialState } from '@/interface';
+import { getCurrentUser } from '@/pages/service';
+import { initialState } from '@/pages/interface';
 import Footer from '@/components/Footer';
 import RightContent from './components/RightContent';
 
@@ -16,7 +15,6 @@ export const initialStateConfig = {
 export async function getInitialState(): Promise<initialState> {
   return {
     currentUser: undefined,
-    settings: defaultSettings,
   };
 }
 

@@ -3,9 +3,9 @@ import { QuestionCircleOutlined, LogoutOutlined } from '@ant-design/icons';
 import React from 'react';
 import { history, SelectLang, useModel, useRequest } from 'umi';
 
-import { getCurrentUser, logout } from '@/service';
+import { getCurrentUser, logout } from '@/pages/service';
 import Access from './Access';
-import { currentUser } from '../interface';
+import { currentUser } from '../pages/interface';
 import Cookies from 'js-cookie';
 
 const menu = (

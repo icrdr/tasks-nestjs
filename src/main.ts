@@ -1,9 +1,9 @@
 import { ClassSerializerInterceptor, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
-import { AppModule } from './app.module';
-import { ErrorHandler } from './error/error.filter';
-import { RequestLoggerInterceptor } from './logger/logger.interceptor';
+import { AppModule } from './modules/app.module';
+import { ErrorHandler } from './modules/error/error.filter';
+import { RequestLoggerInterceptor } from './modules/logger/logger.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

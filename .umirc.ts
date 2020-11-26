@@ -1,7 +1,22 @@
 import { defineConfig } from 'umi';
-import defaultSettings from './defaultSettings';
-import proxy from './proxy';
-import routes from './routes';
+import routes from './src/routes';
+
+const proxy = {
+  dev: {
+    '/api/': {
+      target: 'http://localhost:3000',
+      changeOrigin: true,
+      pathRewrite: { '^': '' },
+    },
+  },
+  test: {
+    '/api/': {
+      target: 'http://localhost:3000',
+      changeOrigin: true,
+      pathRewrite: { '^': '' },
+    },
+  },
+};
 
 const { REACT_APP_ENV } = process.env;
 const localeConfig = {
@@ -13,7 +28,6 @@ const localeConfig = {
 const layoutConfig = {
   name: 'YIMU',
   locale: true,
-  ...defaultSettings,
 };
 
 export default defineConfig({
@@ -27,7 +41,7 @@ export default defineConfig({
   dynamicImport: { loading: '@ant-design/pro-layout/es/PageLoading' },
   targets: { ie: 11 },
   routes,
-  theme: { 'primary-color': defaultSettings.primaryColor },
+  theme: { 'primary-color': '#1890ff' },
   esbuild: {},
   title: false,
   ignoreMomentLocale: true,
