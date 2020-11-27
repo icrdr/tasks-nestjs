@@ -55,6 +55,7 @@ export class UserController {
     return user;
   }
 
+
   @Get()
   async getUsers(@Query() query: GetUsersDTO) {
     const users = await this.userService.getUsers({

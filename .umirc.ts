@@ -32,4 +32,7 @@ export default {
   manifest: { basePath: "/" },
   exportStatic: {},
   outputPath: "dist/web",
+  request: {
+    dataField: '',
+  },
 };

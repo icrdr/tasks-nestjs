@@ -11,53 +11,36 @@ import { tokenPayload, currentUser } from './user.interface';
 import { APP_GUARD } from '@nestjs/core';
 import { Request } from 'express';
 import { verify } from 'jsonwebtoken';
-import { stringMatch } from '../../utils/utils';
+import { getValidPerms } from '@/utils/utils';
 
 @Injectable()
 export class PermGuard implements CanActivate {
-  constructor(
-    private reflector: Reflector,
-    private configService: ConfigService,
-  ) {}
+  constructor(private reflector: Reflector, private configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const neededPerms = this.reflector.get<string[]>(
-      'perms',
-      context.getHandler(),
-    );
+    const neededPerms = this.reflector.get<string[]>('perms', context.getHandler());
     if (!neededPerms) return true;
 
     const req: Request = context.switchToHttp().getRequest();
     const authorization = req.headers['authorization'];
-    if (!authorization)
-      throw new UnauthorizedException('no authorization is found');
+    if (!authorization) throw new UnauthorizedException('no authorization is found');
 
-    let decodedToken: tokenPayload;
+    let payload: tokenPayload;
     try {
       const token = authorization.split(' ')[1];
-      decodedToken = verify(
-        token,
-        this.configService.get('jwtSecret'),
-      ) as tokenPayload;
+      payload = verify(token, this.configService.get('jwtSecret')) as tokenPayload;
     } catch (error) {
       throw new UnauthorizedException('bad token');
     }
 
-    const ownedPerms = decodedToken.perms;
-    const validated: string[] = [];
-    for (const neededPerm of neededPerms) {
-      for (const ownedPerm of ownedPerms) {
-        if (stringMatch(neededPerm, ownedPerm)) {
-          validated.push(neededPerm);
-          break; //break nested loop
-        }
-      }
-    }
-    if (validated.length === 0) return false;
+    const ownedPerms = payload.perms;
+    const validPerms =
+      neededPerms.length === 0 ? ownedPerms : getValidPerms(neededPerms, payload.perms);
+    if (validPerms.length === 0) return false;
 
     const currentUser: currentUser = {
-      id: decodedToken.id,
-      perms: validated,
+      id: payload.id,
+      perms: validPerms,
     };
 
     req['currentUser'] = currentUser;

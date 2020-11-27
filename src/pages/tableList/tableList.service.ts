@@ -1,3 +1,5 @@
+import { request } from 'umi';
+
 export interface TableListItem {
   key: number;
   disabled?: boolean;
@@ -41,4 +43,40 @@ export interface FormValueType extends Partial<TableListItem> {
   type?: string;
   time?: string;
   frequency?: string;
+}
+
+export async function queryRule(params?: TableListParams) {
+  return request('/api/rule', {
+    params,
+  });
+}
+
+export async function removeRule(params: { key: number[] }) {
+  return request('/api/rule', {
+    method: 'POST',
+    data: {
+      ...params,
+      method: 'delete',
+    },
+  });
+}
+
+export async function addRule(params: TableListItem) {
+  return request('/api/rule', {
+    method: 'POST',
+    data: {
+      ...params,
+      method: 'post',
+    },
+  });
+}
+
+export async function updateRule(params: TableListParams) {
+  return request('/api/rule', {
+    method: 'POST',
+    data: {
+      ...params,
+      method: 'update',
+    },
+  });
 }

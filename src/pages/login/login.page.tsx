@@ -3,11 +3,8 @@ import { useIntl, history, FormattedMessage, useRequest } from 'umi';
 import { Space, message, Typography, Col, Divider } from 'antd';
 import { LockTwoTone, SmileTwoTone, WechatOutlined } from '@ant-design/icons';
 import ProForm, { ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
-import { login, loginParams } from './service';
-import Access from '@/components/Access';
-import { getCurrentUser } from '../service';
-import Cookies from 'js-cookie'
-
+import { login } from './login.service';
+import Cookies from 'js-cookie';
 const { Title } = Typography;
 
 const LoginForm: React.FC = () => {
@@ -55,20 +52,15 @@ const LoginForm: React.FC = () => {
     },
   ];
 
-  // const { setInitialState } = useModel('@@initialState');
-  const { loading, run } = useRequest(login, {
+  
+  const loginReq = useRequest(login, {
     manual: true,
     onSuccess: (res) => {
       message.success(successMsg);
-      Cookies.set('token', res.token)
+      Cookies.set('token', res.token);
       history.push('/');
     },
-    formatResult: (res) => res,
   });
-
-  // const usernameRequest = useRequest(getCurrentUser, {
-  //   ready: !!userIdRequest.data,
-  // });
 
   return (
     <ProForm
@@ -77,12 +69,12 @@ const LoginForm: React.FC = () => {
         searchConfig: { submitText: submitBtn },
         render: (_, doms) => doms.pop(), // remove 'cancel' botton
         submitButtonProps: {
-          loading: loading,
+          loading: loginReq.loading,
           size: 'large',
           style: { width: '100%' },
         },
       }}
-      onFinish={(values: loginParams) => run(values)}
+      onFinish={(values) => loginReq.run(values)}
     >
       {/* <Alert className="m-b:2" message={errorMsg} type="error" showIcon /> */}
       <ProFormText

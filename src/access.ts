@@ -1,39 +1,30 @@
 import Cookies from 'js-cookie';
 import { history } from 'umi';
-import jwt from 'jsonwebtoken';
-import { stringMatch } from './utils/utils';
-
-interface tokenPayload {
-  id: number;
-  perms: string[];
-}
+import { getValidPerms, stringMatch } from '@/utils/utils';
 
 // src/access.ts
-export default function () {
+export default function (initialState) {
+  const { currentUser } = initialState;
   return {
-    hasPerms: (perms: string[] = []) => {
-      // check if the token is valid, otherwise jump to login page
-      const token = Cookies.get('token');
-      if (!token) {
-        history.push('/login');
-      } else {
+    hasPerms: (neededPerms: string[] = []) => {
+      // const token = Cookies.get('token');
+      // const payload = jwt.verify(token, 'secret') as tokenPayload;
+      if (!currentUser) {
+        console.log('hi')
         return true
-        // if (perms.length === 0) return true;
-        // const payload = jwt.verify(token, 'secret') as tokenPayload;
-        // const ownedPerms = payload.perms;
-        // const validated: string[] = [];
-        // for (const neededPerm of perms) {
-        //   for (const ownedPerm of ownedPerms) {
-        //     if (stringMatch(neededPerm, ownedPerm)) {
-        //       validated.push(neededPerm);
-        //       break; //break nested loop
-        //     }
-        //   }
-        // }
-        // if (validated.length !== 0) return true;
+        // history.push('/login');
       }
-      //TODO: check perms in token
 
+      const ownedPerms = currentUser.perms;
+      const validPerms =
+        neededPerms.length === 0 ? ownedPerms : getValidPerms(neededPerms, ownedPerms);
+
+      return validPerms.length !== 0;
+    },
+    has: () => {
+      console.log('hi')
+      // const token = Cookies.get('token');
+      // console.log(initialState);
       return false;
     },
   };

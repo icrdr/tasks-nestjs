@@ -4,10 +4,16 @@ import React, { useState, useRef } from 'react';
 import { PageContainer, FooterToolbar } from '@ant-design/pro-layout';
 import ProTable, { ProColumns, ActionType } from '@ant-design/pro-table';
 import ProDescriptions from '@ant-design/pro-descriptions';
-import CreateForm from './CreateForm';
-import UpdateForm  from './UpdateForm';
-import { TableListItem, FormValueType } from './interface';
-import { queryRule, updateRule, addRule, removeRule } from './service';
+import CreateForm from './components/CreateForm';
+import UpdateForm from './components/UpdateForm';
+import {
+  queryRule,
+  updateRule,
+  addRule,
+  removeRule,
+  TableListItem,
+  FormValueType,
+} from './tableList.service';
 
 /**
  * 添加节点

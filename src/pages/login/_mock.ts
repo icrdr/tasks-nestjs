@@ -27,5 +27,5 @@ const login = async (req: Request, res: Response) => {
 };
 
 export default {
-  'POST /api/login': login,
+  'POST /api/auth/login': login,
 };

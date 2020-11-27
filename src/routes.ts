@@ -1,9 +1,27 @@
 ﻿export default [
   {
     path: '/login',
-    component: '@/layouts/Base',
+    component: 'layout/base.layout',
     layout: false,
-    routes: [{ component: 'login' }],
+    routes: [{ component: 'login/login.page' }],
+  },
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    icon: 'dashboard',
+    component: 'dashboard/dashboard.page',
+  },
+  {
+    path: '/list',
+    name: 'tableList',
+    icon: 'table',
+    component: 'tableList/tableList.page',
+  },
+  {
+    path: '/task',
+    name: 'task',
+    icon: 'smile',
+    component: 'task/task.page',
   },
   {
     path: '/exception',
@@ -11,27 +29,9 @@
     routes: [
       {
         path: '/exception/404',
-        component: '404',
+        component: 'exception/404',
       },
     ],
-  },
-  {
-    path: '/dashboard',
-    name: 'dashboard',
-    icon: 'dashboard',
-    component: 'dashboard',
-  },
-  {
-    path: '/list',
-    name: 'tableList',
-    icon: 'table',
-    component: 'listTableList',
-  },
-  {
-    path: '/task',
-    name: 'task',
-    icon: 'smile',
-    component: 'task',
   },
   {
     path: '/',

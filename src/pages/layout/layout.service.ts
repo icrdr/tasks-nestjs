@@ -1,6 +1,8 @@
+import { request } from 'umi';
+
 export interface currentUser {
   avatar?: string;
-  name?: string;
+  username?: string;
   title?: string;
   group?: string;
   signature?: string;
@@ -15,4 +17,12 @@ export interface currentUser {
 
 export interface initialState {
   currentUser?: currentUser;
+}
+
+export async function getCurrentUser() {
+  return request('/api/auth/currentUser');
+}
+
+export async function logout() {
+  return request('/api/auth/logout');
 }

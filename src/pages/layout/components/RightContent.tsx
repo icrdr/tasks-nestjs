@@ -1,11 +1,10 @@
-import { Tooltip, Space, Avatar, Dropdown, Menu, Spin, Input } from 'antd';
+import { Tooltip, Space, Avatar, Dropdown, Menu, Spin, Input, Button } from 'antd';
 import { QuestionCircleOutlined, LogoutOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useState } from 'react';
 import { history, SelectLang, useModel, useRequest } from 'umi';
 
-import { getCurrentUser, logout } from '@/pages/service';
-import Access from './Access';
-import { currentUser } from '../pages/interface';
+import { getCurrentUser, currentUser, logout } from '../layout.service';
+import Access from '@/components/Access';
 import Cookies from 'js-cookie';
 
 const menu = (
@@ -25,12 +24,12 @@ const menu = (
 interface HeaderAvatarProps {
   currentUser?: currentUser;
 }
-const HeaderAvatar: React.FC<HeaderAvatarProps> = (props) => {
+const HeaderAvatar: React.FC<HeaderAvatarProps> = ({ currentUser }) => {
   return (
     <Dropdown overlay={menu}>
       <Space>
-        <Avatar size="small" src={props.currentUser?.avatar} alt="avatar" />
-        <span>{props.currentUser?.name}</span>
+        <Avatar size="small" src={currentUser?.avatar} alt="avatar" />
+        <span>{currentUser?.username}</span>
       </Space>
     </Dropdown>
   );
@@ -39,14 +38,14 @@ const HeaderAvatar: React.FC<HeaderAvatarProps> = (props) => {
 const RightContent: React.FC<{}> = () => {
   const handleSearch = () => {};
   const { initialState, setInitialState } = useModel('@@initialState');
-  const { data } = useRequest(getCurrentUser, {
+  const currentUserReq = useRequest(getCurrentUser, {
     onSuccess: (res) => {
       if (initialState) initialState.currentUser = res;
-      console.log(initialState);
       setInitialState(initialState);
     },
-    formatResult: (res) => res,
+    ready: Cookies.get('token') !== undefined && !initialState.currentUser,
   });
+
   return (
     <Access>
       <Space size="middle">
@@ -62,7 +61,7 @@ const RightContent: React.FC<{}> = () => {
             <QuestionCircleOutlined />
           </span>
         </Tooltip>
-        <HeaderAvatar currentUser={data} />
+        <HeaderAvatar currentUser={initialState.currentUser} />
         <SelectLang />
       </Space>
     </Access>
