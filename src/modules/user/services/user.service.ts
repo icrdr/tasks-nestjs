@@ -1,20 +1,16 @@
-import {
-  ForbiddenException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { OptionService } from '../../option/option.service';
 import { EntityManager } from 'typeorm';
 import { User, Role } from '../entities/user.entity';
 import { RoleService } from './role.service';
-import { isRoleArray } from '../../../utils/typeGuard';
-import { hash } from '../../../utils/utils';
+import { isRoleArray } from '@/utils/typeGuard';
+import { hash } from '@/utils/utils';
 
 @Injectable()
 export class UserService {
   constructor(
     private optionService: OptionService,
+    @Inject(forwardRef(() => RoleService))
     private roleService: RoleService,
     private manager: EntityManager,
   ) {}
@@ -64,8 +60,7 @@ export class UserService {
         user.roles = roles;
       }
     } else {
-      const defaultRole = (await this.optionService.getOption('defaultRole'))!
-        .value;
+      const defaultRole = (await this.optionService.getOption('defaultRole'))!.value;
       user.roles = [(await this.roleService.getRole(defaultRole))!];
     }
 

@@ -1,31 +1,21 @@
-import Cookies from 'js-cookie';
-import { history } from 'umi';
-import { getValidPerms, stringMatch } from '@/utils/utils';
+import { getValidPerms } from '@/utils/utils';
+import { initialState } from './pages/layout/layout.service';
 
-// src/access.ts
-export default function (initialState) {
-  const { currentUser } = initialState;
+function validPerms(neededPerms: string[], ownedPerms: string[]) {
+  const validPerms = neededPerms.length === 0 ? ownedPerms : getValidPerms(neededPerms, ownedPerms);
+  return validPerms.length !== 0;
+}
+
+export default function (initialState: initialState) {
+  const { me } = initialState;
   return {
     hasPerms: (neededPerms: string[] = []) => {
-      // const token = Cookies.get('token');
-      // const payload = jwt.verify(token, 'secret') as tokenPayload;
-      if (!currentUser) {
-        console.log('hi')
-        return true
-        // history.push('/login');
-      }
-
-      const ownedPerms = currentUser.perms;
-      const validPerms =
-        neededPerms.length === 0 ? ownedPerms : getValidPerms(neededPerms, ownedPerms);
-
-      return validPerms.length !== 0;
+      if (!me) return true;
+      return validPerms(neededPerms, me.perms);
     },
-    has: () => {
-      console.log('hi')
-      // const token = Cookies.get('token');
-      // console.log(initialState);
-      return false;
+    hasAdmin: () => {
+      if (!me) return true;
+      return validPerms(['admin.*'], me.perms);
     },
   };
 }

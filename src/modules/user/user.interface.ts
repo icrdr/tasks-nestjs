@@ -1,6 +1,7 @@
 export interface currentUser {
   id: number;
-  perms: string[];
+  ownedPerms: string[];
+  validPerms: string[];
 }
 
 export interface tokenPayload {

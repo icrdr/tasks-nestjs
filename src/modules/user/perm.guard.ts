@@ -35,12 +35,13 @@ export class PermGuard implements CanActivate {
 
     const ownedPerms = payload.perms;
     const validPerms =
-      neededPerms.length === 0 ? ownedPerms : getValidPerms(neededPerms, payload.perms);
+      neededPerms.length === 0 ? ownedPerms : getValidPerms(neededPerms, ownedPerms);
     if (validPerms.length === 0) return false;
 
     const currentUser: currentUser = {
       id: payload.id,
-      perms: validPerms,
+      validPerms: validPerms,
+      ownedPerms: ownedPerms,
     };
 
     req['currentUser'] = currentUser;

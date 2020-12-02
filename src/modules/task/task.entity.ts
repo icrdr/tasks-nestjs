@@ -7,6 +7,9 @@ import {
   DeleteDateColumn,
   ManyToOne,
   OneToMany,
+  TreeParent,
+  TreeChildren,
+  Tree,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Tag } from '../tag/tag.entity';
@@ -20,6 +23,7 @@ export enum TaskState {
 }
 
 @Entity()
+@Tree("closure-table")
 export class Task extends BaseEntity {
   @Column()
   name: string;
@@ -50,10 +54,10 @@ export class Task extends BaseEntity {
   @OneToMany(() => PassRequest, (passRequest) => passRequest.task)
   requests: PassRequest[];
 
-  @ManyToOne(() => Task, (task) => task.subTasks)
+  @TreeParent()
   parentTask: Task;
 
-  @OneToMany(() => Task, (task) => task.parentTask)
+  @TreeChildren()
   subTasks: Task[];
 
 

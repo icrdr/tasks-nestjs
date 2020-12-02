@@ -1,6 +1,6 @@
 import React from 'react';
-import { useIntl, history, FormattedMessage, useRequest } from 'umi';
-import { Space, message, Typography, Col, Divider } from 'antd';
+import { useIntl, history, FormattedMessage, useRequest, useModel } from 'umi';
+import { Space, message, Typography, Col, Divider, Button } from 'antd';
 import { LockTwoTone, SmileTwoTone, WechatOutlined } from '@ant-design/icons';
 import ProForm, { ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
 import { login } from './login.service';
@@ -11,34 +11,34 @@ const LoginForm: React.FC = () => {
   const intl = useIntl();
 
   const successMsg = intl.formatMessage({
-    id: 'pages.login.success.msg',
+    id: 'page.login.success.msg',
   });
 
   const submitBtn = intl.formatMessage({
-    id: 'pages.login.submit.btn',
+    id: 'page.login.submit.btn',
   });
 
   const errorMsg = intl.formatMessage({
-    id: 'pages.login.error.msg',
+    id: 'page.login.error.msg',
   });
 
   const usernamePhd = intl.formatMessage({
-    id: 'pages.login.username.phd',
+    id: 'page.login.username.phd',
   });
 
   const PasswordPhd = intl.formatMessage({
-    id: 'pages.login.password.phd',
+    id: 'page.login.password.phd',
   });
 
-  const rememberMeTex = intl.formatMessage({
-    id: 'pages.login.rememberMe.tex',
+  const rememberMe = intl.formatMessage({
+    id: 'page.login.rememberMe',
   });
 
   const passwordRule = [
     {
       required: true,
       message: intl.formatMessage({
-        id: 'pages.login.username.required',
+        id: 'page.login.username.required',
       }),
     },
   ];
@@ -47,17 +47,18 @@ const LoginForm: React.FC = () => {
     {
       required: true,
       message: intl.formatMessage({
-        id: 'pages.login.password.required',
+        id: 'page.login.password.required',
       }),
     },
   ];
 
-  
+  const { setInitialState } = useModel('@@initialState');
   const loginReq = useRequest(login, {
     manual: true,
     onSuccess: (res) => {
       message.success(successMsg);
       Cookies.set('token', res.token);
+      setInitialState({ me: res.me });
       history.push('/');
     },
   });
@@ -96,11 +97,11 @@ const LoginForm: React.FC = () => {
         rules={passwordRule}
       />
       <ProFormCheckbox noStyle name="autoLogin">
-        {rememberMeTex}
+        {rememberMe}
       </ProFormCheckbox>
       <Divider />
       {/* <a style={{ float: 'right' }}>
-          <FormattedMessage id="pages.login.forgotPassword"/>
+          <FormattedMessage id="page.login.forgotPassword"/>
         </a> */}
     </ProForm>
   );
@@ -113,7 +114,7 @@ const Login: React.FC<{}> = () => {
         <Title> YIMU </Title>
         <LoginForm />
         <Space>
-          <FormattedMessage id="pages.login.loginWith.tex" />
+          <FormattedMessage id="page.login.loginWith.tex" />
           <WechatOutlined className={'icon'} />
         </Space>
       </Space>

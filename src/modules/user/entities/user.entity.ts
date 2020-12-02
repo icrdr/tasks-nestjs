@@ -6,6 +6,7 @@ import {
   ManyToMany,
   DeleteDateColumn,
   OneToMany,
+  Connection,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { PassRequest, Task } from '../../task/task.entity';

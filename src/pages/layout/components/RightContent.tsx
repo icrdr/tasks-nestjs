@@ -3,9 +3,9 @@ import { QuestionCircleOutlined, LogoutOutlined } from '@ant-design/icons';
 import React, { useState } from 'react';
 import { history, SelectLang, useModel, useRequest } from 'umi';
 
-import { getCurrentUser, currentUser, logout } from '../layout.service';
 import Access from '@/components/Access';
 import Cookies from 'js-cookie';
+import { me } from '@/dtos/user.dto';
 
 const menu = (
   <Menu>
@@ -22,14 +22,15 @@ const menu = (
   </Menu>
 );
 interface HeaderAvatarProps {
-  currentUser?: currentUser;
+  me?: me;
 }
-const HeaderAvatar: React.FC<HeaderAvatarProps> = ({ currentUser }) => {
+const HeaderAvatar: React.FC<HeaderAvatarProps> = ({ me }) => {
   return (
     <Dropdown overlay={menu}>
       <Space>
-        <Avatar size="small" src={currentUser?.avatar} alt="avatar" />
-        <span>{currentUser?.username}</span>
+        <Avatar size="small" style={{ backgroundColor: '#87d068' }} src={me?.username}>
+          {me?.username[0].toUpperCase()}
+        </Avatar>
       </Space>
     </Dropdown>
   );
@@ -37,31 +38,15 @@ const HeaderAvatar: React.FC<HeaderAvatarProps> = ({ currentUser }) => {
 
 const RightContent: React.FC<{}> = () => {
   const handleSearch = () => {};
-  const { initialState, setInitialState } = useModel('@@initialState');
-  const currentUserReq = useRequest(getCurrentUser, {
-    onSuccess: (res) => {
-      if (initialState) initialState.currentUser = res;
-      setInitialState(initialState);
-    },
-    ready: Cookies.get('token') !== undefined && !initialState.currentUser,
-  });
+  const { initialState } = useModel('@@initialState');
+  if (!initialState.me) {
+    history.push('/login');
+  }
 
   return (
     <Access>
       <Space size="middle">
-        <Input.Search
-          size="small"
-          className="v-a:m"
-          placeholder="input search text"
-          onSearch={handleSearch}
-          style={{ width: 200 }}
-        />
-        <Tooltip title="使用文档">
-          <span onClick={() => history.push('https://pro.ant.design/docs/getting-started')}>
-            <QuestionCircleOutlined />
-          </span>
-        </Tooltip>
-        <HeaderAvatar currentUser={initialState.currentUser} />
+        <HeaderAvatar me={initialState.me} />
         <SelectLang />
       </Space>
     </Access>

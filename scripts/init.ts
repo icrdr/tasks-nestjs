@@ -4,7 +4,7 @@ import { DatabaseService } from '../src/modules/database/database.service';
 
 async function initDb() {
   const contrainer = await NestFactory.create(DatabaseModule, {
-    logger: false,
+    // logger: false,
   });
   const databaseService = contrainer.get(DatabaseService);
   console.log('Dropping tables...');

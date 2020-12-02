@@ -1,34 +1,47 @@
 import React from 'react';
 import { BasicLayoutProps, PageLoading } from '@ant-design/pro-layout';
 import { RequestConfig } from 'umi';
-import { getCurrentUser, initialState } from '@/pages/layout/layout.service';
+import { getMe, initialState } from '@/pages/layout/layout.service';
 import Footer from '@/pages/layout/components/Footer';
 import RightContent from '@/pages/layout/components/RightContent';
 import Cookies from 'js-cookie';
-import { tokenPayload } from '@/modules/user/user.interface';
 import jwt from 'jsonwebtoken';
 import { history } from 'umi';
+import { me } from '@/dtos/user.dto';
 
 export const initialStateConfig = {
   loading: <PageLoading />,
 };
 
 export async function getInitialState(): Promise<initialState> {
-  let currentUser: any = undefined;
-  // try {
-  //   const token = Cookies.get('token');
-  //   const payload = jwt.verify(token, 'secret') as tokenPayload;
-  //   currentUser = await getCurrentUser();
-  //   currentUser['perms'] = payload.perms;
-  // } catch {}
+  let me: me | undefined = undefined;
+  const token = Cookies.get('token');
 
-  return { currentUser };
+  if (token) {
+    try {
+      const payload = jwt.verify(token, 'secret');
+      me = await getMe();
+    } catch {
+      history.push('/login');
+    }
+  }
+  return { me };
 }
 
 export const layout = (): BasicLayoutProps => {
   return {
     rightContentRender: () => <RightContent />,
     footerRender: () => <Footer />,
+    disableContentMargin: false,
+    menuHeaderRender: undefined,
+    primaryColor: '#1890ff',
+    layout: 'mix',
+    contentWidth: 'Fluid',
+    fixedHeader: false,
+    fixSiderbar: true,
+    colorWeak: false,
+    title: 'Ant Design Pro',
+    siderWidth: 208,
   };
 };
 

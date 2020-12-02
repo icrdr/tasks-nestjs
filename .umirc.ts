@@ -1,4 +1,4 @@
-import routes from "./src/routes";
+import routes from './src/routes';
 
 export default {
   hash: true,
@@ -7,31 +7,33 @@ export default {
     hmr: true,
   },
   layout: {
-    name: "YIMU",
+    name: 'YIMU',
     locale: true,
+    navTheme: 'light',
+    headerTheme: 'light',
   },
   locale: {
-    default: "zh-CN",
+    default: 'zh-CN',
     antd: true,
     baseNavigator: true,
   },
-  dynamicImport: { loading: "@ant-design/pro-layout/es/PageLoading" },
+  dynamicImport: { loading: '@ant-design/pro-layout/es/PageLoading' },
   targets: { ie: 11 },
   routes,
-  theme: { "primary-color": "#1890ff" },
+  theme: { 'primary-color': '#1890ff' },
   esbuild: {},
   title: false,
   ignoreMomentLocale: true,
   proxy: {
-    "/api/": {
-      target: "http://localhost:3000",
+    '/api/': {
+      target: 'http://localhost:3000',
       changeOrigin: true,
-      pathRewrite: { "^": "" },
+      pathRewrite: { '^': '' },
     },
   },
-  manifest: { basePath: "/" },
+  manifest: { basePath: '/' },
   exportStatic: {},
-  outputPath: "dist/web",
+  outputPath: 'dist/web',
   request: {
     dataField: '',
   },

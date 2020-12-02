@@ -1,59 +1,17 @@
 import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
-import {
-  IsString,
-  IsOptional,
-  IsBooleanString,
-  IsNumber,
-} from 'class-validator';
+
 import { Perms } from '../user/perm.decorator';
 import { UserService } from '../user/services/user.service';
 import { CurrentUser } from '../user/user.decorator';
 import { currentUser } from '../user/user.interface';
 import { TaskService } from './task.service';
-
-class CreateTaskDTO {
-  @IsString()
-  name: string;
-
-  @IsString()
-  @IsOptional()
-  description: string;
-}
-
-class CreateSubTaskDTO extends CreateTaskDTO {
-  @IsNumber()
-  @IsOptional()
-  userId: number;
-
-  @IsBooleanString()
-  @IsOptional()
-  isMandatory: string;
-}
-
-class GetTasksDTO {
-  @IsNumber()
-  @IsOptional()
-  perPage: number;
-
-  @IsNumber()
-  @IsOptional()
-  page: number;
-}
-
-class SubmitRequestDTO {
-  @IsString()
-  @IsOptional()
-  content: string;
-}
-
-class RespondRequestDTO {
-  @IsBooleanString()
-  isConfirmed: string;
-
-  @IsString()
-  @IsOptional()
-  content: string;
-}
+import {
+  CreateTaskDTO,
+  GetTasksDTO,
+  SubmitRequestDTO,
+  RespondRequestDTO,
+  CreateSubTaskDTO,
+} from '@/dtos/task.dto';
 
 @Controller('api/tasks')
 export class TaskController {
@@ -61,10 +19,7 @@ export class TaskController {
 
   @Perms('common.task.create')
   @Post()
-  async createTask(
-    @Body() body: CreateTaskDTO,
-    @CurrentUser() currentUser: currentUser,
-  ) {
+  async createTask(@Body() body: CreateTaskDTO, @CurrentUser() currentUser: currentUser) {
     return this.taskService.createTask(body.name, [currentUser.id], {
       description: body.description,
     });
@@ -89,38 +44,21 @@ export class TaskController {
 
   @Perms('common.task.start')
   @Put('/:id/start')
-  async startTask(
-    @Param('id') id: number,
-    @CurrentUser() currentUser: currentUser,
-  ) {
-    const task = await this.taskService.isUserThePerformer(
-      id,
-      currentUser.id,
-      false,
-    );
+  async startTask(@Param('id') id: number, @CurrentUser() currentUser: currentUser) {
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id, false);
     return await this.taskService.startTask(task);
   }
 
   @Perms('common.task.suspend')
   @Put('/:id/suspend')
-  async suspendTask(
-    @Param('id') id: number,
-    @CurrentUser() currentUser: currentUser,
-  ) {
-    const task = await this.taskService.isUserThePerformer(
-      id,
-      currentUser.id,
-      false,
-    );
+  async suspendTask(@Param('id') id: number, @CurrentUser() currentUser: currentUser) {
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id, false);
     return await this.taskService.suspendTask(task);
   }
 
   @Perms('common.task.complete')
   @Put('/:id/complete')
-  async completeTask(
-    @Param('id') id: number,
-    @CurrentUser() currentUser: currentUser,
-  ) {
+  async completeTask(@Param('id') id: number, @CurrentUser() currentUser: currentUser) {
     const task = await this.taskService.isUserThePerformer(id, currentUser.id);
     return await this.taskService.completeTask(task);
   }
@@ -132,11 +70,7 @@ export class TaskController {
     @Body() body: SubmitRequestDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.isUserThePerformer(
-      id,
-      currentUser.id,
-      false,
-    );
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id, false);
     return await this.taskService.submitRequest(task, currentUser.id, {
       submitContent: body.content,
     });
@@ -165,20 +99,11 @@ export class TaskController {
     @Body() body: CreateSubTaskDTO,
     @CurrentUser() currentUser: currentUser,
   ) {
-    const task = await this.taskService.isUserThePerformer(
-      id,
-      currentUser.id,
-      false,
-    );
+    const task = await this.taskService.isUserThePerformer(id, currentUser.id, false);
     const subTaskPerformerId = body.userId ? body.userId : currentUser.id;
-    return this.taskService.createSubTask(
-      task,
-      body.name,
-      [subTaskPerformerId],
-      {
-        description: body.description,
-        isMandatory: !(body.isMandatory === 'false'), //default is true
-      },
-    );
+    return this.taskService.createSubTask(task, body.name, [subTaskPerformerId], {
+      description: body.description,
+      isMandatory: !(body.isMandatory === 'false'), //default is true
+    });
   }
 }

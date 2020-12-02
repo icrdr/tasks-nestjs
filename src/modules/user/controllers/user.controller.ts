@@ -11,34 +11,12 @@ import {
   Query,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import {
-  IsString,
-  IsNumberString,
-  IsOptional,
-  IsNumber,
-} from 'class-validator';
+
 import { Perms } from '../perm.decorator';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { Type } from 'class-transformer';
-
-class CreateUserDTO {
-  @IsString()
-  username: string;
-
-  @IsString()
-  password: string;
-}
-
-class GetUsersDTO {
-  @IsNumber()
-  @IsOptional()
-  perPage: number;
-
-  @IsNumber()
-  @IsOptional()
-  page: number;
-}
+import { CreateUserDTO, GetUsersDTO } from '@/dtos/user.dto';
 
 @Controller('api/users')
 export class UserController {
@@ -54,7 +32,6 @@ export class UserController {
     const user = await this.userService.getUser(id);
     return user;
   }
-
 
   @Get()
   async getUsers(@Query() query: GetUsersDTO) {

@@ -12,16 +12,17 @@
     component: 'dashboard/dashboard.page',
   },
   {
-    path: '/list',
-    name: 'tableList',
-    icon: 'table',
-    component: 'tableList/tableList.page',
-  },
-  {
-    path: '/task',
-    name: 'task',
+    path: '/admin',
+    name: 'admin',
     icon: 'smile',
-    component: 'task/task.page',
+    routes: [
+      {
+        path: '/admin/task',
+        name: 'taskManagement',
+        component: 'task/task.page',
+      },
+    ],
+    access: 'hasAdmin',
   },
   {
     path: '/exception',

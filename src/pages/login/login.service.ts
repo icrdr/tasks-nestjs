@@ -1,5 +1,5 @@
 import { request } from 'umi';
-import { loginDTO } from '@/modules/user/controllers/auth.controller';
+import { loginDTO } from '@/dtos/user.dto';
 
 export const login = async (body: loginDTO) => {
   return request('/api/auth/login', {
