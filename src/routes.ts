@@ -8,18 +8,58 @@
   {
     path: '/dashboard',
     name: 'dashboard',
-    icon: 'dashboard',
+    icon: 'Dashboard',
     component: 'dashboard/dashboard.page',
+  },
+  {
+    path: '/task',
+    name: 'task',
+    icon: 'CheckSquareOutlined',
+    component: 'task/task.page',
+    routes: [
+      {
+        path: '/task/:id',
+        name: 'detail',
+        component: 'taskDetail/taskDetail.page',
+        hideInMenu: true,
+      },
+    ],
+  },
+  {
+    path: '/resource',
+    name: 'resource',
+    icon: 'PictureOutlined',
+    component: 'resource/resource.page',
   },
   {
     path: '/admin',
     name: 'admin',
-    icon: 'smile',
+    icon: 'FolderOpenOutlined',
     routes: [
       {
-        path: '/admin/task',
-        name: 'taskManagement',
-        component: 'task/task.page',
+        path: '/admin/tasklist',
+        name: 'task',
+        component: 'adminTask/adminTask.page',
+      },
+      {
+        path: '/admin/user',
+        name: 'user',
+        component: 'adminTask/adminTask.page',
+      },
+      {
+        path: '/admin/group',
+        name: 'group',
+        component: 'adminTask/adminTask.page',
+      },
+      {
+        path: '/admin/perm',
+        name: 'perm',
+        component: 'adminTask/adminTask.page',
+      },
+      {
+        path: '/admin/finance',
+        name: 'finance',
+        component: 'adminTask/adminTask.page',
       },
     ],
     access: 'hasAdmin',

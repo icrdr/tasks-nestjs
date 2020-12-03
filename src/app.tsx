@@ -32,16 +32,6 @@ export const layout = (): BasicLayoutProps => {
   return {
     rightContentRender: () => <RightContent />,
     footerRender: () => <Footer />,
-    disableContentMargin: false,
-    menuHeaderRender: undefined,
-    primaryColor: '#1890ff',
-    layout: 'mix',
-    contentWidth: 'Fluid',
-    fixedHeader: false,
-    fixSiderbar: true,
-    colorWeak: false,
-    title: 'Ant Design Pro',
-    siderWidth: 208,
   };
 };
 
