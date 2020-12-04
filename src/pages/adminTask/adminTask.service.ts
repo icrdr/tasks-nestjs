@@ -6,3 +6,7 @@ export async function getTasks(params?: GetTasksDTO) {
     params,
   });
 }
+
+export async function getTask(id: number) {
+  return request('/api/tasks/' + id);
+}

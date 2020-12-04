@@ -1,5 +1,5 @@
 import routes from './src/routes';
-
+import darkTheme from '@ant-design/dark-theme';
 export default {
   hash: true,
   antd: {},
@@ -9,8 +9,15 @@ export default {
   layout: {
     name: 'YIMU',
     locale: true,
-    navTheme: 'light',
-    headerTheme: 'light',
+    navTheme: 'realDark',
+    primaryColor: '#13C2C2',
+    layout: 'side',
+    contentWidth: 'Fluid',
+    fixedHeader: false,
+    fixSiderbar: true,
+    pwa: false,
+    iconfontUrl: '',
+    splitMenus: false,
   },
   locale: {
     default: 'zh-CN',
@@ -20,7 +27,10 @@ export default {
   dynamicImport: { loading: '@ant-design/pro-layout/es/PageLoading' },
   targets: { ie: 11 },
   routes,
-  theme: { 'primary-color': '#1890ff' },
+  theme: { 
+    ...darkTheme,
+    'primary-color': '#13C2C2' 
+  },
   esbuild: {},
   title: false,
   ignoreMomentLocale: true,

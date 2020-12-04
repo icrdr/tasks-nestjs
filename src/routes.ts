@@ -16,14 +16,13 @@
     name: 'task',
     icon: 'CheckSquareOutlined',
     component: 'task/task.page',
-    routes: [
-      {
-        path: '/task/:id',
-        name: 'detail',
-        component: 'taskDetail/taskDetail.page',
-        hideInMenu: true,
-      },
-    ],
+  },
+  {
+    path: '/task/:id',
+    name: 'task.detail',
+    component: 'task/taskDetail.page',
+    hideInMenu: true,
+    parentKeys: ['/task'],
   },
   {
     path: '/resource',
@@ -35,16 +34,24 @@
     path: '/admin',
     name: 'admin',
     icon: 'FolderOpenOutlined',
+    access: 'hasAdmin',
     routes: [
       {
-        path: '/admin/tasklist',
+        path: '/admin/task',
         name: 'task',
         component: 'adminTask/adminTask.page',
       },
       {
+        path: '/admin/task/:id',
+        name: 'task.detail',
+        component: 'adminTask/adminTaskDetail.page',
+        hideInMenu: true,
+        parentKeys: ['/admin/task'],
+      },
+      {
         path: '/admin/user',
         name: 'user',
-        component: 'adminTask/adminTask.page',
+        component: 'adminUser/adminUser.page',
       },
       {
         path: '/admin/group',
@@ -62,7 +69,6 @@
         component: 'adminTask/adminTask.page',
       },
     ],
-    access: 'hasAdmin',
   },
   {
     path: '/exception',

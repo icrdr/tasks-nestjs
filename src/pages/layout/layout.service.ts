@@ -1,12 +1,17 @@
 import { request } from 'umi';
-import { me } from '@/dtos/user.dto';
 
-export interface initialState {
-  me?: me;
+export interface currentUser {
+  id: number;
+  username: string;
+  perms:string[]
 }
 
-export async function getMe() {
-  return request('/api/auth/me');
+export interface initialState {
+  currentUser?: currentUser;
+}
+
+export async function getCurrentUser() {
+  return request('/api/auth/currentUser');
 }
 
 export async function logout() {

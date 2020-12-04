@@ -1,10 +1,17 @@
-import { ForbiddenException, forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OptionService } from '../../option/option.service';
 import { EntityManager } from 'typeorm';
 import { User, Role } from '../entities/user.entity';
 import { RoleService } from './role.service';
 import { isRoleArray } from '@/utils/typeGuard';
 import { hash } from '@/utils/utils';
+import { GetUsersDTO } from '@/dtos/user.dto';
 
 @Injectable()
 export class UserService {
@@ -14,9 +21,21 @@ export class UserService {
     private roleService: RoleService,
     private manager: EntityManager,
   ) {}
+
   async isUsernameAvailable(username: string) {
     const user = await this.manager.findOne(User, { username: username });
     if (user) throw new ForbiddenException('Username existed');
+  }
+
+  async getUserId(user: User | string | number) {
+    let userId: number;
+    if (user instanceof User) {
+      return user.id;
+    } else if (typeof user === 'string') {
+      return (await this.getUser(user)).id;
+    } else {
+      return user;
+    }
   }
 
   async getUser(identify: string | number) {
@@ -28,10 +47,10 @@ export class UserService {
     return user;
   }
 
-  async getUsers(options: { perPage: number; page: number }) {
+  async getUsers(options: GetUsersDTO = {}) {
     return await this.manager.findAndCount(User, {
-      take: options.perPage,
-      skip: options.page,
+      take: options.pageSize || 5,
+      skip: options.current - 1 || 0,
     });
   }
 
@@ -41,7 +60,7 @@ export class UserService {
     options: {
       fullName?: string;
       email?: string;
-      mobile?: string | undefined;
+      mobile?: string;
       roles?: Role[] | number[] | string[];
     } = {},
   ) {

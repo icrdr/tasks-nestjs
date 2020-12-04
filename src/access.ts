@@ -7,15 +7,15 @@ function validPerms(neededPerms: string[], ownedPerms: string[]) {
 }
 
 export default function (initialState: initialState) {
-  const { me } = initialState;
+  const { currentUser } = initialState;
   return {
     hasPerms: (neededPerms: string[] = []) => {
-      if (!me) return true;
-      return validPerms(neededPerms, me.perms);
+      if (!currentUser) return false;
+      return validPerms(neededPerms, currentUser.perms);
     },
     hasAdmin: () => {
-      if (!me) return true;
-      return validPerms(['admin.*'], me.perms);
+      if (!currentUser) return false;
+      return validPerms(['admin.*'], currentUser.perms);
     },
   };
 }

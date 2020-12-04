@@ -3,7 +3,7 @@ import { PageContainer } from '@ant-design/pro-layout';
 import { Card, Alert, Typography } from 'antd';
 import { Access, useAccess, useRequest } from 'umi';
 
-const Task: React.FC<{}> = () => {
+const TaskDetail: React.FC<{}> = () => {
   const access = useAccess();
   const { loading } = useRequest('/api/users', {
     onSuccess: (res) => {
@@ -18,9 +18,9 @@ const Task: React.FC<{}> = () => {
       fallback={<div>Can not read foo content.</div>}
     >
       <PageContainer>
-        <Card>Task</Card>
+        <Card>TaskDetail</Card>
       </PageContainer>
     </Access>
   );
 };
-export default Task;
+export default TaskDetail;

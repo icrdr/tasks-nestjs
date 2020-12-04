@@ -1,4 +1,4 @@
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose } from 'class-transformer';
 import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
@@ -7,6 +7,7 @@ import {
 
 export abstract class BaseEntity {
   @PrimaryGeneratedColumn()
+  @Expose()
   id: number;
 
   @CreateDateColumn()

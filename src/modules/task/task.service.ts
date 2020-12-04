@@ -1,16 +1,14 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
-import { isUserArray } from '../../utils/typeGuard';
+import { EntityManager, In, IsNull, Not } from 'typeorm';
+import { GetTasksDTO } from '@/dtos/task.dto';
+import { isUserArray } from '@/utils/typeGuard';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/services/user.service';
 import { PassRequest, Task, TaskState } from './task.entity';
 
 @Injectable()
 export class TaskService {
-  constructor(
-    private userService: UserService,
-    private manager: EntityManager,
-  ) {}
+  constructor(private userService: UserService, private manager: EntityManager) {}
 
   async isUserThePerformer(
     task: Task | number,
@@ -32,9 +30,7 @@ export class TaskService {
     }
 
     if (!mandatoryCheck || !task.isMandatory) {
-      performerIdWhitelist = performerIdWhitelist.concat(
-        task.performers.map((item) => item.id),
-      );
+      performerIdWhitelist = performerIdWhitelist.concat(task.performers.map((item) => item.id));
     }
     console.log(performerIdWhitelist);
     if (!performerIdWhitelist.includes(userId))
@@ -47,9 +43,7 @@ export class TaskService {
     let parentTask = task.parentTask;
     if (parentTask) {
       if (!states.includes(parentTask.state))
-        throw new ForbiddenException(
-          `Parent task is restricted, forbidden action.`,
-        );
+        throw new ForbiddenException(`Parent task is restricted, forbidden action.`);
       this.isParentTaskInStates(parentTask, states);
     }
   }
@@ -91,20 +85,39 @@ export class TaskService {
     return task;
   }
 
-  async getTasks(options: { perPage?: number; page?: number } = {}) {
+  async getTasks(options: GetTasksDTO = {}) {
     return await this.manager.findAndCount(Task, {
-      take: options.perPage,
-      skip: options.page,
+      take: options.pageSize || 5,
+      skip: options.current - 1 || 0,
+      where: {
+        state: options.state ? In([...options.state]) : Not(IsNull()),
+      },
+      order: {
+        id: 'DESC',
+      },
       relations: ['performers', 'requests', 'subTasks', 'parentTask'],
     });
+  }
+
+  async getTasksOfUser(
+    user: User | string | number,
+    options: { pageSize?: number; current?: number } = {},
+  ) {
+    const userId = await this.userService.getUserId(user);
+
+    return await this.manager
+      .createQueryBuilder(Task, 'task')
+      .leftJoin('task.performers', 'performer')
+      .where('performer.id = :id', { id: userId })
+      .limit(options.pageSize || 5)
+      .offset(options.current || 0)
+      .getMany();
   }
 
   async startTask(task: Task | number) {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.SUSPENDED)
-      throw new ForbiddenException(
-        'Task is not suspended, forbidden initialization.',
-      );
+      throw new ForbiddenException('Task is not suspended, forbidden initialization.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
     return await this.manager.save(task);
@@ -113,9 +126,7 @@ export class TaskService {
   async suspendTask(task: Task | number) {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
-      throw new ForbiddenException(
-        'Task is not in progress, forbidden suspension.',
-      );
+      throw new ForbiddenException('Task is not in progress, forbidden suspension.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.SUSPENDED;
     return await this.manager.save(task);
@@ -140,14 +151,10 @@ export class TaskService {
     const request = new PassRequest();
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
-      throw new ForbiddenException(
-        'Task is not in progress, forbidden submittion.',
-      );
+      throw new ForbiddenException('Task is not in progress, forbidden submittion.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     request.submitter =
-      submitter instanceof User
-        ? submitter
-        : await this.userService.getUser(submitter);
+      submitter instanceof User ? submitter : await this.userService.getUser(submitter);
 
     if (options.submitContent) request.submitContent = options.submitContent;
 
@@ -167,19 +174,14 @@ export class TaskService {
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.UNCONFIRMED)
-      throw new ForbiddenException(
-        'Task does not wait for comfirmtion, forbidden response.',
-      );
+      throw new ForbiddenException('Task does not wait for comfirmtion, forbidden response.');
 
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     const request = task.requests[task.requests.length - 1];
     request.responder =
-      responder instanceof User
-        ? responder
-        : await this.userService.getUser(responder);
+      responder instanceof User ? responder : await this.userService.getUser(responder);
 
-    if (options.responseContent)
-      request.responseContent = options.responseContent;
+    if (options.responseContent) request.responseContent = options.responseContent;
 
     request.respondAt = new Date();
     await this.manager.save(request);
@@ -199,10 +201,7 @@ export class TaskService {
     } = {},
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
-    if (
-      task.state === TaskState.UNCONFIRMED ||
-      task.state === TaskState.COMPLETED
-    )
+    if (task.state === TaskState.UNCONFIRMED || task.state === TaskState.COMPLETED)
       throw new ForbiddenException(
         'Task is freezed (completed or unconfirmed), \
         forbidden subtask creation.',

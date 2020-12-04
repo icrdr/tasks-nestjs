@@ -1,31 +1,34 @@
 import React from 'react';
 import { BasicLayoutProps, PageLoading } from '@ant-design/pro-layout';
 import { RequestConfig } from 'umi';
-import { getMe, initialState } from '@/pages/layout/layout.service';
-import Footer from '@/pages/layout/components/Footer';
-import RightContent from '@/pages/layout/components/RightContent';
+import { getCurrentUser, initialState, currentUser } from '@/pages/layout/layout.service';
+import Footer from '@/pages/layout/components/layout.Footer';
+import RightContent from '@/pages/layout/components/layout.RightContent';
 import Cookies from 'js-cookie';
 import jwt from 'jsonwebtoken';
 import { history } from 'umi';
-import { me } from '@/dtos/user.dto';
+import { tokenPayload } from './modules/user/user.interface';
 
 export const initialStateConfig = {
   loading: <PageLoading />,
 };
 
+
+
 export async function getInitialState(): Promise<initialState> {
-  let me: me | undefined = undefined;
+  let currentUser: currentUser | undefined = undefined;
   const token = Cookies.get('token');
 
   if (token) {
     try {
-      const payload = jwt.verify(token, 'secret');
-      me = await getMe();
+      const payload = jwt.verify(token, 'secret') as tokenPayload;
+      currentUser = await getCurrentUser();
+      currentUser.perms = payload.perms
     } catch {
       history.push('/login');
     }
   }
-  return { me };
+  return { currentUser };
 }
 
 export const layout = (): BasicLayoutProps => {

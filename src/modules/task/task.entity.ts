@@ -11,7 +11,6 @@ import {
   TreeChildren,
   Tree,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
 import { Tag } from '../tag/tag.entity';
 import { User } from '../user/entities/user.entity';
 
@@ -66,7 +65,6 @@ export class Task extends BaseEntity {
   tags: Tag[];
 
   @DeleteDateColumn()
-  @Exclude()
   deleteAt: Date;
 }
 

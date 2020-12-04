@@ -5,10 +5,31 @@ import { LockTwoTone, SmileTwoTone, WechatOutlined } from '@ant-design/icons';
 import ProForm, { ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
 import { login } from './login.service';
 import Cookies from 'js-cookie';
+import jwt from 'jsonwebtoken';
+import { tokenPayload } from '@/modules/user/user.interface';
+
 const { Title } = Typography;
 
 const LoginForm: React.FC = () => {
   const intl = useIntl();
+
+  const { setInitialState } = useModel('@@initialState');
+  const loginReq = useRequest(login, {
+    manual: true,
+    onSuccess: (res) => {
+      try {
+        const currentUser = res.currentUser;
+        const token = res.token;
+        const payload = jwt.verify(token, 'secret') as tokenPayload;
+        currentUser.perms = payload.perms;
+        setInitialState({ currentUser });
+        Cookies.set('token', res.token);
+        message.success(successMsg);
+        history.push('/');
+      } catch {
+      }
+    },
+  });
 
   const successMsg = intl.formatMessage({
     id: 'page.login.success.msg',
@@ -51,17 +72,6 @@ const LoginForm: React.FC = () => {
       }),
     },
   ];
-
-  const { setInitialState } = useModel('@@initialState');
-  const loginReq = useRequest(login, {
-    manual: true,
-    onSuccess: (res) => {
-      message.success(successMsg);
-      Cookies.set('token', res.token);
-      setInitialState({ me: res.me });
-      history.push('/');
-    },
-  });
 
   return (
     <ProForm

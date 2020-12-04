@@ -5,7 +5,7 @@ import { history, SelectLang, useModel, useRequest } from 'umi';
 
 import Access from '@/components/Access';
 import Cookies from 'js-cookie';
-import { me } from '@/dtos/user.dto';
+import { currentUser } from '../layout.service';
 
 const menu = (
   <Menu>
@@ -21,15 +21,13 @@ const menu = (
     </Menu.Item>
   </Menu>
 );
-interface HeaderAvatarProps {
-  me?: me;
-}
-const HeaderAvatar: React.FC<HeaderAvatarProps> = ({ me }) => {
+
+const HeaderAvatar: React.FC<{ currentUser: currentUser | undefined }> = ({ currentUser }) => {
   return (
     <Dropdown overlay={menu}>
       <Space>
-        <Avatar size="small" style={{ backgroundColor: '#87d068' }} src={me?.username}>
-          {me?.username[0].toUpperCase()}
+        <Avatar size="small" style={{ backgroundColor: '#87d068' }} src={currentUser.username}>
+          {currentUser?.username[0].toUpperCase()}
         </Avatar>
       </Space>
     </Dropdown>
@@ -39,14 +37,14 @@ const HeaderAvatar: React.FC<HeaderAvatarProps> = ({ me }) => {
 const RightContent: React.FC<{}> = () => {
   const handleSearch = () => {};
   const { initialState } = useModel('@@initialState');
-  if (!initialState.me) {
+  if (!initialState.currentUser) {
     history.push('/login');
   }
 
   return (
     <Access>
       <Space size="middle">
-        <HeaderAvatar me={initialState.me} />
+        <HeaderAvatar currentUser={initialState.currentUser} />
         <SelectLang />
       </Space>
     </Access>

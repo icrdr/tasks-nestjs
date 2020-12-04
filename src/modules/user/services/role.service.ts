@@ -50,14 +50,7 @@ export class RoleService {
   }
 
   async getPermsOfUser(user: User | string | number) {
-    let userId: number;
-    if (user instanceof User) {
-      userId = user.id;
-    } else if (typeof user === 'string') {
-      userId = (await this.userService.getUser(user)).id;
-    } else {
-      userId = user;
-    }
+    const userId = await this.userService.getUserId(user);
 
     return await this.manager
       .createQueryBuilder(Perm, 'perm')
@@ -66,6 +59,16 @@ export class RoleService {
       .leftJoin('role.users', 'roleUser')
       .where('roleUser.id = :id', { id: userId })
       .orWhere('user.id = :id', { id: userId })
+      .getMany();
+  }
+
+  async getRolesOfUser(user: User | string | number) {
+    const userId = await this.userService.getUserId(user);
+
+    return await this.manager
+      .createQueryBuilder(Role, 'role')
+      .leftJoin('role.users', 'user')
+      .where('user.id = :id', { id: userId })
       .getMany();
   }
 }

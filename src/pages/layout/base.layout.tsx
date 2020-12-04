@@ -1,7 +1,7 @@
 import React from 'react';
 import { SelectLang } from 'umi';
 import { Layout, Affix } from 'antd';
-import Footer from '@/pages/layout/components/Footer';
+import Footer from '@/pages/layout/components/layout.Footer';
 
 const Base: React.FC<{}> = ({ children }) => {
   return (
