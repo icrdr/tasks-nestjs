@@ -7,6 +7,7 @@ import { login } from './login.service';
 import Cookies from 'js-cookie';
 import jwt from 'jsonwebtoken';
 import { tokenPayload } from '@/modules/user/user.interface';
+import { currentUser } from '@/pages/layout/layout.service';
 
 const { Title } = Typography;
 
@@ -18,7 +19,7 @@ const LoginForm: React.FC = () => {
     manual: true,
     onSuccess: (res) => {
       try {
-        const currentUser = res.currentUser;
+        const currentUser = res.currentUser as currentUser;
         const token = res.token;
         const payload = jwt.verify(token, 'secret') as tokenPayload;
         currentUser.perms = payload.perms;
@@ -26,8 +27,7 @@ const LoginForm: React.FC = () => {
         Cookies.set('token', res.token);
         message.success(successMsg);
         history.push('/');
-      } catch {
-      }
+      } catch {}
     },
   });
 
@@ -85,7 +85,9 @@ const LoginForm: React.FC = () => {
           style: { width: '100%' },
         },
       }}
-      onFinish={(values) => loginReq.run(values)}
+      onFinish={async (values) => {
+        loginReq.run(values);
+      }}
     >
       {/* <Alert className="m-b:2" message={errorMsg} type="error" showIcon /> */}
       <ProFormText

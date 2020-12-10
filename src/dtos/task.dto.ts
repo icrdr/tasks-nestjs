@@ -7,11 +7,15 @@ import {
   IsArray,
   ValidateIf,
   IsDefined,
+  IsNumberString,
+  IsBoolean,
+  IsNotEmpty,
 } from 'class-validator';
-import { Exclude, Expose, Transform, Type } from 'class-transformer';
+import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
 import { Task, TaskState } from '../modules/task/task.entity';
 import { ListRes } from './misc.dto';
 import { UserRes } from './user.dto';
+import { OutputData } from '@editorjs/editorjs';
 
 export class CreateTaskDTO {
   @IsString()
@@ -19,17 +23,20 @@ export class CreateTaskDTO {
 
   @IsOptional()
   @IsString()
-  description: string;
+  description?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { each: true })
+  performerId?: number[];
 }
 
 export class CreateSubTaskDTO extends CreateTaskDTO {
+  @Type(() => String)
+  @Transform((v) => v === 'true')
+  @IsBoolean()
   @IsOptional()
-  @IsNumber()
-  userId?: number;
-
-  @IsOptional()
-  @IsBooleanString()
-  isMandatory?: string;
+  isMandatory?: boolean;
 }
 
 export class GetTasksDTO {
@@ -52,10 +59,16 @@ export class SubmitRequestDTO {
   @IsString()
   content?: string;
 }
+export class UpdateTaskDTO {
+  @IsNotEmpty()
+  content: OutputData;
+}
 
 export class RespondRequestDTO {
-  @IsBooleanString()
-  isConfirmed: string;
+  @Type(() => String)
+  @Transform((v) => v === 'true')
+  @IsBoolean()
+  isConfirmed: boolean;
 
   @IsOptional()
   @IsString()
@@ -74,6 +87,9 @@ export class TaskRes {
   name: string;
 
   @Expose()
+  createAt: Date;
+
+  @Expose()
   @Type(() => UserRes)
   performers: UserRes[];
 
@@ -82,7 +98,7 @@ export class TaskRes {
 
   @Expose()
   @Type(() => TaskRes)
-  parentTask:TaskRes
+  parentTask: TaskRes;
 
   constructor(partial: Partial<TaskRes>) {
     Object.assign(this, partial);
@@ -101,6 +117,21 @@ export class TaskDetailRes {
   name: string;
 
   @Expose()
+  createAt: Date;
+
+  @Expose()
+  startAt: Date;
+
+  @Expose()
+  endAt: Date;
+
+  @Expose()
+  description: string;
+
+  @Expose()
+  content: OutputData;
+
+  @Expose()
   @Type(() => UserRes)
   performers: UserRes[];
 
@@ -109,13 +140,12 @@ export class TaskDetailRes {
 
   @Expose()
   @Type(() => TaskRes)
-  parentTask:TaskRes
+  parentTask: TaskRes;
 
   constructor(partial: Partial<TaskRes>) {
     Object.assign(this, partial);
   }
 }
-
 
 export class TaskListRes extends ListRes {
   @Type(() => TaskRes)

@@ -48,10 +48,21 @@ export class UserService {
   }
 
   async getUsers(options: GetUsersDTO = {}) {
-    return await this.manager.findAndCount(User, {
-      take: options.pageSize || 5,
-      skip: options.current - 1 || 0,
-    });
+    let query = this.manager.createQueryBuilder(User, 'user');
+    if (options.username) {
+      query = query.where('user.username LIKE :username', { username: `%${options.username}%` });
+    }
+
+    if (options.fullName) {
+      query = query.where('user.fullName LIKE :fullName', { fullName: `%${options.fullName}%` });
+    }
+
+    query = query
+      .orderBy('user.id', 'DESC')
+      .skip((options.current - 1) * options.pageSize || 0)
+      .take(options.pageSize || 5);
+
+    return await query.getManyAndCount();
   }
 
   async createUser(

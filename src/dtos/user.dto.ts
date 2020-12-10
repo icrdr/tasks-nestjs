@@ -2,6 +2,7 @@ import { IsString, IsNumberString, IsOptional, IsNumber } from 'class-validator'
 import { Exclude, Expose, Type } from 'class-transformer';
 import { ListRes } from './misc.dto';
 import { User } from '../modules/user/entities/user.entity';
+import { isStringArray } from '../utils/typeGuard';
 
 export class LoginDTO {
   @IsString()
@@ -43,6 +44,14 @@ export class GetUsersDTO {
   @IsOptional()
   @IsNumber()
   current?: number;
+
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
 }
 
 @Exclude()

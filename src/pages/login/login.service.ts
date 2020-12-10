@@ -1,7 +1,7 @@
 import { request } from 'umi';
-import { LoginDTO } from '@/dtos/user.dto';
+import { CurrentUserTokenRes, LoginDTO } from '@/dtos/user.dto';
 
-export const login = async (body: LoginDTO) => {
+export const login = async (body: LoginDTO): Promise<CurrentUserTokenRes> => {
   return request('/api/auth/login', {
     method: 'POST',
     data: body,

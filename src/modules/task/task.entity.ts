@@ -13,6 +13,7 @@ import {
 } from 'typeorm';
 import { Tag } from '../tag/tag.entity';
 import { User } from '../user/entities/user.entity';
+import { OutputData } from '@editorjs/editorjs';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -22,16 +23,19 @@ export enum TaskState {
 }
 
 @Entity()
-@Tree("closure-table")
+@Tree('closure-table')
 export class Task extends BaseEntity {
   @Column()
   name: string;
 
-  @Column({default:false})
-  isMandatory:boolean
+  @Column({ default: false })
+  isMandatory: boolean;
 
-  @Column()
+  @Column({ nullable: true })
   description: string;
+
+  @Column('simple-json', { nullable: true })
+  content: OutputData;
 
   @ManyToMany(() => User, (user) => user.tasks)
   @JoinTable()
@@ -58,7 +62,6 @@ export class Task extends BaseEntity {
 
   @TreeChildren()
   subTasks: Task[];
-
 
   @ManyToMany(() => Tag, (tag) => tag.tasks)
   @JoinTable()

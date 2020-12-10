@@ -16,6 +16,7 @@ async function bootstrap() {
       whitelist: true,
       transformOptions: {
         //FIXME: auto transform type. but boolean not working
+        //FIXME: also not working to array
         enableImplicitConversion: true, 
       },
     }),

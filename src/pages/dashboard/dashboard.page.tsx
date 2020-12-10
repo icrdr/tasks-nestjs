@@ -7,20 +7,15 @@ const Dashboard: React.FC<{}> = () => {
   const access = useAccess();
   const { loading } = useRequest('/api/users', {
     onSuccess: (res) => {
-      console.log(res)
+      console.log(res);
     },
     formatResult: (res) => res,
   });
 
   return (
-    <Access
-      accessible={access.hasPerms(['common.*'])}
-      fallback={<div>Can not read foo content.</div>}
-    >
-      <PageContainer>
-        <Card>Dashboard</Card>
-      </PageContainer>
-    </Access>
+    <PageContainer>
+      <Card>Dashboard</Card>
+    </PageContainer>
   );
 };
 export default Dashboard;

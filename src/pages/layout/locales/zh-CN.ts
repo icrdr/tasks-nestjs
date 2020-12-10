@@ -1,5 +1,5 @@
 export default {
-  'menu.dashboard': '仪表盘',
+  'menu.dashboard': '工作台',
   'menu.task': '任务',
   'menu.task.detail': '任务详情',
   'menu.resource': '资源',
@@ -10,4 +10,11 @@ export default {
   'menu.admin.group': '小组管理',
   'menu.admin.perm': '权限管理',
   'menu.admin.finance': '财务管理',
+  'taskState.suspended': '暂停中',
+  'taskState.inProgress': '进行中',
+  'taskState.unconfirmed': '待确认',
+  'taskState.completed': '已完成',
+  'taskState.unknown': '未知',
+  'layout.global.error.title':'错误名',
+  'layout.global.error.stack':'错误栈',
 };

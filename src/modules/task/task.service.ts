@@ -5,6 +5,7 @@ import { isUserArray } from '@/utils/typeGuard';
 import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/services/user.service';
 import { PassRequest, Task, TaskState } from './task.entity';
+import { OutputData } from '@editorjs/editorjs';
 
 @Injectable()
 export class TaskService {
@@ -25,14 +26,12 @@ export class TaskService {
       performerIdWhitelist = performerIdWhitelist.concat(
         parentTask.performers.map((item) => item.id),
       );
-      console.log(parentTask.performers.map((item) => item.id));
       parentTask = parentTask.parentTask;
     }
 
     if (!mandatoryCheck || !task.isMandatory) {
       performerIdWhitelist = performerIdWhitelist.concat(task.performers.map((item) => item.id));
     }
-    console.log(performerIdWhitelist);
     if (!performerIdWhitelist.includes(userId))
       throw new ForbiddenException("You are not permitted task's performer");
     return task;
@@ -86,17 +85,42 @@ export class TaskService {
   }
 
   async getTasks(options: GetTasksDTO = {}) {
-    return await this.manager.findAndCount(Task, {
-      take: options.pageSize || 5,
-      skip: options.current - 1 || 0,
-      where: {
-        state: options.state ? In([...options.state]) : Not(IsNull()),
-      },
-      order: {
-        id: 'DESC',
-      },
-      relations: ['performers', 'requests', 'subTasks', 'parentTask'],
-    });
+
+    let query = this.manager
+      .createQueryBuilder(Task, 'task')
+      .leftJoinAndSelect('task.performers', 'performer')
+      .leftJoinAndSelect('task.requests', 'request')
+      .leftJoinAndSelect('task.parentTask', 'parentTask');
+    if (options.state) {
+      query = query.where('task.state IN (:...states)', { states: [...options.state] });
+    }
+
+    query = query
+      .orderBy('task.id', 'DESC')
+      .skip((options.current - 1) * options.pageSize || 0)
+      .take(options.pageSize || 5);
+
+    return await query.getManyAndCount();
+  }
+
+  async getSubTasks(parentTask: Task | number, options: GetTasksDTO = {}) {
+    
+    const parentTaskId = parentTask instanceof Task ? parentTask.id : parentTask;
+    let query = this.manager
+      .createQueryBuilder(Task, 'task')
+      .leftJoinAndSelect('task.performers', 'performer')
+      .leftJoinAndSelect('task.requests', 'request')
+      .leftJoinAndSelect('task.parentTask', 'parentTask');
+    if (options.state) {
+      query = query.where('task.state IN (:...states)', { states: [...options.state] });
+    }
+    query = query.andWhere('parentTask.id =:id', { id: parentTaskId });
+    query = query
+      .orderBy('task.id', 'DESC')
+      .skip((options.current - 1) * options.pageSize || 0)
+      .take(options.pageSize || 5);
+
+    return await query.getManyAndCount();
   }
 
   async getTasksOfUser(
@@ -109,8 +133,8 @@ export class TaskService {
       .createQueryBuilder(Task, 'task')
       .leftJoin('task.performers', 'performer')
       .where('performer.id = :id', { id: userId })
-      .limit(options.pageSize || 5)
-      .offset(options.current || 0)
+      .skip((options.current - 1) * options.pageSize || 0)
+      .take(options.pageSize || 5)
       .getMany();
   }
 
@@ -118,6 +142,15 @@ export class TaskService {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.SUSPENDED)
       throw new ForbiddenException('Task is not suspended, forbidden initialization.');
+    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    task.state = TaskState.IN_PROGRESS;
+    return await this.manager.save(task);
+  }
+
+  async restartTask(task: Task | number) {
+    if (!(task instanceof Task)) task = await this.getTask(task);
+    if (task.state !== TaskState.COMPLETED)
+      throw new ForbiddenException('Task is not completed, forbidden initialization.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
     return await this.manager.save(task);
@@ -137,7 +170,28 @@ export class TaskService {
     if (task.state === TaskState.COMPLETED)
       throw new ForbiddenException('Task is already completed.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    this.completeSubTask(task);
     task.state = TaskState.COMPLETED;
+    return await this.manager.save(task);
+  }
+
+  async completeSubTask(task: Task | number) {
+    if (!(task instanceof Task)) task = await this.getTask(task);
+    console.log(task.subTasks)
+    if (!task.subTasks) return;
+    for (const subTask of task.subTasks) {
+      await this.completeSubTask(subTask);
+      subTask.state = TaskState.COMPLETED;
+      await this.manager.save(subTask);
+    }
+  }
+
+  async updateTask(task: Task | number, content:OutputData) {
+    if (!(task instanceof Task)) task = await this.getTask(task);
+    if (task.state !== TaskState.IN_PROGRESS)
+      throw new ForbiddenException('Task is not in progress, forbidden suspension.');
+    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    task.content = content
     return await this.manager.save(task);
   }
 
@@ -207,7 +261,7 @@ export class TaskService {
         forbidden subtask creation.',
       );
 
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.isParentTaskInStates(task, [TaskState.SUSPENDED, TaskState.IN_PROGRESS]);
 
     const subTask = await this.createTask(name, performers, options);
     task.subTasks.push(subTask);

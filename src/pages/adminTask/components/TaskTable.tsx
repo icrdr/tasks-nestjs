@@ -2,23 +2,21 @@ import React, { useRef } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Avatar, Table, Space } from 'antd';
 import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro-table';
-import { useIntl, history } from 'umi';
-import { getTasks } from '../adminTask.service';
-import { TaskRes } from '@/dtos/task.dto';
+import { useIntl, history, Link } from 'umi';
+import { getSubTasks, getTasks } from '../adminTask.service';
+import { TaskDetailRes, TaskRes } from '@/dtos/task.dto';
+import TaskForm from './TaskForm';
 
-const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = ({
-  headerTitle = '',
-  showParentTask = true,
-}) => {
+const TaskTable: React.FC<{
+  headerTitle?: string;
+  parentTask?: TaskDetailRes;
+}> = ({ headerTitle = '', parentTask }) => {
   const actionRef = useRef<ActionType>();
   const intl = useIntl();
   const actionMenu = [
     { key: 'copy', name: '复制' },
     { key: 'delete', name: '删除' },
   ];
-  const createTaskBtn = intl.formatMessage({
-    id: 'taskTable.createTask.btn',
-  });
 
   const nameTit = intl.formatMessage({
     id: 'taskTable.name.tit',
@@ -45,16 +43,16 @@ const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = 
   });
 
   const stateSuspended = intl.formatMessage({
-    id: 'taskTable.state.suspended',
+    id: 'taskState.suspended',
   });
   const stateInProgress = intl.formatMessage({
-    id: 'taskTable.state.inProgress',
+    id: 'taskState.inProgress',
   });
   const stateUnconfirmed = intl.formatMessage({
-    id: 'taskTable.state.unconfirmed',
+    id: 'taskState.unconfirmed',
   });
   const stateCompleted = intl.formatMessage({
-    id: 'taskTable.state.completed',
+    id: 'taskState.completed',
   });
 
   const actionTit = intl.formatMessage({
@@ -106,7 +104,7 @@ const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = 
       ),
     },
     {
-      dataIndex: 'created_at',
+      dataIndex: 'createAt',
       title: createDataTit,
       valueType: 'date',
     },
@@ -119,13 +117,11 @@ const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = 
     },
   ];
 
-  if (showParentTask)
+  if (!parentTask)
     columns.splice(0, 0, {
       title: parentTit,
       render: (_, record) => (
-        <a onClick={() => history.push('/admin/task/' + record.parentTask?.id)}>
-          {record.parentTask?.name}
-        </a>
+        <Link to={`/admin/task/${record.parentTask?.id}`}>{record.parentTask?.name}</Link>
       ),
     });
 
@@ -136,7 +132,10 @@ const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = 
       columns={columns}
       actionRef={actionRef}
       request={async (params, sorter, filter) => {
-        const res = await getTasks({ ...params, ...filter });
+        const res = parentTask
+          ? await getSubTasks(parentTask.id, { ...params, ...filter })
+          : await getTasks({ ...params, ...filter });
+
         console.log(res);
         return {
           data: res.list,
@@ -145,7 +144,7 @@ const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = 
         };
       }}
       options={{
-        fullScreen: true
+        fullScreen: true,
       }}
       rowSelection={{
         selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
@@ -169,9 +168,12 @@ const TaskTable: React.FC<{ headerTitle?: string; showParentTask?: boolean }> = 
         );
       }}
       toolBarRender={() => [
-        <Button key="button" icon={<PlusOutlined />} type="primary">
-          {createTaskBtn}
-        </Button>,
+        <TaskForm
+          key="1"
+          disabled={parentTask && parentTask?.state !== 'inProgress' && parentTask?.state !== 'suspended'}
+          parentTaskId={parentTask?.id}
+          onSuccess={() => actionRef.current.reload()}
+        />,
       ]}
     />
   );

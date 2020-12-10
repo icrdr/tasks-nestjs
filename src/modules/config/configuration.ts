@@ -16,7 +16,7 @@ export default () => ({
   adminUsername: process.env.ADMIN_USERNAME || 'admin',
   adminPassword: process.env.ADMIN_PASSWORD || 'admin',
   jwtSecret: process.env.JWT_SECRET || 'app',
-  // logLevel: process.env.NODE_ENV === 'prod' ? 'http' : 'debug',
+  logLevel: process.env.NODE_ENV === 'prod' ? 'http' : 'debug',
   logSilent: process.env.NODE_ENV === 'test',
   defaultRoles: {
     admin: ['*'],
