@@ -17,7 +17,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1{
+h1 {
   font-size: 2em;
 }
 ul,
@@ -48,4 +48,53 @@ ol {
 
 // .ant-pro-card {
 //   background-color: rgb(20, 20, 20) !important;
+// }
+
+*[modifier]::before {
+  content: attr(modifier);
+  position: absolute;
+  left: -20px;
+  text-align: right;
+  transform: translateX(-100%);
+  display: block;
+  font-size: 12px;
+}
+
+.ce-block__content {
+  max-width: none;
+}
+.ce-toolbar__content {
+  max-width: none;
+  width: 100%;
+}
+.ce-toolbar__actions {
+  right: -10px;
+}
+
+@media (max-width: 650px) {
+  .ce-toolbar__actions {
+    right: 8px;
+  }
+  .ce-toolbox{
+    visibility: visible
+  }
+  .ce-toolbar__plus{
+    display: none !important;
+  }
+}
+// @media (max-width: 650px) {
+//   .ce-toolbar--opened {
+//     display: -webkit-box;
+//     display: -ms-flexbox;
+//     display: flex;
+//   }
+//   .ce-toolbar {
+//     position: fixed;
+//     bottom: 0;
+//     top: auto;
+//     transform: none !important;
+//   }
+//   .ce-toolbar__content {
+//     width: 100%;
+//   }
 // }

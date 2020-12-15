@@ -14,7 +14,6 @@ export const initialStateConfig = {
 };
 
 
-
 export async function getInitialState(): Promise<initialState> {
   let currentUser: currentUser | undefined = undefined;
   const token = Cookies.get('token');
