@@ -1,13 +1,15 @@
+import OSS from 'ali-oss';
 import { request } from 'umi';
 
 export interface currentUser {
   id: number;
   username: string;
-  perms:string[]
+  perms: string[];
 }
 
 export interface initialState {
   currentUser?: currentUser;
+  ossClient?: OSS;
 }
 
 export async function getCurrentUser() {

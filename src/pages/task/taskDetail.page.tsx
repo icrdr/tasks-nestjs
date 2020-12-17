@@ -5,6 +5,7 @@ import { updateTask } from './task.service';
 import { getTask } from '../adminTask/adminTask.service';
 import Editor from '@/components/Editor';
 
+
 const TaskDetail: React.FC<{}> = () => {
   const { initialState } = useModel('@@initialState');
   const { currentUser } = initialState;
@@ -21,8 +22,10 @@ const TaskDetail: React.FC<{}> = () => {
   return (
     <PageContainer title={getTaskReq.data?.name}>
       <Editor
+        loading={getTaskReq.loading}
         currentUser={{ id: currentUser.id, username: currentUser.username }}
         content={getTaskReq.data?.content}
+        editable
         onSaved={(output) => {
           updateTaskReq.run(params.id, { content: output });
         }}

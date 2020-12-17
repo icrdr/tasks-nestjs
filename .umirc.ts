@@ -6,6 +6,9 @@ export default {
   dva: {
     hmr: true,
   },
+  cssLoader: {
+    localsConvention: 'camelCase'
+  },
   layout: {
     name: 'YIMU',
     locale: true,

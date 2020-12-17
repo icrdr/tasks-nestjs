@@ -14,7 +14,7 @@ const Dashboard: React.FC<{}> = () => {
 
   return (
     <PageContainer>
-      <Card className='p:10'>Dashboard</Card>
+      <Card >Dashboard</Card>
     </PageContainer>
   );
 };

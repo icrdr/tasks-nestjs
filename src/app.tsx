@@ -8,26 +8,39 @@ import Cookies from 'js-cookie';
 import jwt from 'jsonwebtoken';
 import { history } from 'umi';
 import { tokenPayload } from './modules/user/user.interface';
+import OSS from 'ali-oss';
 
 export const initialStateConfig = {
   loading: <PageLoading />,
 };
 
-
 export async function getInitialState(): Promise<initialState> {
   let currentUser: currentUser | undefined = undefined;
-  const token = Cookies.get('token');
+  let ossClient: OSS | undefined = undefined;
 
+  try {
+    ossClient = new OSS({
+      region: 'oss-cn-hangzhou',
+      accessKeyId: 'LTAI4G31Yoh3TMXHv9QZQ45k',
+      accessKeySecret: 'sFfIKhMst9Pm7A8t39QfpQfEsvf55K',
+      bucket: 'yimu-tasks',
+    });
+    console.log(ossClient);
+  } catch (e) {
+    console.log(e);
+  }
+
+  const token = Cookies.get('token');
   if (token) {
     try {
       const payload = jwt.verify(token, 'secret') as tokenPayload;
       currentUser = await getCurrentUser();
-      currentUser.perms = payload.perms
+      currentUser.perms = payload.perms;
     } catch {
       history.push('/login');
     }
   }
-  return { currentUser };
+  return { currentUser, ossClient };
 }
 
 export const layout = (): BasicLayoutProps => {
