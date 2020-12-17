@@ -21,8 +21,8 @@ export async function getInitialState(): Promise<initialState> {
   try {
     ossClient = new OSS({
       region: 'oss-cn-hangzhou',
-      accessKeyId: 'LTAI4G31Yoh3TMXHv9QZQ45k',
-      accessKeySecret: 'sFfIKhMst9Pm7A8t39QfpQfEsvf55K',
+      accessKeyId: '',
+      accessKeySecret: '',
       bucket: 'yimu-tasks',
     });
     console.log(ossClient);
