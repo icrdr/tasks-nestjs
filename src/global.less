@@ -1,4 +1,4 @@
-@import '~antd/es/style/themes/default.less';
+@import "~antd/es/style/themes/default.less";
 
 html,
 body,
@@ -68,7 +68,7 @@ ol {
 }
 .ce-toolbar__actions {
   right: 0px;
-  top: -2px;
+  top: 0px;
 }
 
 @media (max-width: 650px) {
@@ -76,21 +76,9 @@ ol {
     right: 8px;
     top: 50%;
   }
-  // .ce-toolbox {
-  //   visibility: visible;
-  // }
-  // .ce-toolbar__plus {
-  //   display: none !important;
-  // }
-  .ce-toolbar__plus--hidden {
-    display: none !important;
-  }
-}
 
-@media (max-height: 650px) {
-  .ce-toolbar__actions {
-    right: 8px;
-    top: 50%;
+  .ce-toolbar {
+    margin-top: 0px !important;
   }
   // .ce-toolbox {
   //   visibility: visible;
@@ -121,7 +109,11 @@ ol {
     background-color: @btn-default-bg;
   }
 }
-
+.ce-settings__button--confirm {
+  &:hover {
+    color: @btn-primary-color;
+  }
+}
 .ce-toolbar__settings-btn {
   width: 30px;
   height: 30px;
@@ -159,7 +151,8 @@ ol {
 
 .cdx-input {
   border: @border-width-base @border-style-base @border-color-base;
-  padding: calc(@input-padding-vertical-base - 0.5px) @input-padding-horizontal-base;
+  padding: calc(@input-padding-vertical-base - 0.5px)
+    @input-padding-horizontal-base;
   color: @text-color-secondary;
   font-size: @font-size-base - 1px;
   line-height: @line-height-base;
@@ -167,19 +160,22 @@ ol {
   &::placeholder {
     color: @input-placeholder-color;
   }
-  &[contenteditable='false'] {
+  &[contenteditable="false"] {
     border: none;
     box-shadow: none;
+    padding: calc(@input-padding-vertical-base - 0.5px) 0;
   }
 
-  &[contenteditable='false']:empty {
+  &[contenteditable="false"]:empty {
     display: none;
   }
 }
+.cdx-block.image-tool {
+  padding: 10px 0;
+}
 
 .image-tool__caption {
-  margin-bottom: 10px !important;
-
+  margin-top:5px !important;
   .image-tool--withBackground & {
     max-width: 60%;
     margin: 0 auto;
@@ -211,13 +207,15 @@ ol {
 }
 
 .oss-image-tool__image-preloader-contrainer {
-  .image-tool--filled & {
-    display: none;
-  }
   position: relative;
   height: 200px;
   width: 100%;
   overflow: hidden;
+
+  .image-tool--filled & {
+    display: none;
+  }
+
   & .ant-spin-dot {
     position: absolute;
     left: 50%;
@@ -231,7 +229,7 @@ ol {
   position: absolute;
   opacity: 0.5;
   width: 200%;
-  height: 200%; 
+  height: 200%;
   top: -50%;
   left: -50%;
   filter: blur(20px);

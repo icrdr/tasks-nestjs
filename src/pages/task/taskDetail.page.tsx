@@ -25,7 +25,7 @@ const TaskDetail: React.FC<{}> = () => {
         loading={getTaskReq.loading}
         currentUser={{ id: currentUser.id, username: currentUser.username }}
         content={getTaskReq.data?.content}
-        editable
+        // editable
         onSaved={(output) => {
           updateTaskReq.run(params.id, { content: output });
         }}

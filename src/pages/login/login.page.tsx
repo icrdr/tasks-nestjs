@@ -122,7 +122,7 @@ const LoginForm: React.FC = () => {
 const Login: React.FC<{}> = () => {
   return (
     <Col span={8} offset={8}>
-      <Space direction="vertical" className={'w:full'}>
+      <Space direction="vertical" style={{width:'100%'}}>
         <Title> YIMU </Title>
         <LoginForm />
         <Space>

@@ -1,8 +1,11 @@
-import configuration  from './configuration';
-import { ConfigModule } from '@nestjs/config';
+import config from "@/config";
+import { ConfigModule } from "@nestjs/config";
 
 export const configModule = ConfigModule.forRoot({
-    envFilePath: '.env',
-    load: [configuration],
-    isGlobal: true,
-  });
+  load: [
+    () => {
+      return config;
+    },
+  ],
+  isGlobal: true,
+});
