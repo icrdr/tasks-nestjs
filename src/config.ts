@@ -1,5 +1,7 @@
 import * as dotenv from "dotenv";
-dotenv.config();
+const env = dotenv.config();
+console.log(env);
+console.log(process.env.OSS_REGION);
 export default {
   dbHost: process.env.DB_HOST || "localhost",
   dbPort: 3306,

@@ -5,15 +5,15 @@ import {
   getCurrentUser,
   initialState,
   currentUser,
-} from "@/pages/layout/layout.service";
-import Footer from "@/pages/layout/components/layout.Footer";
-import RightContent from "@/pages/layout/components/layout.RightContent";
+} from "./pages/layout/layout.service";
+import Footer from "./pages/layout/components/layout.Footer";
+import RightContent from "./pages/layout/components/layout.RightContent";
 import Cookies from "js-cookie";
 import jwt from "jsonwebtoken";
 import { history } from "umi";
-import { tokenPayload } from "./modules/user/user.interface";
+import { tokenPayload } from "@/modules/user/user.interface";
 import OSS from "ali-oss";
-import config from "@/config";
+import config from "../config";
 
 export const initialStateConfig = {
   loading: <PageLoading />,
@@ -23,6 +23,7 @@ export async function getInitialState(): Promise<initialState> {
   //@ts-ignore
   let currentUser: currentUser | undefined = undefined;
   let ossClient: OSS | undefined = undefined;
+  console.log(config)
   try {
     ossClient = new OSS({
       region: config.ossRegion,

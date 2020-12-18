@@ -9,9 +9,9 @@
     "init": "ts-node scripts/init",
     "dev:ser": "nest start --watch",
     "build:ser": "nest build",
-    "dev:ui": "MOCK=none umi dev",
-    "dev:ui-mock": "umi dev",
-    "build:ui": "umi build",
+    "dev:ui": "MOCK=none APP_ROOT=src/render umi dev",
+    "dev:ui-mock": "APP_ROOT=src/render umi dev",
+    "build:ui": "APP_ROOT=src/render umi build",
     "dev": "npm run dev:ser & npm run dev:ui-no-mock",
     "build": "npm run build:ser && npm run build:ui",
     "start": "node dist/main"

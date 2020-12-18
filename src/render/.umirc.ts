@@ -1,5 +1,6 @@
-import routes from "./src/routes";
+import routes from "../routes";
 import darkTheme from "@ant-design/dark-theme";
+
 export default {
   define: {
     "process.env.OSS_REGION": process.env.OSS_REGION,
@@ -53,7 +54,7 @@ export default {
   },
   manifest: { basePath: "/" },
   exportStatic: {},
-  outputPath: "dist/web",
+  outputPath: "../../dist/web",
   request: {
     dataField: "",
   },

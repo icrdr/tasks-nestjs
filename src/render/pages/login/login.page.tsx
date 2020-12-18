@@ -7,7 +7,7 @@ import { login } from './login.service';
 import Cookies from 'js-cookie';
 import jwt from 'jsonwebtoken';
 import { tokenPayload } from '@/modules/user/user.interface';
-import { currentUser } from '@/pages/layout/layout.service';
+import { currentUser } from '@/render/pages/layout/layout.service';
 
 const { Title } = Typography;
 

@@ -4,7 +4,7 @@ import { Link, useIntl, useParams, useRequest } from 'umi';
 import { changeState, getTask } from './adminTask.service';
 import TaskTable from './components/TaskTable';
 import { Avatar, Badge, Button, Descriptions, Dropdown, Menu, Modal, Space } from 'antd';
-import TaskState from '@/components/TaskState';
+import TaskState from '../../components/TaskState';
 import { EllipsisOutlined } from '@ant-design/icons';
 
 const TaskDetail: React.FC<{}> = () => {

@@ -3,7 +3,7 @@ import { QuestionCircleOutlined, LogoutOutlined } from '@ant-design/icons';
 import React, { useState } from 'react';
 import { history, SelectLang, useModel, useRequest } from 'umi';
 
-import Access from '@/components/Access';
+import Access from '../../../components/Access';
 import Cookies from 'js-cookie';
 import { currentUser } from '../layout.service';
 

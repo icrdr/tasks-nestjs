@@ -4,7 +4,7 @@ import { ConfigModule } from "@nestjs/config";
 export const configModule = ConfigModule.forRoot({
   load: [
     () => {
-      return config;
+      return config
     },
   ],
   isGlobal: true,

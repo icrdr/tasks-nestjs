@@ -1,4 +1,4 @@
-import { getValidPerms } from '@/utils/utils';
+import { getValidPerms } from '../utils/utils';
 import { initialState } from './pages/layout/layout.service';
 
 function validPerms(neededPerms: string[], ownedPerms: string[]) {

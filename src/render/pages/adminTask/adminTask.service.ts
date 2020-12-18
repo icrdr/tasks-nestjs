@@ -8,7 +8,7 @@ import {
   TaskDetailRes,
   TaskListRes,
 } from '@/dtos/task.dto';
-import { UserListRes } from '../../dtos/user.dto';
+import { UserListRes } from '@/dtos/user.dto';
 
 export async function getUsersByfullName(fullName: string): Promise<UserListRes> {
   return request('/api/users', { params: { username: fullName } });
