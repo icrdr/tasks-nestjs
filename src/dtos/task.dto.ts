@@ -12,7 +12,7 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { Task, TaskState } from '../modules/task/task.entity';
+import { Task, TaskState } from '../server/task/task.entity';
 import { ListRes } from './misc.dto';
 import { UserRes } from './user.dto';
 import { OutputData } from '@editorjs/editorjs';

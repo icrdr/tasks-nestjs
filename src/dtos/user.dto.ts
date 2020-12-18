@@ -1,8 +1,8 @@
 import { IsString, IsNumberString, IsOptional, IsNumber } from 'class-validator';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { ListRes } from './misc.dto';
-import { User } from '../modules/user/entities/user.entity';
-import { isStringArray } from '../utils/typeGuard';
+import { Perm, Role, User } from '@server/user/entities/user.entity';
+import { isStringArray } from '@utils/typeGuard';
 
 export class LoginDTO {
   @IsString()
@@ -80,8 +80,19 @@ export class UserListRes extends ListRes {
 export class CurrentUserRes {
   @Expose()
   id: number;
+
   @Expose()
   username: string;
+
+  private roles: Role[];
+
+  @Expose()
+  permCodes: string[];
+
+  @Expose()
+  get roleNames(): string[] {
+    return this.roles.map((item) => item.name);
+  }
 
   constructor(partial: Partial<CurrentUserRes>) {
     Object.assign(this, partial);

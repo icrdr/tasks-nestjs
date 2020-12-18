@@ -7,14 +7,14 @@
   "license": "UNLICENSED",
   "scripts": {
     "init": "ts-node scripts/init",
-    "dev:ser": "nest start --watch",
-    "build:ser": "nest build",
-    "dev:ui": "MOCK=none APP_ROOT=src/render umi dev",
-    "dev:ui-mock": "APP_ROOT=src/render umi dev",
-    "build:ui": "APP_ROOT=src/render umi build",
-    "dev": "npm run dev:ser & npm run dev:ui-no-mock",
-    "build": "npm run build:ser && npm run build:ui",
-    "start": "node dist/main"
+    "dev:server": "nest start --watch",
+    "build:server": "nest build",
+    "dev:client": "MOCK=none APP_ROOT=src/client umi dev",
+    "dev:client-mock": "APP_ROOT=src/client umi dev",
+    "build:client": "APP_ROOT=src/client umi build",
+    "dev": "npm run dev:server & npm run dev:client",
+    "build": "npm run build:server && npm run build:client",
+    "start": "node dist/server/main"
   },
   "dependencies": {
     "@ant-design/dark-theme": "^2.0.2",
@@ -49,7 +49,6 @@
     "@nestjs/serve-static": "^2.1.4",
     "@nestjs/typeorm": "^7.1.4",
     "@nestjs/websockets": "^7.6.1",
-    "@types/ali-oss": "^6.0.5",
     "@types/faker": "^5.1.5",
     "@types/js-cookie": "^2.2.6",
     "@types/jsonwebtoken": "^8.5.0",

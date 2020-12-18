@@ -12,9 +12,13 @@
     "outDir": "./dist",
     "baseUrl": "./",
     "paths": {
-      "@/*": ["./src/*"],
-      "@@/*": ["./src/.umi/*"]
+      "@utils/*": ["./src/utils/*"],
+      "@dtos/*": ["./src/dtos/*"],
+      "@server/*": ["./src/server/*"],
+      "@pages/*": ["./src/client/pages/*"],
+      "@components/*": ["./src/client/components/*"],
+      "@/*": ["./src/client/*"],
+      "@@/*": ["./src/client/.umi/*"]
     }
-  },
-  "include": ["src", "scripts"]
+  }
 }
