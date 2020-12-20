@@ -4,6 +4,7 @@ import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { AppModule } from './app.module';
 import { ErrorHandler } from './error/error.filter';
 import { RequestLoggerInterceptor } from './logger/logger.interceptor';
+import { WsAdapter } from '@nestjs/platform-ws'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,6 +27,7 @@ async function bootstrap() {
     new ClassSerializerInterceptor(reflector),
   );
   app.useGlobalFilters(new ErrorHandler(winston));
+  app.useWebSocketAdapter(new WsAdapter(app))
   await app.listen(3000);
 }
 bootstrap();

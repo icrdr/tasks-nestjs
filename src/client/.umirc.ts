@@ -20,7 +20,7 @@ export default {
   layout: {
     name: 'YIMU',
     locale: true,
-    navTheme: 'realDark',
+    navTheme: 'light',
     primaryColor: '#13C2C2',
     layout: 'side',
     contentWidth: 'Fluid',
@@ -39,7 +39,7 @@ export default {
   targets: { ie: 11 },
   routes,
   theme: {
-    ...darkTheme,
+    // ...darkTheme,
     'primary-color': '#13C2C2',
   },
   esbuild: {},

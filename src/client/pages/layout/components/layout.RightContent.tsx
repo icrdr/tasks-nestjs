@@ -5,7 +5,7 @@ import { history, SelectLang, useModel, useRequest } from 'umi';
 
 import Access from '@components/Access';
 import Cookies from 'js-cookie';
-import { currentUser } from '../layout.service';
+import { CurrentUserRes } from '@dtos/user.dto';
 
 const menu = (
   <Menu>
@@ -22,7 +22,7 @@ const menu = (
   </Menu>
 );
 
-const HeaderAvatar: React.FC<{ currentUser: currentUser | undefined }> = ({ currentUser }) => {
+const HeaderAvatar: React.FC<{ currentUser: CurrentUserRes | undefined }> = ({ currentUser }) => {
   return (
     <Dropdown overlay={menu}>
       <Space>
