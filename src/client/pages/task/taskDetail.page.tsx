@@ -3,7 +3,7 @@ import { PageContainer } from '@ant-design/pro-layout';
 import { useModel, useParams, useRequest } from 'umi';
 import { updateTask } from './task.service';
 import { getTask } from '../adminTask/adminTask.service';
-import Editor from '../../components/Editor';
+import Editor from '@components/Editor';
 
 
 const TaskDetail: React.FC<{}> = () => {
@@ -15,7 +15,7 @@ const TaskDetail: React.FC<{}> = () => {
     manual: true,
     debounceInterval: 1000,
     onSuccess: (res) => {
-      console.log(res);
+      // console.log(res);
     },
   });
 

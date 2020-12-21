@@ -144,10 +144,6 @@ ol {
   background: @input-bg;
 }
 
-.ce-block--selected .ce-block__content {
-  background: @border-color-base;
-}
-
 .ce-toolbox__button--active {
   color: @primary-color;
 }
@@ -178,7 +174,7 @@ ol {
 }
 
 .image-tool__caption {
-  margin-top:5px !important;
+  margin-top: 5px !important;
   .image-tool--withBackground & {
     max-width: 60%;
     margin: 0 auto;
@@ -275,6 +271,10 @@ ol {
   }
   .ce-block--focused &::before {
     display: none !important;
+  }
+
+  .ce-block--selected & {
+    background: @border-color-base;
   }
 }
 
