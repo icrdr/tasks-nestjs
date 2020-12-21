@@ -134,20 +134,12 @@ const Editor: React.FC<{
         this._block = block;
         this._api = api;
         this._modifier = data.modifier || currentUser;
-
-        const currentIndex = this._api.blocks.getCurrentBlockIndex();
-        muxRef.current(() => {
-          const ymap = new Y.Map();
-          ymap.set("type", this._block.name);
-          ymap.set("data", this.data);
-          this._block.config["ymap"] = ymap;
-          const beforeCount = yarrayRef.current.toArray().length;
-          yarrayRef.current.insert(currentIndex + 1, [ymap]);
-          const afterCount = yarrayRef.current.toArray().length;
-          console.log(
-            `No.${currentIndex} on creation: ${beforeCount} -> ${afterCount}`
-          );
-        });
+      }
+      getIndex() {
+        const nodes = Array.prototype.slice.call(
+          this._block.holder.parentElement.children
+        );
+        return nodes.indexOf(this._block.holder);
       }
 
       save(blockContent: HTMLElement) {
@@ -182,24 +174,36 @@ const Editor: React.FC<{
         //     yarrayRef.current.insert(currentIndex + 1, [this._yContent]);
         //   });
         // }
+
+        muxRef.current(() => {
+          if (!yarrayRef.current) return;
+          const index = this.getIndex();
+          const ymap = new Y.Map();
+          ymap.set("type", this._block.name);
+          ymap.set("data", this.data);
+          const beforeCount = yarrayRef.current.toArray().length;
+          yarrayRef.current.insert(index, [ymap]);
+          const afterCount = yarrayRef.current.toArray().length;
+          console.log(
+            `No.${index} on creation: ${beforeCount} -> ${afterCount}`
+          );
+        });
       }
       updateInner(data) {
         // console.log(data);
+        console.log(`No.${this.getIndex()} updating`);
         this._blockContent.innerHTML = data.text;
       }
 
       updated() {
-        console.log(
-          yarrayRef.current.toArray().indexOf(this._block.config["ymap"])
-        );
         if (super.updated) super.updated();
         this._modifier = currentUser;
         this.updateModifierUI();
+        console.log(`No.${this.getIndex()} updated`);
         const newContent = this.save(this._blockContent);
-        const currentIndex = this._api.blocks.getCurrentBlockIndex();
         muxRef.current(() => {
-          const ymap = this._block.config["ymap"];
-          // ymap.set("on", currentIndex);
+          const index = this.getIndex();
+          const ymap = yarrayRef.current.toArray()[index] as Y.Map<any>;
           ymap.set("data", newContent);
         });
       }
@@ -287,10 +291,7 @@ const Editor: React.FC<{
               {},
               startIndex
             );
-            const block = editorRef.current.blocks.getBlockByIndex(
-              startIndex
-            ) as BlockAPI;
-            block.config["ymap"] = ymap;
+            console.log(yarrayRef.current.length)
             startIndex = startIndex + 1;
           }
 
@@ -311,11 +312,10 @@ const Editor: React.FC<{
         switch (change.action) {
           case "update":
             const index = yarrayRef.current.toArray().indexOf(ymap);
-            console.log(index);
             const block = editorRef.current.blocks.getBlockByIndex(
               index
             ) as BlockAPI;
-            // block.call("updateInner", ymap.get("data"));
+            block.call("updateInner", ymap.get("data"));
 
             break;
           default:
