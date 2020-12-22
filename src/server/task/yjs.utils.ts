@@ -82,7 +82,7 @@ const updateHandler = (update, origin, doc) => {
   const message = encoding.toUint8Array(encoder)
   doc.conns.forEach((_, conn) => send(doc, conn, message))
 }
-const CALLBACK_OBJECTS = { 'quill': 'Text' }
+const CALLBACK_OBJECTS = { 'editorjs': 'Array' }
 const getContent = (objName, objType, doc) => {
   switch (objType) {
     case 'Array': return doc.getArray(objName)
