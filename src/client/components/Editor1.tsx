@@ -109,14 +109,15 @@ const Editor: React.FC<{
     const editor1 = new EditorJS({
       holder: 'editorjs',
       tools: tools,
+      logLevel: "ERROR" as LogLevels,
       onReady: () => {
         if (editable) new DragDrop(editor1);
         const binding1 = new EditorBinding(editor1, divRef.current, ydoc1.getArray('docId'));
       },
     });
     const provider = new WebsocketProvider(
-      'wss://demos.yjs.dev',
-      'edibbasnnnnnnnnnnnnbsef',
+      'ws://localhost:3000',
+      'edibbasnnnnnnnnbbbbbbbbn556666666666nnnnnnnnnnbef',
       ydoc1,
     );
     yDocRef.current = ydoc1;
