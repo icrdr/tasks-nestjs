@@ -3,7 +3,7 @@ import { PageContainer } from '@ant-design/pro-layout';
 import { useModel, useParams, useRequest } from 'umi';
 import { updateTask } from './task.service';
 import { getTask } from '../adminTask/adminTask.service';
-import Editor from '@components/Editor1';
+import Editor from '@components/Editor';
 
 
 const TaskDetail: React.FC<{}> = () => {
@@ -24,7 +24,6 @@ const TaskDetail: React.FC<{}> = () => {
       <Editor
         loading={getTaskReq.loading}
         currentUser={{ id: currentUser.id, username: currentUser.username }}
-        content={getTaskReq.data?.content}
         editable
         onSaved={(output) => {
           updateTaskReq.run(params.id, { content: output });
