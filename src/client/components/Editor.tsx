@@ -1,18 +1,23 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useLocation, useModel, useParams, useRequest } from 'umi';
-import { Button, Card, Spin } from 'antd';
-import DragDrop from 'editorjs-drag-drop';
-import EditorJS, { API, BlockAPI, LogLevels, OutputData } from '@editorjs/editorjs';
-import Header from '@editorjs/header';
-import Paragraph from '@editorjs/paragraph';
-import ImageTool from '@editorjs/image';
-import moment from 'moment';
-import * as Y from 'yjs';
-import { MoveEvent } from '@editorjs/editorjs/types/tools';
-import { WebsocketProvider } from 'y-websocket';
-import { EditorBinding } from './EditorBinding';
-import OSS from 'ali-oss';
+import React, { useEffect, useRef, useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import { useLocation, useModel, useParams, useRequest } from "umi";
+import { Button, Card, Spin } from "antd";
+import DragDrop from "editorjs-drag-drop";
+import EditorJS, {
+  API,
+  BlockAPI,
+  LogLevels,
+  OutputData,
+} from "@editorjs/editorjs";
+import Header from "@editorjs/header";
+import Paragraph from "@editorjs/paragraph";
+import ImageTool from "@editorjs/image";
+import moment from "moment";
+import * as Y from "yjs";
+import { MoveEvent } from "@editorjs/editorjs/types/tools";
+import { WebsocketProvider } from "y-websocket";
+import { EditorBinding } from "./EditorBinding";
+import OSS from "ali-oss";
 
 const Editor: React.FC<{
   currentUser?: { id: number; username: string };
@@ -21,16 +26,19 @@ const Editor: React.FC<{
   onReady?: (editor: EditorJS) => void;
   onChange?: (editor: EditorJS) => void;
   onSaved?: (output?: OutputData) => void;
-}> = ({ currentUser = { id: 1, username: 'unkown' }, editable = false, loading = false }) => {
-  const { initialState } = useModel('@@initialState');
+}> = ({
+  currentUser = { id: 1, username: "unkown" },
+  editable = false,
+  loading = false,
+}) => {
+  const { initialState } = useModel("@@initialState");
   const { ossClient } = initialState;
   const location = useLocation() as any;
   const editorRef = useRef<EditorJS>();
   const yDocRef = useRef<Y.Doc>();
-  const [isReady, setReady] = useState(true);
+  const [isReady, setReady] = useState(false);
   const readyRef = useRef<boolean>(false);
-  const bindingRef = useRef<EditorBinding>();
-  readyRef.current = isReady;
+  const providerRef = useRef<WebsocketProvider>();
   const divRef = useRef();
 
   class ossImageTool extends ImageTool {
@@ -41,18 +49,18 @@ const Editor: React.FC<{
       this.ossClient = config.ossClient;
       const imagePreloader = (this as ImageTool).ui.nodes.imagePreloader;
       const imageContainer = (this as ImageTool).ui.nodes.imageContainer;
-      imagePreloader.className = 'oss-image-tool__image-preloader';
-      imageContainer.className = 'oss-image-tool__image';
+      imagePreloader.className = "oss-image-tool__image-preloader";
+      imageContainer.className = "oss-image-tool__image";
 
-      const spin = document.createElement('span');
-      spin.classList.add('ant-spin-dot', 'ant-spin-dot-spin');
+      const spin = document.createElement("span");
+      spin.classList.add("ant-spin-dot", "ant-spin-dot-spin");
       for (let index = 0; index < 4; index++) {
-        const dot = document.createElement('i');
-        dot.className = 'ant-spin-dot-item';
+        const dot = document.createElement("i");
+        dot.className = "ant-spin-dot-item";
         spin.append(dot);
       }
-      const contrainer = document.createElement('div');
-      contrainer.className = 'oss-image-tool__image-preloader-contrainer';
+      const contrainer = document.createElement("div");
+      contrainer.className = "oss-image-tool__image-preloader-contrainer";
 
       contrainer.append(imagePreloader);
       contrainer.append(spin);
@@ -91,7 +99,7 @@ const Editor: React.FC<{
   }
 
   const uploadByFile = async (file: any) => {
-    const objectName = moment().format('YYYYMMDDhhmmss');
+    const objectName = moment().format("YYYYMMDDhhmmss");
     const res = await ossClient.put(objectName, file);
     console.log(res);
     return {
@@ -112,91 +120,100 @@ const Editor: React.FC<{
       });
     });
   };
+  function toolWrapper(Tool: any) {
+    const wrapper = class extends Tool {
+      _block: BlockAPI;
+      _api: API;
+      _blockContent: HTMLElement;
+
+      constructor({ data, config, api, readOnly, block }) {
+        super({ data, config, api, readOnly, block });
+        this._block = block;
+        this._api = api;
+      }
+
+      save(blockContent: HTMLElement) {
+        const output = super.save(blockContent);
+        return output;
+      }
+
+      static getSave(blockContent: HTMLElement) {
+        return super.save(blockContent);
+      }
+      
+      render() {
+        return super.render();
+      }
+
+      rendered() {
+        if (super.rendered) super.rendered();
+      }
+
+      updated() {
+        if (super.updated) super.updated();
+      }
+
+      moved(event: MoveEvent) {
+        if (super.moved) super.moved(event);
+      }
+
+      removed() {
+        if (super.removed) super.removed();
+      }
+    };
+    return wrapper;
+  }
+
+  const tools = {
+    header: {
+      class: toolWrapper(Header),
+      config: {
+        levels: [1, 2, 3],
+        defaultLevel: 1,
+      },
+      inlineToolbar: ["link"],
+    },
+    paragraph: {
+      class: toolWrapper(Paragraph),
+      config: {
+        preserveBlank: true,
+      },
+    },
+    image: {
+      class: toolWrapper(ossImageTool),
+      config: {
+        uploader: {
+          uploadByFile,
+          uploadByUrl,
+        },
+      },
+    },
+  };
+
   //editor init
   useEffect(() => {
-    function toolWrapper(Tool: any) {
-      const wrapper = class extends Tool {
-        _block: BlockAPI;
-        _api: API;
-        _blockContent: HTMLElement;
-
-        constructor({ data, config, api, readOnly, block }) {
-          super({ data, config, api, readOnly, block });
-          this._block = block;
-          this._api = api;
-        }
-
-        save(blockContent: HTMLElement) {
-          const output = super.save(blockContent);
-          return output;
-        }
-
-        static getSave(blockContent: HTMLElement) {
-          return super.save(blockContent);
-        }
-        render() {
-          return super.render();
-        }
-
-        rendered() {
-          if (super.rendered) super.rendered();
-        }
-
-        updated() {
-          if (super.updated) super.updated();
-        }
-
-        moved(event: MoveEvent) {
-          if (super.moved) super.moved(event);
-        }
-
-        removed() {
-          if (super.removed) super.removed();
-        }
-      };
-      return wrapper;
-    }
-
-    const tools = {
-      header: {
-        class: toolWrapper(Header),
-        config: {
-          levels: [1, 2, 3],
-          defaultLevel: 1,
-        },
-        inlineToolbar: ['link'],
-      },
-      paragraph: {
-        class: toolWrapper(Paragraph),
-        config: {
-          preserveBlank: true,
-        },
-      },
-      image: {
-        class: toolWrapper(ossImageTool),
-        config: {
-          uploader: {
-            uploadByFile,
-            uploadByUrl,
-          },
-        },
-      },
-    };
     const ydoc = new Y.Doc();
-    const yArray = ydoc.getArray('editorjs');
+    const yArray = ydoc.getArray("editorjs");
     const editor = new EditorJS({
-      holder: 'editorjs',
+      holder: "editorjs",
       tools: tools,
-      logLevel: 'ERROR' as LogLevels,
+      logLevel: "ERROR" as LogLevels,
       onReady: () => {
         if (editable) new DragDrop(editor);
-        const binding = new EditorBinding(editor, yArray);
-        bindingRef.current = binding;
       },
     });
-    const provider = new WebsocketProvider('ws://localhost:3000', 'dd', ydoc);
+    // wss://demos.yjs.dev
+    // ws://localhost:3000
+    const provider = new WebsocketProvider("wss://demos.yjs.dev", "bbbbbbb", ydoc);
+    provider.on("sync", async (isSynced: boolean) => {
+      await editor.isReady;
+      const binding = new EditorBinding(editor, yArray);
+      await binding.isReady
+      setReady(true);
+    });
     yDocRef.current = ydoc;
     editorRef.current = editor;
+    providerRef.current = provider;
 
     return () => {
       editorRef.current.destroy();
@@ -205,9 +222,9 @@ const Editor: React.FC<{
   const showSaved = () => {
     console.log(
       yDocRef.current
-        .getArray('editorjs')
+        .getArray("editorjs")
         .toArray()
-        .map((item: Y.Map<any>) => item.toJSON()),
+        .map((item: Y.Map<any>) => item.toJSON())
     );
   };
 
@@ -218,7 +235,7 @@ const Editor: React.FC<{
       <div
         ref={divRef}
         id="editorjs"
-        style={{ visibility: loading || !isReady ? 'hidden' : 'visible' }}
+        style={{ visibility: loading || !isReady ? "hidden" : "visible" }}
       ></div>
     </Card>
   );
