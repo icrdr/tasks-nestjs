@@ -1,7 +1,7 @@
-import * as Y from "yjs";
-import genUUID from "uuid/dist/v4";
-import EditorJS, { BlockAPI } from "@editorjs/editorjs";
-import { YArrayEvent, YMapEvent } from "yjs";
+import * as Y from 'yjs';
+import genUUID from 'uuid/dist/v4';
+import EditorJS, { BlockAPI } from '@editorjs/editorjs';
+import { YArrayEvent, YMapEvent } from 'yjs';
 
 class Mutex {
   token: boolean = true;
@@ -22,16 +22,16 @@ class Mutex {
 // from editor.js
 const Block = {
   CSS: {
-    wrapper: "ce-block",
-    wrapperStretched: "ce-block--stretched",
-    content: "ce-block__content",
-    focused: "ce-block--focused",
-    selected: "ce-block--selected",
-    dropTarget: "ce-block--drop-target",
+    wrapper: 'ce-block',
+    wrapperStretched: 'ce-block--stretched',
+    content: 'ce-block__content',
+    focused: 'ce-block--focused',
+    selected: 'ce-block--selected',
+    dropTarget: 'ce-block--drop-target',
   },
 };
 
-type changeType = "insert" | "delete" | "update";
+type changeType = 'insert' | 'delete' | 'update';
 interface eEvent {
   uuid: string;
   type: changeType;
@@ -49,9 +49,6 @@ export class EditorBinding {
     this.editor = editor;
     this.yArray = yArray;
     this.mux = new Mutex();
-    // this.initialize();
-    // this.setYDocObserver();
-    // this.setEditorObserver();
     this.isReady = Promise.all([
       this.initialize(),
       this.setYDocObserver(),
@@ -62,10 +59,9 @@ export class EditorBinding {
   getEventType(mutation: MutationRecord) {
     const isBlockElement = (e: Element | Text) =>
       e instanceof Element ? e.classList.contains(Block.CSS.wrapper) : false;
-    if (!!Array.from(mutation.removedNodes).find(isBlockElement))
-      return "delete";
-    if (!!Array.from(mutation.addedNodes).find(isBlockElement)) return "insert";
-    return "update";
+    if (!!Array.from(mutation.removedNodes).find(isBlockElement)) return 'delete';
+    if (!!Array.from(mutation.addedNodes).find(isBlockElement)) return 'insert';
+    return 'update';
   }
 
   getYBlockByIndex(index: number) {
@@ -89,12 +85,31 @@ export class EditorBinding {
   }
 
   getYBlockByUuid(uuid: string) {
-    return this.yBlocks.find((b) => b.get("uuid") === uuid);
+    return this.yBlocks.find((b) => b.get('uuid') === uuid);
   }
   getElementUuid(element: HTMLElement) {
-    if (!element.dataset.uuid) element.setAttribute("data-uuid", genUUID());
+    if (!element.dataset.uuid) element.setAttribute('data-uuid', genUUID());
     return element.dataset.uuid;
   }
+
+  getMutatedBlock(mutation: MutationRecord, type: changeType): HTMLElement {
+    const WrapperClass = '.' + Block.CSS.wrapper;
+    switch (type) {
+      case 'insert':
+        return Array.from(mutation.addedNodes).find((e: Element) =>
+          e.classList.contains(Block.CSS.wrapper),
+        ) as HTMLElement;
+      case 'delete':
+        return Array.from(mutation.removedNodes).find((e: Element) =>
+          e.classList.contains(Block.CSS.wrapper),
+        ) as HTMLElement;
+      case 'update':
+        const e = mutation.target;
+        if (e instanceof Text) return e.parentElement?.closest(WrapperClass);
+        if (e instanceof Element) return e.querySelector(WrapperClass) || e.closest(WrapperClass);
+    }
+  }
+
   get eApi() {
     return this.editor.blocks;
   }
@@ -113,52 +128,48 @@ export class EditorBinding {
     return blocks as BlockAPI[];
   }
 
-  yarrayObserve(event: Y.YEvent) {
+  yInsertDeleteHandler(event: Y.YEvent) {
     const delta = event.changes.delta;
     // console.log(delta);
     let startIndex = 0;
     for (const d of delta) {
       const key = Object.keys(d)[0];
       switch (key) {
-        case "retain":
+        case 'retain':
           startIndex = d[key];
           break;
-        case "insert":
+        case 'insert':
           const yBlocks = d[key];
           for (const yBlock of yBlocks) {
-            this.eApi.insert(
-              yBlock.get("type"),
-              yBlock.get("data"),
-              null,
-              startIndex,
-              false
-            );
-            this.getEBlockByIndex(startIndex).holder.setAttribute(
-              "data-uuid",
-              yBlock.get("uuid")
-            );
+            const uuid = yBlock.get('uuid');
+            console.log(`yEvent[insert]:: ${uuid}`);
+            this.eApi.insert(yBlock.get('type'), yBlock.get('data'), null, startIndex, false);
+            this.getEBlockByIndex(startIndex).holder.setAttribute('data-uuid', uuid);
             startIndex = startIndex + 1;
           }
           break;
-        case "delete":
+        case 'delete':
+          const uuid = this.getEBlockByIndex(startIndex).holder.dataset.uuid;
+          console.log(`yEvent[delete]:: ${uuid}`);
           this.editor.blocks.delete(startIndex);
           break;
       }
     }
   }
 
-  ymapObserve(event: Y.YEvent) {
+  yUpdateHandler(event: Y.YEvent) {
     const yBlock = event.target as Y.Map<any>;
     const keys = event.changes.keys;
     keys.forEach((change, key) => {
-      if (key === "data") {
+      if (key === 'data') {
         switch (change.action) {
-          case "update":
+          case 'update':
+            const uuid = yBlock.get('uuid');
+            console.log(`yEvent[update]:: ${uuid}`);
             const yIndex = this.getYIndex(yBlock);
             const eBlock = this.getEBlockByIndex(yIndex);
-            const e = eBlock.holder.firstChild.firstChild as HTMLElement;
-            e.innerHTML = yBlock.get("data").text;
-            // eBlock.call('updateInner', yBlock.get('data'));
+            const data = yBlock.get('data');
+            eBlock.call('updateRender', data);
             break;
           default:
             break;
@@ -167,14 +178,14 @@ export class EditorBinding {
     });
   }
 
-  yObserve(events: Y.YEvent[]) {
+  yEventHandler(events: Y.YEvent[]) {
     for (const event of events) {
       switch (event.constructor) {
         case YArrayEvent:
-          this.yarrayObserve(event);
+          this.yInsertDeleteHandler(event);
           break;
         case YMapEvent:
-          this.ymapObserve(event);
+          this.yUpdateHandler(event);
           break;
         default:
           break;
@@ -188,27 +199,18 @@ export class EditorBinding {
     if (this.yArray.length) {
       this.mux.run(() => {
         this.yBlocks.forEach((yBlock, index) => {
-          this.eApi.insert(
-            yBlock.get("type"),
-            yBlock.get("data"),
-            null,
-            index,
-            false
-          );
-          this.getEBlockByIndex(index).holder.setAttribute(
-            "data-uuid",
-            yBlock.get("uuid")
-          );
+          this.eApi.insert(yBlock.get('type'), yBlock.get('data'), null, index, false);
+          this.getEBlockByIndex(index).holder.setAttribute('data-uuid', yBlock.get('uuid'));
         });
         this.eApi.delete(this.eApi.getBlocksCount() - 1);
       });
     } else {
       const uuid = genUUID();
-      this.getEBlockByIndex(0).holder.setAttribute("data-uuid", uuid);
+      this.getEBlockByIndex(0).holder.setAttribute('data-uuid', uuid);
       const yBlock = new Y.Map([
-        ["type", "paragraph"],
-        ["data", { text: "" }],
-        ["uuid", uuid],
+        ['type', 'paragraph'],
+        ['data', { text: '' }],
+        ['uuid', uuid],
       ]);
       this.yApi.insert(0, [yBlock]);
     }
@@ -216,52 +218,34 @@ export class EditorBinding {
 
   private async setYDocObserver() {
     this.yArray.observeDeep((event) => {
-      console.log(`Y=>E state:${this.mux.token && this.mutexToken}`);
+      console.log(`Y=>E state:${this.mux.token}`);
       this.mux.run(() => {
         this.mutexToken = false;
-        console.log(event);
-        this.yObserve(event);
+        this.yEventHandler(event);
+        // TODO: not grace way to fix EditorObserver out of y edit mutex, could be better.
+        setTimeout(() => {
+          this.mutexToken = true;
+          console.log(this.mutexToken);
+        }, 200);
       });
     });
   }
 
   private async setEditorObserver() {
     const editorObserver = new MutationObserver((mutationList, observer) => {
-      this.mutationHandler(mutationList);
+      this.eEventHandler(mutationList);
     });
 
-    editorObserver.observe(
-      this.holder.querySelector(".codex-editor__redactor"),
-      {
-        childList: true,
-        attributes: true,
-        subtree: true,
-        characterData: true,
-        characterDataOldValue: true,
-      }
-    );
+    editorObserver.observe(this.holder.querySelector('.codex-editor__redactor'), {
+      childList: true,
+      attributes: true,
+      subtree: true,
+      characterData: true,
+      characterDataOldValue: true,
+    });
   }
 
-  getMutatedBlock(mutation: MutationRecord, type: changeType): HTMLElement {
-    const WrapperClass = "." + Block.CSS.wrapper;
-    switch (type) {
-      case "insert":
-        return Array.from(mutation.addedNodes).find((e: Element) =>
-          e.classList.contains(Block.CSS.wrapper)
-        ) as HTMLElement;
-      case "delete":
-        return Array.from(mutation.removedNodes).find((e: Element) =>
-          e.classList.contains(Block.CSS.wrapper)
-        ) as HTMLElement;
-      case "update":
-        const e = mutation.target;
-        if (e instanceof Text) return e.parentElement?.closest(WrapperClass);
-        if (e instanceof Element)
-          return e.querySelector(WrapperClass) || e.closest(WrapperClass);
-    }
-  }
-
-  private mutationHandler(mutationList: MutationRecord[]): void {
+  private eEventHandler(mutationList: MutationRecord[]): void {
     /**
      * We divide two Mutation types:
      * 1) mutations that concerns client changes: settings changes, symbol added, deletion, insertions and so on
@@ -272,23 +256,22 @@ export class EditorBinding {
     mutationList.map((mutation) => {
       const type = this.getEventType(mutation);
       const blockElement = this.getMutatedBlock(mutation, type);
-      // console.log(`${type}: ${blockElement}`);
       switch (mutation.type) {
-        case "childList":
-        case "characterData":
+        case 'childList':
+        case 'characterData':
           if (blockElement) {
             const uuid = this.getElementUuid(blockElement);
             events.add({ uuid, type });
           }
           break;
-        case "attributes":
-          const target = mutation.target as Element;
-          if (target.classList.contains(Block.CSS.wrapper)) break;
-          if (blockElement) {
-            const uuid = this.getElementUuid(blockElement);
-            events.add({ uuid, type });
-          }
-          break;
+        // case 'attributes':
+        //   const target = mutation.target as Element;
+        //   if (target.classList.contains(Block.CSS.wrapper)) break;
+        //   if (blockElement) {
+        //     const uuid = this.getElementUuid(blockElement);
+        //     events.add({ uuid, type });
+        //   }
+        //   break;
       }
     });
     this.eEventCallback(events);
@@ -296,32 +279,30 @@ export class EditorBinding {
 
   private async eEventCallback(events: Set<eEvent>) {
     for await (const { uuid, type } of events) {
+      console.log(this.mutexToken);
       console.log(`E=>Y state:${this.mux.token && this.mutexToken}`);
-      if (!this.mutexToken) {
-        this.mutexToken = true;
-        continue;
-      }
+      if (!this.mutexToken) continue;
       const eBlock = this.getEBlockByUuid(uuid);
       const eIndex = eBlock ? this.getEIndex(eBlock) : undefined;
       const savedData = eBlock ? await eBlock.save() : undefined;
       this.mux.run(() => {
-        console.log(`${type}: ${uuid}`);
+        console.log(`eEvent[${type}]: ${uuid}`);
         const yBlock =
           this.getYBlockByUuid(uuid) ||
           new Y.Map([
-            ["type", savedData["tool"]],
-            ["data", savedData["data"]],
-            ["uuid", uuid],
+            ['type', savedData['tool']],
+            ['data', savedData['data']],
+            ['uuid', uuid],
           ]);
         switch (type) {
-          case "insert":
+          case 'insert':
             this.yArray.insert(eIndex, [yBlock]);
             break;
-          case "delete":
+          case 'delete':
             this.yArray.delete(this.getYIndex(yBlock));
             break;
-          case "update":
-            yBlock.set("data", savedData["data"]);
+          case 'update':
+            yBlock.set('data', savedData['data']);
             break;
         }
       });

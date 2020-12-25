@@ -26,13 +26,13 @@ export async function getInitialState(): Promise<initialState> {
     } catch {
       history.push('/login');
     }
-    // try {
-    //   const stsToken = await getStsToken();
-    //   console.log(stsToken);
-    //   ossClient = new OSS(stsToken);
-    // } catch {
-    //   message.error('Connot access to any assets. please try later.');
-    // }
+    try {
+      const stsToken = await getStsToken();
+      console.log(stsToken);
+      ossClient = new OSS(stsToken);
+    } catch {
+      message.error('Connot access to any assets. please try later.');
+    }
   }
 
   return { currentUser, ossClient };

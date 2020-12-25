@@ -1,0 +1,114 @@
+.ce-block__content {
+  max-width: none;
+}
+.ce-toolbar__content {
+  max-width: none;
+  width: 100%;
+}
+.ce-toolbar__actions {
+  right: 0px;
+  top: 0px;
+}
+
+@media (max-width: 650px) {
+  .ce-toolbar__actions {
+    right: 8px;
+    top: 50%;
+  }
+
+  .ce-toolbar {
+    margin-top: 0px !important;
+  }
+  // .ce-toolbox {
+  //   visibility: visible;
+  // }
+  // .ce-toolbar__plus {
+  //   display: none !important;
+  // }
+  .ce-toolbar__plus--hidden {
+    display: none !important;
+  }
+}
+
+.ce-conversion-tool__icon {
+  background-color: @icon-color;
+}
+
+.cdx-button,
+.ce-toolbar__plus,
+.ce-toolbox__button,
+.cdx-settings-button,
+.ce-inline-toolbar__dropdown,
+.ce-settings__button,
+.ce-inline-tool {
+  color: @btn-default-color;
+  background: @btn-default-bg;
+  &:hover {
+    color: @primary-color;
+    background-color: @btn-default-bg;
+  }
+}
+.ce-settings__button--confirm {
+  &:hover {
+    color: @btn-primary-color;
+  }
+}
+.ce-toolbar__settings-btn {
+  width: 30px;
+  height: 30px;
+  color: @btn-default-color;
+  background: @btn-default-bg;
+  &:hover {
+    color: @btn-primary-color;
+    background-color: @btn-primary-bg;
+  }
+}
+
+.ce-toolbar,
+.ce-settings,
+.ce-inline-toolbar,
+.ce-conversion-toolbar {
+  background: @component-background;
+  color: @text-color;
+  border-color: @border-color-base;
+}
+
+.ce-conversion-tool--focused {
+  background: @primary-1 !important;
+}
+.ce-inline-tool-input {
+  background: @input-bg;
+}
+
+.ce-toolbox__button--active {
+  color: @primary-color;
+}
+
+.cdx-input {
+  border: @border-width-base @border-style-base @border-color-base;
+  padding: calc(@input-padding-vertical-base - 0.5px)
+    @input-padding-horizontal-base;
+  color: @text-color-secondary;
+  font-size: @font-size-base - 1px;
+  line-height: @line-height-base;
+  font-style: italic;
+  &::placeholder {
+    color: @input-placeholder-color;
+  }
+  &[contenteditable="false"] {
+    border: none;
+    box-shadow: none;
+    padding: calc(@input-padding-vertical-base - 0.5px) 0;
+  }
+
+  &[contenteditable="false"]:empty {
+    display: none;
+  }
+}
+
+// TODO: try to disable text selction menu on ios, but not working yet.
+// .ce-block {
+//   -webkit-touch-callout:none;
+//   -webkit-user-modify: read-write-plaintext-only;
+//   user-modify: read-write-plaintext-only;
+// }
