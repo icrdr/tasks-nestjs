@@ -1,32 +1,43 @@
 import React, { useEffect, useRef, useState } from "react";
-import { useLocation, useModel } from "umi";
+import { useLocation, useModel, useParams } from "umi";
 import { Button, Card, Spin } from "antd";
 import DragDrop from "editorjs-drag-drop";
-import EditorJS, { LogLevels } from "@editorjs/editorjs";
+import EditorJS, { LogLevels, OutputData } from "@editorjs/editorjs";
 import { Paragraph, Header, Image } from "./editorTools";
 import * as Y from "yjs";
 import { WebsocketProvider } from "y-websocket";
+// import { IndexeddbPersistence } from "y-indexeddb";
 import { EditorBinding } from "./EditorBinding";
+import { CloudOutlined, DisconnectOutlined, SyncOutlined } from "@ant-design/icons";
+
+const { IndexeddbPersistence } = require("y-indexeddb/dist/y-indexeddb.cjs");
 
 const Editor: React.FC<{
+  wsRoom?: string;
+  data?: OutputData;
   currentUser?: { id: number; username: string };
   editable?: boolean;
   loading?: boolean;
 }> = ({
+  wsRoom,
+  data,
   currentUser = { id: 0, username: "unkown" },
   editable = false,
   loading = false,
 }) => {
   const { initialState } = useModel("@@initialState");
   const { ossClient } = initialState;
-  const location = useLocation() as any;
   const bindingRef = useRef<EditorBinding>();
   const editorRef = useRef<EditorJS>();
   const yDocRef = useRef<Y.Doc>();
   const [isReady, setReady] = useState(false);
+  const [isConnect, setConnect] = useState(false);
   const isReadyRef = useRef<boolean>();
-  isReadyRef.current = isReady
-  const providerRef = useRef<WebsocketProvider>();
+  const isConnectRef = useRef<boolean>();
+  isReadyRef.current = isReady;
+  isConnectRef.current = isConnect;
+  const websocketProviderRef = useRef<WebsocketProvider>();
+  const indexeddbProviderRef = useRef<any>();
   const tools = {
     header: {
       class: Header,
@@ -52,37 +63,60 @@ const Editor: React.FC<{
 
   //editor init
   useEffect(() => {
-    const ydoc = new Y.Doc();
-    const yArray = ydoc.getArray("editorjs");
     const editor = new EditorJS({
       holder: "editorjs",
+      data: data,
       tools: tools,
       logLevel: "ERROR" as LogLevels,
+      readOnly: !editable && !wsRoom,
       onReady: () => {
-        if (editable) new DragDrop(editor);
+        if (editable || wsRoom) new DragDrop(editor);
       },
     });
-    // wss://demos.yjs.dev
-    // ws://localhost:3000
-    const provider = new WebsocketProvider("ws://localhost:3000", "a3", ydoc);
-    provider.on("sync", async (isSynced: boolean) => {
-      if (isSynced && !isReadyRef.current) {
+    editorRef.current = editor;
+
+    if (wsRoom && !data) {
+      // wss://demos.yjs.dev
+      // ws://localhost:3000
+      const ydoc = new Y.Doc();
+      const yArray = ydoc.getArray("editorjs");
+      const indexeddbProvider = new IndexeddbPersistence(wsRoom, ydoc);
+      const websocketProvider = new WebsocketProvider(
+        "ws://localhost:3000",
+        wsRoom,
+        ydoc
+      );
+      indexeddbProvider.on("synced", async () => {
         await editor.isReady;
         const binding = new EditorBinding(editor, yArray);
         bindingRef.current = binding;
         await binding.isReady;
         setReady(true);
-      }
-    });
-    yDocRef.current = ydoc;
-    editorRef.current = editor;
-    providerRef.current = provider;
+      });
+      websocketProvider.on("sync", async (isSynced: boolean) => {
+        console.log(`wsProvider state: ${isSynced}`);
+        setConnect(isSynced);
+      });
+      yDocRef.current = ydoc;
+      websocketProviderRef.current = websocketProvider;
+      indexeddbProviderRef.current = indexeddbProvider;
+    }
 
     return () => {
       if (editorRef.current.destroy) editorRef.current.destroy();
-      providerRef.current.destroy();
+      if (websocketProviderRef.current) websocketProviderRef.current.destroy();
+      if (indexeddbProviderRef.current) indexeddbProviderRef.current.destroy();
     };
   }, []);
+
+  useEffect(() => {
+    if (data) {
+      editorRef.current.isReady.then(async () => {
+        await editorRef.current.render(data);
+        setReady(true);
+      });
+    }
+  }, [data]);
 
   const showSaved = () => {
     console.log(
@@ -94,8 +128,11 @@ const Editor: React.FC<{
   };
 
   return (
-    <Card style={{ padding: 10 }}>
-      <Button onClick={showSaved}>showSaved</Button>
+    <Card
+      style={{ padding: 10 }}
+      extra={isConnect ? <CloudOutlined /> : <DisconnectOutlined />}
+    >
+      {/* <Button onClick={showSaved}>showSaved</Button> */}
       {(loading || !isReady) && <Spin />}
       <div
         id="editorjs"

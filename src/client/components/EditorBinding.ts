@@ -120,26 +120,24 @@ export class EditorBinding {
     this.holder = this.getEBlockByIndex(0).holder.parentElement.parentElement;
     console.log(`${this.yArray.length} yBlocks ready to init`);
     if (this.yArray.length) {
-      this.mux(() => {
-        this.yBlocks.forEach((yBlock, index) => {
-          let offset = 0;
-          const uuid = yBlock.get("uuid");
-          if (uuid) {
-            this.eApi.insert(
-              yBlock.get("type"),
-              yBlock.get("data"),
-              null,
-              index - offset,
-              false
-            );
-          } else {
-            this.yApi.delete(this.getYIndex(yBlock));
-            offset += 1;
-          }
-          this.getEBlockByIndex(index).holder.setAttribute("data-uuid", uuid);
-        });
-        this.eApi.delete(this.eApi.getBlocksCount() - 1);
+      this.yBlocks.forEach((yBlock, index) => {
+        let offset = 0;
+        const uuid = yBlock.get("uuid");
+        if (uuid) {
+          this.eApi.insert(
+            yBlock.get("type"),
+            yBlock.get("data"),
+            null,
+            index - offset,
+            false
+          );
+        } else {
+          this.yApi.delete(this.getYIndex(yBlock));
+          offset += 1;
+        }
+        this.getEBlockByIndex(index).holder.setAttribute("data-uuid", uuid);
       });
+      this.eApi.delete(this.eApi.getBlocksCount() - 1);
     } else {
       const uuid = genUUID();
       this.getEBlockByIndex(0).holder.setAttribute("data-uuid", uuid);

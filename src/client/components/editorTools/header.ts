@@ -1,5 +1,5 @@
-import { BlockAPI } from '@editorjs/editorjs';
-import HeaderS from '@editorjs/header';
+import { BlockAPI } from "@editorjs/editorjs";
+import HeaderS from "@editorjs/header";
 
 export class Header extends HeaderS {
   blockApi: BlockAPI;
@@ -18,5 +18,7 @@ export class Header extends HeaderS {
 
   updateRender(data) {
     (this as HeaderS).data = data;
+    (this as HeaderS)._element.innerHTML = '';
+    (this as HeaderS)._element.textContent = data.text
   }
 }

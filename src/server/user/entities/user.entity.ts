@@ -9,7 +9,7 @@ import {
   Connection,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { PassRequest, Task } from '../../task/task.entity';
+import { Task } from '../../task/task.entity';
 
 export enum UserGender {
   MALE = 'male',
@@ -46,12 +46,6 @@ export class User extends BaseEntity {
 
   @ManyToMany(() => Task, (task) => task.performers)
   tasks: Task[];
-
-  @OneToMany(() => PassRequest, (passRequest) => passRequest.submitter)
-  passRequestsAsSubmitter: PassRequest[];
-
-  @OneToMany(() => PassRequest, (passRequest) => passRequest.responder)
-  passRequestsAsResponder: PassRequest[];
 
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable()

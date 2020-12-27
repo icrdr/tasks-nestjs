@@ -104,11 +104,11 @@ export class TaskController {
     @CurrentUser() currentUser: currentUser,
   ) {
     const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
-    return new TaskDetailRes(
-      await this.taskService.submitRequest(task, currentUser.id, {
-        submitContent: body.content,
-      }),
-    );
+    // return new TaskDetailRes(
+    //   await this.taskService.submitRequest(task, currentUser.id, {
+    //     submitContent: body.content,
+    //   }),
+    // );
   }
 
   @Perms('common.task.respondRequest')
@@ -119,11 +119,11 @@ export class TaskController {
     @CurrentUser() currentUser: currentUser,
   ) {
     const task = await this.taskService.isUserThePerformer(params.id, currentUser.id);
-    return new TaskDetailRes(
-      await this.taskService.respondRequest(task, body.isConfirmed, currentUser.id, {
-        responseContent: body.content,
-      }),
-    );
+    // return new TaskDetailRes(
+    //   await this.taskService.respondRequest(task, body.isConfirmed, currentUser.id, {
+    //     responseContent: body.content,
+    //   }),
+    // );
   }
 
   @Perms('common.task.create')

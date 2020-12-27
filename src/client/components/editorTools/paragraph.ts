@@ -17,5 +17,7 @@ export class Paragraph extends ParagraphS {
 
   updateRender(data) {
     (this as ParagraphS).data = data;
+    (this as ParagraphS)._element.innerHTML = '';
+    (this as ParagraphS)._element.textContent = data.text
   }
 }

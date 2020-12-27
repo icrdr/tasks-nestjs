@@ -13,20 +13,21 @@ import { Inject, Injectable, Req } from "@nestjs/common";
 import { Logger } from "winston";
 import { Socket, Server } from "ws";
 import { WINSTON_MODULE_PROVIDER } from "nest-winston";
-import { setupWSConnection } from "./yjs.utils";
+import { YjsService } from "./yjs.service";
 
 @WebSocketGateway()
 export class YjsGateway implements OnGatewayConnection {
-  // constructor(
-  //   @Inject(WINSTON_MODULE_PROVIDER)
-  //   private readonly logger: Logger
-  // ) {}
+  constructor(
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
+    private yjsService: YjsService,
+  ) {}
   @WebSocketServer() server: Server;
 
   public handleConnection(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: unknown
   ): void {
-    setupWSConnection(client, data);
+    this.yjsService.setupWSConnection(client, data);
   }
 }

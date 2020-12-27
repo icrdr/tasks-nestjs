@@ -33,7 +33,7 @@ export class Task extends BaseEntity {
 
   @Column({ nullable: true })
   description: string;
-
+  
   @Column('simple-json', { nullable: true })
   content: OutputData;
 
@@ -54,8 +54,8 @@ export class Task extends BaseEntity {
   })
   state: TaskState;
 
-  @OneToMany(() => PassRequest, (passRequest) => passRequest.task)
-  requests: PassRequest[];
+  @OneToMany(() => TaskContent, (taskContent) => taskContent.task)
+  contents: TaskContent[];
 
   @TreeParent()
   parentTask: Task;
@@ -72,24 +72,10 @@ export class Task extends BaseEntity {
 }
 
 @Entity()
-export class PassRequest extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.requests)
+export class TaskContent extends BaseEntity {
+  @ManyToOne(() => Task, (task) => task.contents)
   task: Task;
 
-  @ManyToOne(() => User, (user) => user.passRequestsAsSubmitter)
-  submitter: User;
-
-  @ManyToOne(() => User, (user) => user.passRequestsAsResponder, {
-    nullable: true,
-  })
-  responder: User;
-
-  @Column({ nullable: true })
-  submitContent: string;
-
-  @Column({ nullable: true })
-  responseContent: string;
-
-  @Column({ nullable: true })
-  respondAt: Date;
+  @Column('simple-json', { nullable: true })
+  content: OutputData;
 }

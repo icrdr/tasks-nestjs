@@ -86,6 +86,7 @@ class Uploader {
   }
 }
 
+
 export class Image extends ImageS {
   constructor({ data, config, api, readOnly }) {
     //call on block's creation (init editor or insert a new block)
@@ -124,6 +125,10 @@ export class Image extends ImageS {
 
   updateRender(data) {
     (this as ImageS).data = data;
+    if ( (this as ImageS).ui.nodes.caption) {
+      (this as ImageS).ui.nodes.caption.innerHTML = '';
+      (this as ImageS).ui.nodes.caption.textContent = (this as ImageS)._data.caption;
+    }
   }
 
   set image(file: { url?: string; ossObject?: string }) {

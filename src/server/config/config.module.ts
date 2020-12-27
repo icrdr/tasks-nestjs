@@ -31,6 +31,8 @@ export const configModule = ConfigModule.forRoot({
         ossRoleArn: process.env.OSS_ROLE_ARN,
         ossAccessKeyId: process.env.OSS_ACCESSKEYID,
         ossAccessKeySecret: process.env.OSS_ACCESSKEYSECRET,
+        yGcEnabled: process.env.Y_GC !== "false",
+        yPersistenceDir: process.env.Y_PERSISTENCE_DIR,
       };
     },
   ],
