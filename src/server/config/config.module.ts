@@ -22,7 +22,7 @@ export const configModule = ConfigModule.forRoot({
           admin: ['*'],
           user: ['common.*', 'common.user.*'],
         },
-        defaultOptions: {
+        options: {
           defaultRole: 'user',
           registrable: '1',
         },

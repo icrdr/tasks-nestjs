@@ -16,6 +16,7 @@ import { Task, TaskState } from '../server/task/task.entity';
 import { ListRes } from './misc.dto';
 import { UserRes } from './user.dto';
 import { OutputData } from '@editorjs/editorjs';
+import { ActionType } from '@ant-design/pro-table';
 
 export class CreateTaskDTO {
   @IsString()
@@ -54,25 +55,16 @@ export class GetTasksDTO {
   state?: TaskState[];
 }
 
-export class SubmitRequestDTO {
-  @IsOptional()
-  @IsString()
-  content?: string;
-}
 export class UpdateTaskDTO {
   @IsNotEmpty()
   content: OutputData;
 }
 
-export class RespondRequestDTO {
+export class ReviewTaskDTO {
   @Type(() => String)
   @Transform((v) => v === 'true')
   @IsBoolean()
   isConfirmed: boolean;
-
-  @IsOptional()
-  @IsString()
-  content?: string;
 }
 
 @Exclude()
@@ -106,6 +98,26 @@ export class TaskRes {
 }
 
 @Exclude()
+export class ContentRes {
+  @Expose()
+  content: OutputData;
+}
+
+@Exclude()
+export class LogRes {
+  @Expose()
+  createAt: Date;
+  
+  @Expose()
+  @Type(() => UserRes)
+  executor: UserRes;
+
+  @Expose()
+  action: ActionType;
+}
+
+
+@Exclude()
 export class TaskDetailRes {
   @Expose()
   id: number;
@@ -129,7 +141,12 @@ export class TaskDetailRes {
   description: string;
 
   @Expose()
-  content: OutputData;
+  @Type(() => ContentRes)
+  contents: ContentRes[];
+
+  @Expose()
+  @Type(() => LogRes)
+  logs: LogRes[];
 
   @Expose()
   @Type(() => UserRes)

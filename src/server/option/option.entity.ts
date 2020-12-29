@@ -9,6 +9,6 @@ export class Option extends BaseEntity {
   @Column({ unique: true })
   name: string;
 
-  @Column()
-  value: string;
+  @Column('simple-json', { nullable: true })
+  value: object;
 }

@@ -1,6 +1,6 @@
 import { NestFactory } from '@nestjs/core';
-import { DatabaseModule } from '../src/server/database/database.module';
-import { DatabaseService } from '../src/server/database/database.service';
+import { DatabaseModule } from '@server/database/database.module';
+import { DatabaseService } from '@server/database/database.service';
 
 async function initDb() {
   const contrainer = await NestFactory.create(DatabaseModule, {

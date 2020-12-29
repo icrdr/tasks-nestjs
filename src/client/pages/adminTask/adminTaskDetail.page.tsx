@@ -21,7 +21,6 @@ const TaskDetail: React.FC<{}> = () => {
   const changeStateReq = useRequest(changeState, {
     manual: true,
     onSuccess: (res) => {
-      console.log(res);
       setUpdate(!update);
     },
   });
@@ -119,8 +118,22 @@ const TaskDetail: React.FC<{}> = () => {
             重启
           </Button>
         )}
-        {data?.state === 'inProgress' && <Button>提交</Button>}
-        {data?.state === 'unconfirmed' && <Button>审核</Button>}
+        {data?.state === 'inProgress' && (
+          <Button
+            onClick={() => changeStateReq.run(params.id, 'commit')}
+            disabled={changeStateReq.loading}
+          >
+            提交
+          </Button>
+        )}
+        {data?.state === 'unconfirmed' && (
+          <Button
+            onClick={() => changeStateReq.run(params.id, 'refuse')}
+            disabled={changeStateReq.loading}
+          >
+            打回
+          </Button>
+        )}
         <Dropdown overlay={otherActionMenu} placement="bottomRight">
           <Button>
             <EllipsisOutlined />

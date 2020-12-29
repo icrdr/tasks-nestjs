@@ -4,4 +4,5 @@ export class StsTokenRes {
   accessKeySecret: string;
   stsToken: string;
   bucket: string;
+  expiration: string;
 }

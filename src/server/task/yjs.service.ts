@@ -1,10 +1,12 @@
-import { ForbiddenException, Injectable } from "@nestjs/common";
+import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
 import { EntityManager, In, IsNull, Not } from "typeorm";
 import { TaskService } from "./task.service";
 import * as Y from "yjs";
 import { debounce } from "lodash";
 import { parse } from "dotenv/types";
 import { ConfigService } from "@nestjs/config";
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger } from 'winston';
 
 const encoding = require("lib0/dist/encoding.cjs");
 const decoding = require("lib0/dist/decoding.cjs");
@@ -82,6 +84,8 @@ export class WSSharedDoc extends Y.Doc {
 @Injectable()
 export class YjsService {
   constructor(
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
     private taskService: TaskService,
     private configService: ConfigService
   ) {}
@@ -92,8 +96,9 @@ export class YjsService {
       .getArray("editorjs")
       .toArray()
       .map((i: Y.Map<any>) => i.toJSON());
-    console.log(blocks);
-    this.taskService.updateTask(taskId, { blocks: blocks });
+    
+    this.logger.info(`wsUpdate on ${taskId}`)
+    this.taskService.updateTaskContent(taskId, { blocks: blocks });
   }
 
   updateHandler(update: Uint8Array, origin: any, doc: WSSharedDoc) {

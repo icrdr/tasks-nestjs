@@ -3,8 +3,7 @@ import {
   CreateSubTaskDTO,
   CreateTaskDTO,
   GetTasksDTO,
-  RespondRequestDTO,
-  SubmitRequestDTO,
+  ReviewTaskDTO,
   TaskDetailRes,
   TaskListRes,
 } from '@dtos/task.dto';
@@ -46,15 +45,7 @@ export async function getSubTasks(id: number, params?: GetTasksDTO): Promise<Tas
 
 export async function changeState(
   id: number,
-  action: 'start' | 'suspend' | 'complete' | 'restart',
+  action: 'start' | 'suspend' | 'complete' | 'restart'| 'commit'| 'refuse',
 ): Promise<TaskDetailRes> {
   return request(`/api/tasks/${id}/${action}`, { method: 'PUT' });
-}
-
-export async function submitRequest(id: number, body: SubmitRequestDTO): Promise<TaskDetailRes> {
-  return request(`/api/tasks/${id}/submit`, { method: 'PUT', data: body });
-}
-
-export async function respondRequest(id: number, body: RespondRequestDTO): Promise<TaskDetailRes> {
-  return request(`/api/tasks/${id}/respond`, { method: 'PUT', data: body });
 }

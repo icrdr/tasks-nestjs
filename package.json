@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "init": "ts-node scripts/init",
+    "init": "ts-node -r tsconfig-paths/register scripts/init",
     "dev:server": "nest start --watch",
     "build:server": "nest build",
     "dev:client": "MOCK=none APP_ROOT=src/client umi dev",
@@ -50,6 +50,7 @@
     "@nestjs/serve-static": "^2.1.4",
     "@nestjs/typeorm": "^7.1.4",
     "@nestjs/websockets": "^7.6.1",
+    "@types/ali-oss": "^6.0.5",
     "@types/faker": "^5.1.5",
     "@types/js-cookie": "^2.2.6",
     "@types/jsonwebtoken": "^8.5.0",

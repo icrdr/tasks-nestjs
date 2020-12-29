@@ -1,25 +1,25 @@
-import ImageS from "@editorjs/image";
-import moment from "moment";
-import OSS from "ali-oss";
-import { selectFiles } from "@utils/utils";
-import isEqual from "lodash/isEqual";
+import ImageS from '@editorjs/image';
+import moment from 'moment';
+import OSS from 'ali-oss';
+import { selectFiles } from '@utils/utils';
+import isEqual from 'lodash/isEqual';
+import { getOssClient } from '@/pages/layout/layout.service';
 
 class Uploader {
   config: any;
   onUpload: any;
   onError: any;
-  ossClient: OSS;
 
   constructor({ config, onUpload, onError }) {
     this.config = config;
     this.onUpload = onUpload;
     this.onError = onError;
-    this.ossClient = config.uploader;
   }
 
   async ossUpload(file) {
-    const objectName = moment().format("YYYYMMDDhhmmss");
-    const res = await this.ossClient.put(objectName, file);
+    const objectName = moment().format('YYYYMMDDhhmmss');
+    const ossClient = await getOssClient();
+    const res = await ossClient.put(objectName, file);
     console.log(res);
     return {
       success: 1,
@@ -49,7 +49,7 @@ class Uploader {
       });
   }
 
-  uploadByUrl(url) {
+  uploadByUrl(url:string) {
     const upload = new Promise(function (resolve, reject) {
       resolve({
         success: 1,
@@ -68,7 +68,7 @@ class Uploader {
       });
   }
 
-  uploadByFile(file, { onPreview }) {
+  uploadByFile(file:any, { onPreview }) {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (e) => {
@@ -86,25 +86,24 @@ class Uploader {
   }
 }
 
-
 export class Image extends ImageS {
   constructor({ data, config, api, readOnly }) {
     //call on block's creation (init editor or insert a new block)
     super({ data, config, api, readOnly });
     const imagePreloader = (this as ImageS).ui.nodes.imagePreloader;
     const imageContainer = (this as ImageS).ui.nodes.imageContainer;
-    imagePreloader.className = "oss-image-tool__image-preloader";
-    imageContainer.className = "oss-image-tool__image";
+    imagePreloader.className = 'oss-image-tool__image-preloader';
+    imageContainer.className = 'oss-image-tool__image';
 
-    const spin = document.createElement("span");
-    spin.classList.add("ant-spin-dot", "ant-spin-dot-spin");
+    const spin = document.createElement('span');
+    spin.classList.add('ant-spin-dot', 'ant-spin-dot-spin');
     for (let index = 0; index < 4; index++) {
-      const dot = document.createElement("i");
-      dot.className = "ant-spin-dot-item";
+      const dot = document.createElement('i');
+      dot.className = 'ant-spin-dot-item';
       spin.append(dot);
     }
-    const contrainer = document.createElement("div");
-    contrainer.className = "oss-image-tool__image-preloader-contrainer";
+    const contrainer = document.createElement('div');
+    contrainer.className = 'oss-image-tool__image-preloader-contrainer';
 
     contrainer.append(imagePreloader);
     contrainer.append(spin);
@@ -125,7 +124,7 @@ export class Image extends ImageS {
 
   updateRender(data) {
     (this as ImageS).data = data;
-    if ( (this as ImageS).ui.nodes.caption) {
+    if ((this as ImageS).ui.nodes.caption) {
       (this as ImageS).ui.nodes.caption.innerHTML = '';
       (this as ImageS).ui.nodes.caption.textContent = (this as ImageS)._data.caption;
     }
@@ -137,33 +136,15 @@ export class Image extends ImageS {
     (this as ImageS)._data.file = file || {};
     if (file) {
       if ((this as ImageS).ui.nodes.imageEl)
-        (this as ImageS).ui.nodes.imageContainer.removeChild(
-          (this as ImageS).ui.nodes.imageEl
-        );
+        (this as ImageS).ui.nodes.imageContainer.removeChild((this as ImageS).ui.nodes.imageEl);
       if (file.url) {
         (this as ImageS).ui.fillImage(file.url);
       } else if (file.ossObject) {
-        const url = (this as ImageS).config.uploader.signatureUrl(
-          file.ossObject,
-          { expires: 3600 }
-        );
-        (this as ImageS).ui.fillImage(url);
+        getOssClient().then((ossClient) => {
+          const url = ossClient.signatureUrl(file.ossObject, { expires: 3600 });
+          (this as ImageS).ui.fillImage(url);
+        });
       }
     }
-  }
-
-  removed() {
-    // const ossObject = (this as ImageS)._data.file?.ossObject;
-    // console.log((this as ImageS)._data);
-    // if (ossObject) {
-    //   this.ossClient
-    //     .delete(ossObject)
-    //     .then((res) => {
-    //       console.log(res);
-    //     })
-    //     .catch((err) => {
-    //       console.log(err);
-    //     });
-    // }
   }
 }

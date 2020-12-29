@@ -6,8 +6,6 @@ import Footer from './pages/layout/components/layout.Footer';
 import RightContent from './pages/layout/components/layout.RightContent';
 import Cookies from 'js-cookie';
 import { history } from 'umi';
-import OSS from 'ali-oss';
-import { message } from 'antd';
 
 export const initialStateConfig = {
   loading: <PageLoading />,
@@ -16,7 +14,6 @@ export const initialStateConfig = {
 export async function getInitialState(): Promise<initialState> {
   //@ts-ignore
   let currentUser: currentUser | undefined = undefined;
-  let ossClient: OSS | undefined = undefined;
 
   const token = Cookies.get('token');
   if (token) {
@@ -26,16 +23,9 @@ export async function getInitialState(): Promise<initialState> {
     } catch {
       history.push('/login');
     }
-    try {
-      const stsToken = await getStsToken();
-      console.log(stsToken);
-      ossClient = new OSS(stsToken);
-    } catch {
-      message.error('Connot access to any assets. please try later.');
-    }
   }
 
-  return { currentUser, ossClient };
+  return { currentUser };
 }
 
 export const layout = (): BasicLayoutProps => {

@@ -34,7 +34,7 @@ export class DatabaseService {
   }
 
   async createDefault() {
-    const defaultOptions = this.configService.get('defaultOptions') as {
+    const options = this.configService.get('options') as {
       [key: string]: string;
     };
     const defaultRoles = this.configService.get('defaultRoles') as {
@@ -42,10 +42,7 @@ export class DatabaseService {
     };
 
     // create default options
-    for (const key in defaultOptions) {
-      const value: string = defaultOptions[key];
-      await this.optionService.createOption(key, value);
-    }
+    await this.optionService.setOptionValue('options', options);
 
     // create default roles
     for (const key in defaultRoles) {

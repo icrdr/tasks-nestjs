@@ -9,7 +9,7 @@ import {
   Connection,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Task } from '../../task/task.entity';
+import { Task, TaskLog } from '../../task/task.entity';
 
 export enum UserGender {
   MALE = 'male',
@@ -50,6 +50,9 @@ export class User extends BaseEntity {
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable()
   roles: Role[];
+
+  @OneToMany(() => TaskLog, (taskLog) => taskLog.task)
+  taskLogs: TaskLog[];
 
   @ManyToMany(() => Perm, (perm) => perm.users)
   @JoinTable()

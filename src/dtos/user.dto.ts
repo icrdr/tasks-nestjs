@@ -3,6 +3,7 @@ import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { ListRes } from './misc.dto';
 import { Perm, Role, User } from '@server/user/entities/user.entity';
 import { isStringArray } from '@utils/typeGuard';
+import { StsTokenRes } from './asset.dto';
 
 export class LoginDTO {
   @IsString()

@@ -96,8 +96,8 @@ export class UserService {
         user.roles = roles;
       }
     } else {
-      const defaultRole = (await this.optionService.getOption('defaultRole'))!.value;
-      user.roles = [(await this.roleService.getRole(defaultRole))!];
+      const options:any = await this.optionService.getOptionValue('options');
+      user.roles = [(await this.roleService.getRole(options.defaultRole))!];
     }
 
     user.username = username;

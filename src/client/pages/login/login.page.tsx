@@ -5,7 +5,7 @@ import { LockTwoTone, SmileTwoTone, WechatOutlined } from '@ant-design/icons';
 import ProForm, { ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
 import { login } from './login.service';
 import Cookies from 'js-cookie';
-
+import OSS from 'ali-oss';
 const { Title } = Typography;
 
 const LoginForm: React.FC = () => {
@@ -16,7 +16,8 @@ const LoginForm: React.FC = () => {
     manual: true,
     onSuccess: (res) => {
       try {
-        const currentUser = res.currentUser ;
+        console.log(res)
+        const currentUser = res.currentUser;
         setInitialState({ currentUser });
         Cookies.set('token', res.token);
         message.success(successMsg);
