@@ -1,4 +1,4 @@
-import { BaseEntity } from '../common/common.entity';
+import { BaseEntity } from '@server/common/common.entity';
 import {
   Entity,
   Column,
@@ -11,9 +11,11 @@ import {
   TreeChildren,
   Tree,
 } from 'typeorm';
-import { Tag } from '../tag/tag.entity';
-import { User } from '../user/entities/user.entity';
+import { Tag } from '@server/tag/tag.entity';
+import { User } from '@server/user/entities/user.entity';
 import { OutputData } from '@editorjs/editorjs';
+import { TaskLog } from './taskLog.entity';
+import { Comment } from './comment.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -57,6 +59,9 @@ export class Task extends BaseEntity {
   @OneToMany(() => TaskLog, (taskLog) => taskLog.task)
   logs: TaskLog[];
 
+  @OneToMany(() => Comment, (comment) => comment.task)
+  comments: Comment[];
+
   @TreeParent()
   parentTask: Task;
 
@@ -78,31 +83,4 @@ export class TaskContent extends BaseEntity {
 
   @Column('simple-json', { nullable: true })
   content: OutputData;
-}
-
-export enum ActionType {
-  START = 'start',
-  RESTART = 'restart',
-  SUSPEND = 'suspend',
-  COMPLETE = 'complete',
-  COMMIT = 'commit',
-  REFUSE = 'refuse',
-  CREATE = 'create',
-  UPDATA = 'update',
-  DELETE = 'delete',
-}
-
-@Entity()
-export class TaskLog extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.logs)
-  task: Task;
-
-  @ManyToOne(() => User, (User) => User.taskLogs, { nullable: true })
-  executor: User;
-
-  @Column({
-    type: 'enum',
-    enum: ActionType,
-  })
-  action: ActionType;
 }

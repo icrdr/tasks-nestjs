@@ -1,19 +1,17 @@
-import { ForbiddenException, Inject, Injectable } from "@nestjs/common";
-import { EntityManager, In, IsNull, Not } from "typeorm";
-import { TaskService } from "./task.service";
-import * as Y from "yjs";
-import { debounce } from "lodash";
-import { parse } from "dotenv/types";
-import { ConfigService } from "@nestjs/config";
+import { Inject, Injectable } from '@nestjs/common';
+import { TaskService } from './task.service';
+import * as Y from 'yjs';
+import { debounce } from 'lodash';
+import { ConfigService } from '@nestjs/config';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 
-const encoding = require("lib0/dist/encoding.cjs");
-const decoding = require("lib0/dist/decoding.cjs");
-const mutex = require("lib0/dist/mutex.cjs");
-const map = require("lib0/dist/map.cjs");
-const syncProtocol = require("y-protocols/dist/sync.cjs");
-const awarenessProtocol = require("y-protocols/dist/awareness.cjs");
+const encoding = require('lib0/dist/encoding.cjs');
+const decoding = require('lib0/dist/decoding.cjs');
+const mutex = require('lib0/dist/mutex.cjs');
+const map = require('lib0/dist/map.cjs');
+const syncProtocol = require('y-protocols/dist/sync.cjs');
+const awarenessProtocol = require('y-protocols/dist/awareness.cjs');
 
 const CALLBACK_DEBOUNCE_WAIT = 2000;
 const CALLBACK_DEBOUNCE_MAXWAIT = 10000;
@@ -25,7 +23,7 @@ const wsReadyStateClosed = 3;
 
 // disable gc when using snapshots!
 const gcEnabled = true;
-const persistenceDir = process.env.Y_PERSISTENCE_DIR
+const persistenceDir = process.env.Y_PERSISTENCE_DIR;
 
 const messageSync = 0;
 const messageAwareness = 1;
@@ -48,10 +46,10 @@ type controlledIds = Set<number>;
 
 const docs = new Map<string, WSSharedDoc>();
 let persistence: persistence = null;
-if (typeof persistenceDir === "string") {
+if (typeof persistenceDir === 'string') {
   console.info(`Persisting documents to ${persistenceDir}`);
 
-  const LeveldbPersistence = require("y-leveldb").LeveldbPersistence;
+  const LeveldbPersistence = require('y-leveldb').LeveldbPersistence;
   const ldb = new LeveldbPersistence(persistenceDir);
   persistence = {
     provider: ldb,
@@ -60,7 +58,7 @@ if (typeof persistenceDir === "string") {
       const newUpdates = Y.encodeStateAsUpdate(ydoc);
       ldb.storeUpdate(docName, newUpdates);
       Y.applyUpdate(ydoc, Y.encodeStateAsUpdate(persistedYdoc));
-      ydoc.on("update", (update) => {
+      ydoc.on('update', (update) => {
         ldb.storeUpdate(docName, update);
       });
     },
@@ -71,13 +69,13 @@ if (typeof persistenceDir === "string") {
 export class WSSharedDoc extends Y.Doc {
   name: string;
   mux: any;
-  conns: Map<Object, Set<number>>;
+  clients: Map<Object, Set<number>>;
   awareness?: any;
   constructor(name: string) {
     super({ gc: gcEnabled });
     this.name = name;
     this.mux = mutex.createMutex();
-    this.conns = new Map<Object, Set<number>>();
+    this.clients = new Map<Object, Set<number>>();
   }
 }
 
@@ -87,17 +85,17 @@ export class YjsService {
     @Inject(WINSTON_MODULE_PROVIDER)
     private readonly logger: Logger,
     private taskService: TaskService,
-    private configService: ConfigService
+    private configService: ConfigService,
   ) {}
 
   callbackHandler(update: any, origin: any, doc: WSSharedDoc) {
-    const taskId = parseInt(doc.name.split("-")[1]);
+    const taskId = parseInt(doc.name.split('-')[1]);
     const blocks = doc
-      .getArray("editorjs")
+      .getArray('editorjs')
       .toArray()
       .map((i: Y.Map<any>) => i.toJSON());
-    
-    this.logger.info(`wsUpdate on ${taskId}`)
+
+    this.logger.info(`wsUpdate on ${taskId}`);
     this.taskService.updateTaskContent(taskId, { blocks: blocks });
   }
 
@@ -106,24 +104,22 @@ export class YjsService {
     encoding.writeVarUint(encoder, messageSync);
     syncProtocol.writeUpdate(encoder, update);
     const message = encoding.toUint8Array(encoder);
-    doc.conns.forEach((_, conn) => this.send(doc, conn, message));
+    doc.clients.forEach((_, client) => this.send(doc, client, message));
   }
 
   getYDoc(docname: string, gc: boolean = true): WSSharedDoc {
-    
-
     return map.setIfUndefined(docs, docname, () => {
       const doc = new WSSharedDoc(docname);
       doc.gc = gc;
       doc.awareness = new awarenessProtocol.Awareness(doc);
       doc.awareness.setLocalState(null);
-      doc.awareness.on("update", this.awarenessChangeHandler.bind(this, doc));
-      doc.on("update", this.updateHandler.bind(this));
+      doc.awareness.on('update', this.awarenessChangeHandler.bind(this, doc));
+      doc.on('update', this.updateHandler.bind(this));
       doc.on(
-        "update",
+        'update',
         debounce(this.callbackHandler.bind(this), CALLBACK_DEBOUNCE_WAIT, {
           maxWait: CALLBACK_DEBOUNCE_MAXWAIT,
-        })
+        }),
       );
       if (persistence !== null) {
         persistence.bindState(docname, doc);
@@ -134,42 +130,45 @@ export class YjsService {
   }
 
   setupWSConnection = (
-    conn: any,
-    req: any,
-    { docName = req.url.slice(1).split("?")[0], gc = true }: any = {}
+    client: any,
+    data: any,
+    { docName = data.url.slice(1).split('?')[0], gc = true }: any = {},
   ) => {
-    conn.binaryType = "arraybuffer";
+    client.binaryType = 'arraybuffer';
     // get doc, initialize if it does not exist yet
+    console.log(docName);
     const doc = this.getYDoc(docName, gc);
-    doc.conns.set(conn, new Set());
+    doc.clients.set(client, new Set());
     // listen and reply to events
-    conn.on("message", (message: ArrayBuffer) =>
-      this.messageListener(conn, doc, new Uint8Array(message))
-    );
+    client.on('message', (message: ArrayBuffer) => {
+      if(typeof message === 'object'){
+        this.messageListener(client, doc, new Uint8Array(message));
+      }
+    });
 
-    // Check if connection is still alive
+    // Check if clientection is still alive
     let pongReceived = true;
     const pingInterval = setInterval(() => {
       if (!pongReceived) {
-        if (doc.conns.has(conn)) {
-          this.closeConn(doc, conn);
+        if (doc.clients.has(client)) {
+          this.closeConn(doc, client);
         }
         clearInterval(pingInterval);
-      } else if (doc.conns.has(conn)) {
+      } else if (doc.clients.has(client)) {
         pongReceived = false;
         try {
-          conn.ping();
+          client.ping();
         } catch (e) {
-          this.closeConn(doc, conn);
+          this.closeConn(doc, client);
           clearInterval(pingInterval);
         }
       }
     }, pingTimeout);
-    conn.on("close", () => {
-      this.closeConn(doc, conn);
+    client.on('close', () => {
+      this.closeConn(doc, client);
       clearInterval(pingInterval);
     });
-    conn.on("pong", () => {
+    client.on('pong', () => {
       pongReceived = true;
     });
     // put the following in a variables in a block so the interval handlers don't keep in in
@@ -179,7 +178,7 @@ export class YjsService {
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, messageSync);
       syncProtocol.writeSyncStep1(encoder, doc);
-      this.send(doc, conn, encoding.toUint8Array(encoder));
+      this.send(doc, client, encoding.toUint8Array(encoder));
       const awarenessStates = doc.awareness.getStates();
       if (awarenessStates.size > 0) {
         const encoder = encoding.createEncoder();
@@ -188,15 +187,15 @@ export class YjsService {
           encoder,
           awarenessProtocol.encodeAwarenessUpdate(
             doc.awareness,
-            Array.from(awarenessStates.keys())
-          )
+            Array.from(awarenessStates.keys()),
+          ),
         );
-        this.send(doc, conn, encoding.toUint8Array(encoder));
+        this.send(doc, client, encoding.toUint8Array(encoder));
       }
     }
   };
 
-  messageListener(conn: any, doc: WSSharedDoc, message: Uint8Array) {
+  messageListener(client: any, doc: WSSharedDoc, message: Uint8Array) {
     const encoder = encoding.createEncoder();
     const decoder = decoding.createDecoder(message);
     const messageType = decoding.readVarUint(decoder);
@@ -205,30 +204,26 @@ export class YjsService {
         encoding.writeVarUint(encoder, messageSync);
         syncProtocol.readSyncMessage(decoder, encoder, doc, null);
         if (encoding.length(encoder) > 1) {
-          this.send(doc, conn, encoding.toUint8Array(encoder));
+          this.send(doc, client, encoding.toUint8Array(encoder));
         }
         break;
       case messageAwareness: {
         awarenessProtocol.applyAwarenessUpdate(
           doc.awareness,
           decoding.readVarUint8Array(decoder),
-          conn
+          client,
         );
         break;
       }
     }
   }
 
-  closeConn(doc: WSSharedDoc, conn: any) {
-    if (doc.conns.has(conn)) {
-      const controlledIds: controlledIds = doc.conns.get(conn);
-      doc.conns.delete(conn);
-      awarenessProtocol.removeAwarenessStates(
-        doc.awareness,
-        Array.from(controlledIds),
-        null
-      );
-      if (doc.conns.size === 0 && persistence !== null) {
+  closeConn(doc: WSSharedDoc, client: any) {
+    if (doc.clients.has(client)) {
+      const controlledIds: controlledIds = doc.clients.get(client);
+      doc.clients.delete(client);
+      awarenessProtocol.removeAwarenessStates(doc.awareness, Array.from(controlledIds), null);
+      if (doc.clients.size === 0 && persistence !== null) {
         // if persisted, we store state and destroy ydocument
         persistence.writeState(doc.name, doc).then(() => {
           doc.destroy();
@@ -236,39 +231,36 @@ export class YjsService {
         docs.delete(doc.name);
       }
     }
-    conn.close();
+    client.close();
   }
 
-  send(doc: WSSharedDoc, conn: any, m: Uint8Array) {
-    if (
-      conn.readyState !== wsReadyStateConnecting &&
-      conn.readyState !== wsReadyStateOpen
-    ) {
-      this.closeConn(doc, conn);
+  send(doc: WSSharedDoc, client: any, m: Uint8Array) {
+    if (client.readyState !== wsReadyStateConnecting && client.readyState !== wsReadyStateOpen) {
+      this.closeConn(doc, client);
     }
     try {
-      conn.send(m, (err: any) => {
-        err != null && this.closeConn(doc, conn);
+      client.send(m, (err: any) => {
+        err != null && this.closeConn(doc, client);
       });
     } catch (e) {
-      this.closeConn(doc, conn);
+      this.closeConn(doc, client);
     }
   }
 
   awarenessChangeHandler(
     doc: WSSharedDoc,
     { added, updated, removed }: changeTypes,
-    conn: Object | null
+    client: Object | null,
   ) {
     const changedClients = added.concat(updated, removed);
-    if (conn !== null) {
-      const connControlledIDs: controlledIds = doc.conns.get(conn);
-      if (connControlledIDs !== undefined) {
+    if (client !== null) {
+      const clientControlledIDs: controlledIds = doc.clients.get(client);
+      if (clientControlledIDs !== undefined) {
         added.forEach((clientID) => {
-          connControlledIDs.add(clientID);
+          clientControlledIDs.add(clientID);
         });
         removed.forEach((clientID) => {
-          connControlledIDs.delete(clientID);
+          clientControlledIDs.delete(clientID);
         });
       }
     }
@@ -277,10 +269,10 @@ export class YjsService {
     encoding.writeVarUint(encoder, messageAwareness);
     encoding.writeVarUint8Array(
       encoder,
-      awarenessProtocol.encodeAwarenessUpdate(doc.awareness, changedClients)
+      awarenessProtocol.encodeAwarenessUpdate(doc.awareness, changedClients),
     );
     const buff = encoding.toUint8Array(encoder);
-    doc.conns.forEach((_, c) => {
+    doc.clients.forEach((_, c) => {
       this.send(doc, c, buff);
     });
   }

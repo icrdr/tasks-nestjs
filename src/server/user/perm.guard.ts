@@ -20,14 +20,26 @@ export class PermGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const neededPerms = this.reflector.get<string[]>('perms', context.getHandler());
     if (!neededPerms) return true;
+    let req:any
+    let token: string;
+    //@ts-ignore
+    switch (context.contextType) {
+      case 'http':
+        req = context.switchToHttp().getRequest();
+        const authorization = req.headers['authorization'];
 
-    const req: Request = context.switchToHttp().getRequest();
-    const authorization = req.headers['authorization'];
-    if (!authorization) throw new UnauthorizedException('no authorization is found');
-
+        token = authorization?.split(' ')[1];
+        break;
+      case 'ws':
+        req = context.switchToWs().getClient()
+        token = req._protocol;
+        break;
+      default:
+        break;
+    }
+    if (!token) throw new UnauthorizedException('no authorization token was found');
     let payload: tokenPayload;
     try {
-      const token = authorization.split(' ')[1];
       payload = verify(token, this.configService.get('jwtSecret')) as tokenPayload;
     } catch (error) {
       throw new UnauthorizedException('bad token');
@@ -39,7 +51,7 @@ export class PermGuard implements CanActivate {
     if (validPerms.length === 0) return false;
 
     const currentUser: currentUser = {
-      id: payload.id,
+      id:  payload.id,
       validPerms: validPerms,
       ownedPerms: ownedPerms,
     };

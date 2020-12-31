@@ -1,14 +1,15 @@
-import { Module } from "@nestjs/common";
-import { TaskService } from "./task.service";
-import { TaskController } from "./task.controller";
-import { CommonModule } from "../common/common.module";
-import { UserModule } from "../user/user.module";
-import { YjsGateway } from "./yjs.gateway";
-import { YjsService } from "./yjs.service";
-
+import { Module } from '@nestjs/common';
+import { TaskService } from './services/task.service';
+import { TaskController } from './controllers/task.controller';
+import { CommonModule } from '../common/common.module';
+import { UserModule } from '../user/user.module';
+import { YjsGateway } from './controllers/yjs.gateway';
+import { YjsService } from './services/yjs.service';
+import { CommentGateway } from './controllers/comment.gateway';
+import { CommentService } from './services/comment.service';
 @Module({
   imports: [CommonModule, UserModule],
-  providers: [TaskService, YjsGateway, YjsService],
+  providers: [TaskService, CommentGateway, CommentService, YjsGateway, YjsService],
   controllers: [TaskController],
 })
 export class TaskModule {}

@@ -2,10 +2,11 @@ import { ForbiddenException, Injectable } from '@nestjs/common';
 import { EntityManager, In, IsNull, Not } from 'typeorm';
 import { GetTasksDTO } from '@dtos/task.dto';
 import { isUserArray } from '@utils/typeGuard';
-import { User } from '../user/entities/user.entity';
-import { UserService } from '../user/services/user.service';
-import { ActionType, Task, TaskContent, TaskLog, TaskState } from './task.entity';
+import { User } from '@server/user/entities/user.entity';
+import { UserService } from '@server/user/services/user.service';
+import { Task, TaskContent, TaskState } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
+import { ActionType, TaskLog } from '../entities/taskLog.entity';
 
 @Injectable()
 export class TaskService {
@@ -56,7 +57,7 @@ export class TaskService {
     } = {},
     executor?: User | number | string,
   ) {
-    const task = new Task();
+    let task = new Task();
 
     if (options.performers) {
       if (!isUserArray(options.performers)) {
@@ -73,12 +74,11 @@ export class TaskService {
     task.name = options.name || '';
     if (options.description) task.description = options.description;
     if (options.isMandatory) task.isMandatory = options.isMandatory;
-    task.contents = []
-    task.logs = []
 
-    const content = new TaskContent();
-    await this.manager.save(content);
-    task.contents.push(content);
+    task = await this.manager.save(task)
+    let content = new TaskContent();
+    content.task = task
+    content = await this.manager.save(content);
 
     await this.createTaskLog(task, ActionType.CREATE, executor);
 
@@ -253,24 +253,24 @@ export class TaskService {
     task.state = TaskState.IN_PROGRESS;
     await this.createTaskLog(task, ActionType.REFUSE, executor);
     if (task.contents.length > 0) {
-      const cloneContent = new TaskContent();
+      let cloneContent = new TaskContent();
       cloneContent.content = task.contents[task.contents.length - 1].content;
-      await this.manager.save(cloneContent);
-      task.contents.push(cloneContent);
+      cloneContent.task = task;
+      cloneContent = await this.manager.save(cloneContent);
     }
     return await this.manager.save(task);
   }
 
   async createTaskLog(task: Task | number, action: ActionType, executor?: User | number | string) {
     task = task instanceof Task ? task : await this.getTask(task);
-    const taskLog = new TaskLog();
+    let taskLog = new TaskLog();
     if (executor)
       taskLog.executor =
         executor instanceof User ? executor : await this.userService.getUser(executor);
 
     taskLog.action = action;
-    await this.manager.save(taskLog);
-    task.logs.push(taskLog);
+    taskLog.task = task
+    taskLog = await this.manager.save(taskLog);
     return await this.manager.save(task);
   }
 

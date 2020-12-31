@@ -31,7 +31,6 @@ export async function getOssClient(): Promise<OSS> {
   }
 
   const res = await request('/api/assets/oss')
-  console.log(res)
   localStorage.setItem('stsToken',JSON.stringify(res))
   return new OSS(res);
 }

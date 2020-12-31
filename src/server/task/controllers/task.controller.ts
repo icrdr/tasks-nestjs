@@ -11,11 +11,11 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Perms } from '../user/perm.decorator';
-import { UserService } from '../user/services/user.service';
-import { CurrentUser } from '../user/user.decorator';
-import { currentUser } from '../user/user.interface';
-import { TaskService } from './task.service';
+import { Perms } from '@server/user/perm.decorator';
+import { UserService } from '@server/user/services/user.service';
+import { CurrentUser } from '@server/user/user.decorator';
+import { currentUser } from '@server/user/user.interface';
+import { TaskService } from '../services/task.service';
 import {
   CreateTaskDTO,
   GetTasksDTO,

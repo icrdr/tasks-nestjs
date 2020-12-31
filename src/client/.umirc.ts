@@ -8,6 +8,7 @@ export default {
     '@server': process.cwd() + '/src/server',
     '@pages': process.cwd() + '/src/client/pages',
     '@components': process.cwd() + '/src/client/components',
+    '@hooks': process.cwd() + '/src/client/hooks',
   },
   hash: true,
   antd: {},

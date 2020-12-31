@@ -4,6 +4,7 @@ import { useModel, useParams, useRequest } from 'umi';
 import { updateTask } from './task.service';
 import { getTask } from '../adminTask/adminTask.service';
 import Editor from '@components/Editor';
+import { Row, Col, Card, Affix, Space } from 'antd';
 
 const TaskDetail: React.FC<{}> = () => {
   const { initialState } = useModel('@@initialState');
@@ -17,7 +18,29 @@ const TaskDetail: React.FC<{}> = () => {
   const { data } = getTaskReq;
   return (
     <PageContainer title={data?.name}>
-      {data && (
+      <Row gutter={12} style={{ width: '100%', margin: '0px auto', maxWidth: '1200px' }}>
+        <Col span={16}>
+          {data && (
+            <Editor
+              loading={getTaskReq.loading}
+              wsRoom={data.state === 'inProgress' ? `task-${params.id}` : undefined}
+              currentUser={{ id: currentUser.id, username: currentUser.username }}
+              data={
+                data.state !== 'inProgress'
+                  ? data.contents[data.contents.length - 1]?.content
+                  : undefined
+              }
+              // editable
+            />
+          )}
+        </Col>
+        <Col span={8}>
+          <Affix offsetTop={24}>
+            <Card style={{ height: 'calc(100vh - 200px)' }}>1111</Card>
+          </Affix>
+        </Col>
+      </Row>
+      {/* {data && (
         <Editor
           loading={getTaskReq.loading}
           wsRoom={data.state === 'inProgress' ? `task-${params.id}` : undefined}
@@ -29,7 +52,7 @@ const TaskDetail: React.FC<{}> = () => {
           }
           // editable
         />
-      )}
+      )} */}
     </PageContainer>
   );
 };

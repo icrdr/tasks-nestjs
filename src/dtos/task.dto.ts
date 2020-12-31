@@ -12,11 +12,12 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { Task, TaskState } from '../server/task/task.entity';
+import { Task, TaskState } from '../server/task/entities/task.entity';
 import { ListRes } from './misc.dto';
 import { UserRes } from './user.dto';
 import { OutputData } from '@editorjs/editorjs';
 import { ActionType } from '@ant-design/pro-table';
+import { CommentType } from '../server/task/entities/comment.entity';
 
 export class CreateTaskDTO {
   @IsString()
@@ -107,7 +108,7 @@ export class ContentRes {
 export class LogRes {
   @Expose()
   createAt: Date;
-  
+
   @Expose()
   @Type(() => UserRes)
   executor: UserRes;
@@ -115,7 +116,6 @@ export class LogRes {
   @Expose()
   action: ActionType;
 }
-
 
 @Exclude()
 export class TaskDetailRes {
@@ -170,6 +170,32 @@ export class TaskListRes extends ListRes {
 
   constructor(partial: Partial<TaskListRes>) {
     super();
+    Object.assign(this, partial);
+  }
+}
+
+export class CommentDTO {
+  taskId: number;
+  content: string;
+  type: CommentType;
+}
+
+@Exclude()
+export class CommentRes {
+  @Expose()
+  createAt: Date;
+
+  @Expose()
+  @Type(() => UserRes)
+  sender: UserRes;
+
+  @Expose()
+  content: string;
+
+  @Expose()
+  type: CommentType;
+
+  constructor(partial: Partial<CommentRes>) {
     Object.assign(this, partial);
   }
 }

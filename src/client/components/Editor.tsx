@@ -76,7 +76,11 @@ const Editor: React.FC<{
       const ydoc = new Y.Doc();
       const yArray = ydoc.getArray('editorjs');
       const indexeddbProvider = new IndexeddbPersistence(wsRoom, ydoc);
-      const websocketProvider = new WebsocketProvider('ws://localhost:3000', wsRoom, ydoc);
+      const websocketProvider = new WebsocketProvider('ws://localhost:3000', wsRoom, ydoc,{
+        params:{
+          target:'editorjs'
+        }
+      });
       indexeddbProvider.on('synced', async () => {
         await editor.isReady;
         const binding = new EditorBinding(editor, yArray);

@@ -1,4 +1,4 @@
-import { BaseEntity } from '../../common/common.entity';
+import { BaseEntity } from '@server/common/common.entity';
 import {
   Entity,
   Column,
@@ -9,7 +9,9 @@ import {
   Connection,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Task, TaskLog } from '../../task/task.entity';
+import { Task } from '@server/task/entities/task.entity';
+import { Comment } from '@server/task/entities/comment.entity';
+import { TaskLog } from '@server/task/entities/taskLog.entity';
 
 export enum UserGender {
   MALE = 'male',
@@ -53,6 +55,9 @@ export class User extends BaseEntity {
 
   @OneToMany(() => TaskLog, (taskLog) => taskLog.task)
   taskLogs: TaskLog[];
+
+  @OneToMany(() => Comment, (comment) => comment.sender)
+  comments: Comment[];
 
   @ManyToMany(() => Perm, (perm) => perm.users)
   @JoinTable()

@@ -17,6 +17,7 @@
       "@server/*": ["./src/server/*"],
       "@pages/*": ["./src/client/pages/*"],
       "@components/*": ["./src/client/components/*"],
+      "@hooks/*": ["./src/client/hooks/*"],
       "@/*": ["./src/client/*"],
       "@@/*": ["./src/client/.umi/*"]
     }
