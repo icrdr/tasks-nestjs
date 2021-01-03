@@ -12,6 +12,7 @@ import { Exclude } from 'class-transformer';
 import { Task } from '@server/task/entities/task.entity';
 import { Comment } from '@server/task/entities/comment.entity';
 import { TaskLog } from '@server/task/entities/taskLog.entity';
+import { TaskParticipant } from '@server/task/entities/taskParticipant.entity';
 
 export enum UserGender {
   MALE = 'male',
@@ -46,22 +47,18 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   idNumber: string;
 
-  @ManyToMany(() => Task, (task) => task.performers)
-  tasks: Task[];
+  @OneToMany(() => TaskParticipant, taskParticipant => taskParticipant.participant)
+  taskParticipants: TaskParticipant[];
 
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable()
   roles: Role[];
 
-  @OneToMany(() => TaskLog, (taskLog) => taskLog.task)
+  @OneToMany(() => TaskLog, (taskLog) => taskLog.executor)
   taskLogs: TaskLog[];
 
   @OneToMany(() => Comment, (comment) => comment.sender)
   comments: Comment[];
-
-  @ManyToMany(() => Perm, (perm) => perm.users)
-  @JoinTable()
-  perms: Perm[];
 
   @DeleteDateColumn()
   @Exclude()
@@ -89,25 +86,9 @@ export class Role extends BaseEntity {
   @Column({ unique: true })
   name: string;
 
-  @Column({ nullable: true })
-  description: string;
-
-  @ManyToMany(() => Perm, (perm) => perm.roles)
-  @JoinTable()
-  perms: Perm[];
+  @Column('simple-json', { nullable: true })
+  permissions: string[];
 
   @ManyToMany(() => User, (user) => user.roles)
-  users: User[];
-}
-
-@Entity()
-export class Perm extends BaseEntity {
-  @Column({ unique: true })
-  code: string;
-
-  @ManyToMany(() => Role, (role) => role.perms)
-  roles: Role[];
-
-  @ManyToMany(() => User, (user) => user.perms)
   users: User[];
 }

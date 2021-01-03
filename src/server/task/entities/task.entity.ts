@@ -16,6 +16,8 @@ import { User } from '@server/user/entities/user.entity';
 import { OutputData } from '@editorjs/editorjs';
 import { TaskLog } from './taskLog.entity';
 import { Comment } from './comment.entity';
+import { TaskParticipant } from './taskParticipant.entity';
+import { Property } from './property.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -30,21 +32,8 @@ export class Task extends BaseEntity {
   @Column()
   name: string;
 
-  @Column({ default: false })
-  isMandatory: boolean;
-
-  @Column({ nullable: true })
-  description: string;
-
-  @ManyToMany(() => User, (user) => user.tasks)
-  @JoinTable()
-  performers: User[];
-
-  @Column({ nullable: true })
-  startAt: Date;
-
-  @Column({ nullable: true })
-  endAt: Date;
+  @OneToMany(() => TaskParticipant, taskParticipant => taskParticipant.task)
+  taskParticipants: TaskParticipant[];
 
   @Column({
     type: 'enum',
@@ -52,6 +41,18 @@ export class Task extends BaseEntity {
     default: TaskState.SUSPENDED,
   })
   state: TaskState;
+
+  @Column({ nullable: true })
+  startAt: Date;
+
+  @Column({ nullable: true })
+  endAt: Date;
+
+  @OneToMany(() => Property, (Property) => Property.task)
+  properties: Property[];
+
+  @OneToMany(() => TaskView, (TaskView) => TaskView.task)
+  views: TaskView[];
 
   @OneToMany(() => TaskContent, (taskContent) => taskContent.task)
   contents: TaskContent[];
@@ -68,10 +69,6 @@ export class Task extends BaseEntity {
   @TreeChildren()
   subTasks: Task[];
 
-  @ManyToMany(() => Tag, (tag) => tag.tasks)
-  @JoinTable()
-  tags: Tag[];
-
   @DeleteDateColumn()
   deleteAt: Date;
 }
@@ -83,4 +80,25 @@ export class TaskContent extends BaseEntity {
 
   @Column('simple-json', { nullable: true })
   content: OutputData;
+}
+
+export enum TaskViewType {
+  PAGE = 'page',
+  TABLE = 'table',
+  FOLDER = 'folder'
+}
+
+@Entity()
+export class TaskView extends BaseEntity {
+  @ManyToOne(() => Task, (task) => task.views)
+  task: Task;
+
+  @Column('simple-json', { nullable: true })
+  options: any;
+
+  @Column({
+    type: 'enum',
+    enum: TaskViewType,
+  })
+  type: TaskViewType;
 }
