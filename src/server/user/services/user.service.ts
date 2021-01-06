@@ -17,7 +17,6 @@ import { GetUsersDTO } from '@dtos/user.dto';
 export class UserService {
   constructor(
     private optionService: OptionService,
-    @Inject(forwardRef(() => RoleService))
     private roleService: RoleService,
     private manager: EntityManager,
   ) {}
@@ -28,7 +27,6 @@ export class UserService {
   }
 
   async getUserId(user: User | string | number) {
-    let userId: number;
     if (user instanceof User) {
       return user.id;
     } else if (typeof user === 'string') {
@@ -38,18 +36,18 @@ export class UserService {
     }
   }
 
-  async getUser(identify: string | number) {
-    const user =
-      typeof identify === 'string'
-        ? await this.manager.findOne(User, {
-            relations: ['roles'],
-            where: { username: identify },
-          })
-        : await this.manager.findOne(User, {
-            relations: ['roles'],
-            where: { id: identify },
-          });
-    if (!user) throw new NotFoundException('User was not found.');
+  async getUser(identify: string | number, exception = true) {
+    let query = this.manager
+      .createQueryBuilder(User, 'user')
+      .leftJoinAndSelect('user.roles', 'role');
+
+    query =
+      typeof identify === 'number'
+        ? query.where('user.id = :identify', { identify })
+        : query.where('user.username = :identify', { identify });
+
+    const user = await query.getOne();
+    if (!user && exception) throw new NotFoundException('User was not found.');
     return user;
   }
 
@@ -96,7 +94,7 @@ export class UserService {
         user.roles = roles;
       }
     } else {
-      const options:any = await this.optionService.getOptionValue('options');
+      const options: any = await this.optionService.getOptionValue('options');
       user.roles = [(await this.roleService.getRole(options.defaultRole))!];
     }
 

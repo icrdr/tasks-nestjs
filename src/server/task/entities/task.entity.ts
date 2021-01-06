@@ -10,14 +10,17 @@ import {
   TreeParent,
   TreeChildren,
   Tree,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
-import { Tag } from '@server/tag/tag.entity';
 import { User } from '@server/user/entities/user.entity';
 import { OutputData } from '@editorjs/editorjs';
 import { TaskLog } from './taskLog.entity';
 import { Comment } from './comment.entity';
-import { TaskParticipant } from './taskParticipant.entity';
-import { Property } from './property.entity';
+import { Member } from './member.entity';
+import { Header, Property } from './property.entity';
+import { Asset } from '@server/asset/asset.entity';
+import { View, ViewSet } from './view.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -32,9 +35,6 @@ export class Task extends BaseEntity {
   @Column()
   name: string;
 
-  @OneToMany(() => TaskParticipant, taskParticipant => taskParticipant.task)
-  taskParticipants: TaskParticipant[];
-
   @Column({
     type: 'enum',
     enum: TaskState,
@@ -48,11 +48,14 @@ export class Task extends BaseEntity {
   @Column({ nullable: true })
   endAt: Date;
 
-  @OneToMany(() => Property, (Property) => Property.task)
-  properties: Property[];
+  @TreeParent()
+  parentTask: Task;
 
-  @OneToMany(() => TaskView, (TaskView) => TaskView.task)
-  views: TaskView[];
+  @TreeChildren()
+  subTasks: Task[];
+
+  @DeleteDateColumn()
+  deleteAt: Date;
 
   @OneToMany(() => TaskContent, (taskContent) => taskContent.task)
   contents: TaskContent[];
@@ -63,14 +66,26 @@ export class Task extends BaseEntity {
   @OneToMany(() => Comment, (comment) => comment.task)
   comments: Comment[];
 
-  @TreeParent()
-  parentTask: Task;
+  @OneToMany(() => Property, (property) => property.task)
+  properties: Property[];
 
-  @TreeChildren()
-  subTasks: Task[];
+  @OneToMany(() => Member, (member) => member.task)
+  members: Member[];
 
-  @DeleteDateColumn()
-  deleteAt: Date;
+  @OneToMany(() => Asset, (asset) => asset.task)
+  assets: Asset[];
+
+  @OneToOne(() => ViewSet)
+  @JoinColumn()
+  subTaskViewSet: ViewSet;
+
+  @OneToOne(() => ViewSet)
+  @JoinColumn() 
+  assetViewSet: ViewSet;
+
+  @OneToOne(() => ViewSet)
+  @JoinColumn()
+  memberViewSet: ViewSet;
 }
 
 @Entity()
@@ -80,25 +95,4 @@ export class TaskContent extends BaseEntity {
 
   @Column('simple-json', { nullable: true })
   content: OutputData;
-}
-
-export enum TaskViewType {
-  PAGE = 'page',
-  TABLE = 'table',
-  FOLDER = 'folder'
-}
-
-@Entity()
-export class TaskView extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.views)
-  task: Task;
-
-  @Column('simple-json', { nullable: true })
-  options: any;
-
-  @Column({
-    type: 'enum',
-    enum: TaskViewType,
-  })
-  type: TaskViewType;
 }

@@ -1,9 +1,10 @@
 import { IsString, IsNumberString, IsOptional, IsNumber } from 'class-validator';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { ListRes } from './misc.dto';
-import { Perm, Role, User } from '@server/user/entities/user.entity';
+import { Role, User } from '@server/user/entities/user.entity';
 import { isStringArray } from '@utils/typeGuard';
 import { StsTokenRes } from './asset.dto';
+import { unionArrays } from '../utils/utils';
 
 export class LoginDTO {
   @IsString()
@@ -68,7 +69,7 @@ export class UserRes {
 }
 
 export class UserListRes extends ListRes {
-  @Type(() => UserRes)
+  @Transform((a) => (a ? a.map((i: User) => new UserRes(i)) : null))
   list: UserRes[];
 
   constructor(partial: Partial<UserListRes>) {
@@ -79,20 +80,23 @@ export class UserListRes extends ListRes {
 
 @Exclude()
 export class CurrentUserRes {
+  roles: Role[];
+
   @Expose()
   id: number;
 
   @Expose()
   username: string;
 
-  private roles: Role[];
-
   @Expose()
-  permCodes: string[];
+  get access(): string[] {
+    const allAccess = this.roles.map((role) => role.access);
+    return unionArrays(allAccess);
+  }
 
   @Expose()
   get roleNames(): string[] {
-    return this.roles.map((item) => item.name);
+    return this.roles.map((role) => role.name);
   }
 
   constructor(partial: Partial<CurrentUserRes>) {
@@ -101,8 +105,8 @@ export class CurrentUserRes {
 }
 
 export class CurrentUserTokenRes {
-  @Type(() => CurrentUserRes)
-  currentUser: CurrentUserRes;
+  @Transform((i) => (i ? new CurrentUserRes(i) : null))
+  currentUser: User | CurrentUserRes;
 
   token: string;
 

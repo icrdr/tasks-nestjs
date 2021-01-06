@@ -11,17 +11,21 @@ export function stringMatch(str: string, rule: string) {
   return new RegExp('^' + rule.split('*').map(escapeRegex).join('.*') + '$').test(str);
 }
 
-export function getValidPerms(neededPerms: string[], ownedPerms: string[]) {
-  const validPerms: string[] = [];
-  for (const neededPerm of neededPerms) {
-    for (const ownedPerm of ownedPerms) {
+export function unionArrays(arr: Array<any>) {
+  return [...new Set([].concat(...arr))];
+}
+
+export function getValidAccess(neededAccess: string[], ownedAccess: string[]) {
+  const validAccess: string[] = [];
+  for (const neededPerm of neededAccess) {
+    for (const ownedPerm of ownedAccess) {
       if (stringMatch(neededPerm, ownedPerm)) {
-        validPerms.push(neededPerm);
+        validAccess.push(neededPerm);
         break; //break nested loop
       }
     }
   }
-  return validPerms;
+  return validAccess;
 }
 
 export function selectFiles(config: { multiple?: boolean; accept?: string } = {}) {

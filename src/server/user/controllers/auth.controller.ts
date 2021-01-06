@@ -1,10 +1,11 @@
 import { Controller, Inject, Post, Body, NotFoundException, Get, Req } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { IsString } from 'class-validator';
 import { UserService } from '../services/user.service';
-import { Perms } from '../perm.decorator';
-import { tokenPayload, currentUser } from '../user.interface';
+import { Access } from '../access.decorator';
+import { tokenPayload } from '../user.interface';
 import { CurrentUserRes, CurrentUserTokenRes, LoginDTO } from '@dtos/user.dto';
+import { User } from '../entities/user.entity';
+import { CurrentUser } from '../user.decorator';
 
 @Controller('api/auth')
 export class AuthController {
@@ -16,13 +17,10 @@ export class AuthController {
     return new CurrentUserTokenRes(authUser);
   }
 
-  @Perms('common.user.auth')
+  @Access('common.user.auth')
   @Get('/currentUser')
-  async getMe(@Req() req: any) {
-    const currentUser = req.currentUser as currentUser;
+  async getMe(@CurrentUser() currentUser: User) {
     const user = await this.userService.getUser(currentUser.id);
-    const currentUserRes = new CurrentUserRes(user);
-    currentUserRes.permCodes = currentUser.ownedPerms;
-    return currentUserRes;
+    return new CurrentUserRes(user);
   }
 }

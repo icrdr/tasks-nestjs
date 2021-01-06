@@ -5,7 +5,6 @@ import { OptionModule } from '../option/option.module';
 import { AuthController } from './controllers/auth.controller';
 import { RoleController } from './controllers/role.controller';
 import { UserController } from './controllers/user.controller';
-import { Perm, Role, User } from './entities/user.entity';
 import { AuthService } from './services/auth.service';
 import { RoleService } from './services/role.service';
 import { UserService } from './services/user.service';

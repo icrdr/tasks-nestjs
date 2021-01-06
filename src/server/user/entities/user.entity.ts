@@ -12,7 +12,8 @@ import { Exclude } from 'class-transformer';
 import { Task } from '@server/task/entities/task.entity';
 import { Comment } from '@server/task/entities/comment.entity';
 import { TaskLog } from '@server/task/entities/taskLog.entity';
-import { TaskParticipant } from '@server/task/entities/taskParticipant.entity';
+import { Member } from '@server/task/entities/member.entity';
+import { Asset } from '@server/asset/asset.entity';
 
 export enum UserGender {
   MALE = 'male',
@@ -47,8 +48,8 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   idNumber: string;
 
-  @OneToMany(() => TaskParticipant, taskParticipant => taskParticipant.participant)
-  taskParticipants: TaskParticipant[];
+  @OneToMany(() => Member, member => member.user)
+  members: Member[];
 
   @ManyToMany(() => Role, (role) => role.users)
   @JoinTable()
@@ -59,6 +60,9 @@ export class User extends BaseEntity {
 
   @OneToMany(() => Comment, (comment) => comment.sender)
   comments: Comment[];
+
+  @OneToMany(() => Asset, (asset) => asset.creator)
+  assets: Asset[];
 
   @DeleteDateColumn()
   @Exclude()
@@ -87,7 +91,7 @@ export class Role extends BaseEntity {
   name: string;
 
   @Column('simple-json', { nullable: true })
-  permissions: string[];
+  access: string[];
 
   @ManyToMany(() => User, (user) => user.roles)
   users: User[];

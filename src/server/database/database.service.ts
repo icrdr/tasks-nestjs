@@ -20,10 +20,7 @@ export class DatabaseService {
     const users = [];
 
     for (const {} of Array(number)) {
-      const user = await this.userService.createUser(
-        internet.userName(),
-        internet.password(),
-      );
+      const user = await this.userService.createUser(internet.userName(), internet.password());
       users.push(user);
     }
     return users;
@@ -46,9 +43,7 @@ export class DatabaseService {
 
     // create default roles
     for (const key in defaultRoles) {
-      await this.roleService.createRole(key, {
-        perms: defaultRoles[key],
-      });
+      await this.roleService.setRole(key, defaultRoles[key]);
     }
 
     //create default user (admin)

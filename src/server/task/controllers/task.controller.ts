@@ -8,13 +8,13 @@ import {
   Put,
   Query,
   SerializeOptions,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 
-import { Perms } from '@server/user/perm.decorator';
+import { Access } from '@server/user/access.decorator';
 import { UserService } from '@server/user/services/user.service';
-import { CurrentUser } from '@server/user/user.decorator';
-import { currentUser } from '@server/user/user.interface';
+import { CurrentUser, TargetTask } from '@server/user/user.decorator';
 import { TaskService } from '../services/task.service';
 import {
   CreateTaskDTO,
@@ -25,68 +25,69 @@ import {
   TaskListRes,
   TaskDetailRes,
   UpdateTaskDTO,
+  MemberRes,
+  TaskMoreDetailRes,
 } from '@dtos/task.dto';
 import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
+import { User } from '@server/user/entities/user.entity';
+import { TaskAccessGuard } from '../../user/taskAccess.guard';
+import { Task } from '../entities/task.entity';
+import { unionArrays } from '../../../utils/utils';
 
 @Controller('api/tasks')
 export class TaskController {
   constructor(private taskService: TaskService) {}
 
-  @Perms('common.task.create')
+  @Access('common.task.create')
   @Post()
-  async createTask(@Body() body: CreateTaskDTO, @CurrentUser() currentUser: currentUser) {
-    return new TaskRes(
-      await this.taskService.createTask(
-        {
-          name: body.name,
-          performers: body.performerId || [currentUser.id],
-          description: body.description,
-        },
-        currentUser.id,
-      ),
-    );
+  async createTask(@Body() body: CreateTaskDTO, @CurrentUser() user: User) {
+    const options = {
+      name: body.name,
+      members: body.memberId ? unionArrays([...body.memberId, user.id]) : [user.id],
+    };
+    return new TaskMoreDetailRes(await this.taskService.createTask(options, user));
   }
 
-  @Perms('common.task.browse')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Get('/:id')
-  async getTask(@Param() params: IdDTO) {
-    const task = await this.taskService.getTask(params.id);
-    return new TaskDetailRes(task);
+  async getTask(@TargetTask() task: Task) {
+    return new TaskMoreDetailRes(await this.taskService.getTask(task.id));
   }
 
-  @Perms('common.task.browse')
+  @Access('common.task.browse')
   @Get()
   async getTasks(@Query() query: GetTasksDTO) {
     const tasks = await this.taskService.getTasks(query);
     return ListResSerialize(tasks, TaskListRes);
   }
 
-  @Perms('common.task.start')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.start')
   @Put('/:id/start')
-  async startTask(@Param() params: IdDTO, @CurrentUser() currentUser: currentUser) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
-    return new TaskDetailRes(await this.taskService.startTask(task, currentUser.id));
+  async startTask(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.startTask(task, user));
   }
 
-  @Perms('common.task.suspend')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.suspend')
   @Put('/:id/suspend')
-  async suspendTask(@Param() params: IdDTO, @CurrentUser() currentUser: currentUser) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
-    return new TaskDetailRes(await this.taskService.suspendTask(task, currentUser.id));
+  async suspendTask(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.suspendTask(task, user));
   }
 
-  @Perms('common.task.complete')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Put('/:id/complete')
-  async completeTask(@Param() params: IdDTO, @CurrentUser() currentUser: currentUser) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id);
-    return new TaskDetailRes(await this.taskService.completeTask(task, currentUser.id));
+  async completeTask(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.completeTask(task, user));
   }
 
-  @Perms('common.task.restart')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Put('/:id/restart')
-  async restartTask(@Param() params: IdDTO, @CurrentUser() currentUser: currentUser) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id);
-    return new TaskDetailRes(await this.taskService.restartTask(task, currentUser.id));
+  async restartTask(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.restartTask(task, user));
   }
 
   // @Perms('common.task.update')
@@ -100,50 +101,44 @@ export class TaskController {
   //   return new TaskDetailRes(await this.taskService.updateTask(task, body.content, currentUser.id));
   // }
 
-  @Perms('common.task.commit')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Put('/:id/commit')
-  async commitTask(@Param() params: IdDTO, @CurrentUser() currentUser: currentUser) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
-    return new TaskDetailRes(await this.taskService.commitOnTask(task, currentUser.id));
+  async commitTask(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.commitOnTask(task, user));
   }
 
-  @Perms('common.task.review')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Put('/:id/refuse')
-  async acceptCommit(@Param() params: IdDTO, @CurrentUser() currentUser: currentUser) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id);
-    return new TaskDetailRes(await this.taskService.refuseToCommit(task, currentUser.id));
+  async acceptCommit(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.refuseToCommit(task, user));
   }
 
-  @Perms('common.task.create')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Post('/:id')
   async createSubTask(
-    @Param() params: IdDTO,
+    @TargetTask() task: Task,
     @Body() body: CreateSubTaskDTO,
-    @CurrentUser() currentUser: currentUser,
+    @CurrentUser() currentUser: User,
   ) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
     return new TaskRes(
       await this.taskService.createSubTask(
         task,
         {
           name: body.name,
-          performers: body.performerId || [currentUser.id],
-          description: body.description,
-          isMandatory: body.isMandatory,
+          members: body.memberId || [currentUser.id],
         },
         currentUser.id,
       ),
     );
   }
 
-  @Perms('common.task.browse')
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.browse')
   @Get('/:id/tasks')
-  async getSubTasks(
-    @Param() params: IdDTO,
-    @Query() query: GetTasksDTO,
-    @CurrentUser() currentUser: currentUser,
-  ) {
-    const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
+  async getSubTasks(@TargetTask() task: Task, @Query() query: GetTasksDTO) {
     const tasks = await this.taskService.getSubTasks(task, query);
     return ListResSerialize(tasks, TaskListRes);
   }

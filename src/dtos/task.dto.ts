@@ -12,12 +12,14 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { Task, TaskState } from '../server/task/entities/task.entity';
+import { Task, TaskContent, TaskState } from '../server/task/entities/task.entity';
 import { ListRes } from './misc.dto';
-import { UserRes } from './user.dto';
 import { OutputData } from '@editorjs/editorjs';
-import { ActionType } from '@ant-design/pro-table';
 import { CommentType } from '../server/task/entities/comment.entity';
+import { UserRes } from './user.dto';
+import { User } from '../server/user/entities/user.entity';
+import { ActionType, TaskLog } from '../server/task/entities/taskLog.entity';
+import { Member } from '../server/task/entities/member.entity';
 
 export class CreateTaskDTO {
   @IsString()
@@ -30,7 +32,7 @@ export class CreateTaskDTO {
   @IsOptional()
   @Type(() => Number)
   @IsNumber({}, { each: true })
-  performerId?: number[];
+  memberId?: number[];
 }
 
 export class CreateSubTaskDTO extends CreateTaskDTO {
@@ -68,8 +70,91 @@ export class ReviewTaskDTO {
   isConfirmed: boolean;
 }
 
+export class CommentDTO {
+  taskId: number;
+  content: string;
+  type: CommentType;
+}
+
+@Exclude()
+export class CommentRes {
+  @Expose()
+  createAt: Date;
+
+  @Expose()
+  @Transform((i) => (i ? new UserRes(i) : null))
+  sender: UserRes;
+
+  @Expose()
+  content: string;
+
+  @Expose()
+  type: CommentType;
+
+  constructor(partial: Partial<CommentRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class ContentRes {
+  @Expose()
+  content: OutputData;
+
+  constructor(partial: Partial<ContentRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class LogRes {
+  @Expose()
+  createAt: Date;
+
+  @Expose()
+  @Transform((i) => (i ? new UserRes(i) : null))
+  executor: UserRes;
+
+  @Expose()
+  action: ActionType;
+
+  constructor(partial: Partial<LogRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class MemberRes {
+  user: User;
+
+  @Expose()
+  get userId(): number {
+    return this.user.id;
+  }
+
+  @Expose()
+  get username(): string {
+    return this.user.username;
+  }
+
+  constructor(partial: Partial<MemberRes>) {
+    Object.assign(this, partial);
+  }
+}
+
 @Exclude()
 export class TaskRes {
+  @Expose()
+  id: number;
+  @Expose()
+  name: string;
+  constructor(partial: Partial<TaskRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class TaskDetailRes {
   @Expose()
   id: number;
 
@@ -83,14 +168,11 @@ export class TaskRes {
   createAt: Date;
 
   @Expose()
-  @Type(() => UserRes)
-  performers: UserRes[];
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : null))
+  members: Member[] | MemberRes[];
 
   @Expose()
-  isMandatory: boolean;
-
-  @Expose()
-  @Type(() => TaskRes)
+  @Transform((i) => (i ? new TaskRes(i) : null))
   parentTask: TaskRes;
 
   constructor(partial: Partial<TaskRes>) {
@@ -99,26 +181,7 @@ export class TaskRes {
 }
 
 @Exclude()
-export class ContentRes {
-  @Expose()
-  content: OutputData;
-}
-
-@Exclude()
-export class LogRes {
-  @Expose()
-  createAt: Date;
-
-  @Expose()
-  @Type(() => UserRes)
-  executor: UserRes;
-
-  @Expose()
-  action: ActionType;
-}
-
-@Exclude()
-export class TaskDetailRes {
+export class TaskMoreDetailRes {
   @Expose()
   id: number;
 
@@ -138,64 +201,32 @@ export class TaskDetailRes {
   endAt: Date;
 
   @Expose()
-  description: string;
-
-  @Expose()
-  @Type(() => ContentRes)
+  @Transform((a) => (a ? a.map((i: TaskContent) => new ContentRes(i)) : null))
   contents: ContentRes[];
 
   @Expose()
-  @Type(() => LogRes)
+  @Transform((a) => (a ? a.map((i: TaskLog) => new LogRes(i)) : null))
   logs: LogRes[];
 
   @Expose()
-  @Type(() => UserRes)
-  performers: UserRes[];
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : null))
+  members: Member[] | MemberRes[];
 
   @Expose()
-  isMandatory: boolean;
-
-  @Expose()
-  @Type(() => TaskRes)
+  @Transform((i) => (i ? new TaskRes(i) : null))
   parentTask: TaskRes;
 
-  constructor(partial: Partial<TaskRes>) {
+  constructor(partial: Partial<TaskMoreDetailRes>) {
     Object.assign(this, partial);
   }
 }
 
 export class TaskListRes extends ListRes {
-  @Type(() => TaskRes)
-  list: TaskRes[];
+  @Transform((a) => (a ? a.map((i: Task) => new TaskDetailRes(i)) : null))
+  list: TaskDetailRes[];
 
   constructor(partial: Partial<TaskListRes>) {
     super();
-    Object.assign(this, partial);
-  }
-}
-
-export class CommentDTO {
-  taskId: number;
-  content: string;
-  type: CommentType;
-}
-
-@Exclude()
-export class CommentRes {
-  @Expose()
-  createAt: Date;
-
-  @Expose()
-  @Type(() => UserRes)
-  sender: UserRes;
-
-  @Expose()
-  content: string;
-
-  @Expose()
-  type: CommentType;
-
-  constructor(partial: Partial<CommentRes>) {
     Object.assign(this, partial);
   }
 }

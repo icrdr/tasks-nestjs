@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { EntityManager, In, IsNull, Not } from 'typeorm';
 import { GetTasksDTO } from '@dtos/task.dto';
 import { isUserArray } from '@utils/typeGuard';
@@ -7,36 +7,11 @@ import { UserService } from '@server/user/services/user.service';
 import { Task, TaskContent, TaskState } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
 import { ActionType, TaskLog } from '../entities/taskLog.entity';
+import { Member } from '../entities/member.entity';
 
 @Injectable()
 export class TaskService {
   constructor(private userService: UserService, private manager: EntityManager) {}
-
-  async isUserThePerformer(
-    task: Task | number,
-    user: User | number,
-    mandatoryCheck: boolean = true,
-  ) {
-    if (!(task instanceof Task)) task = await this.getTask(task);
-    const userId = user instanceof User ? user.id : user;
-    let performerIdWhitelist = [];
-    let parentTask = task.parentTask;
-
-    while (parentTask) {
-      parentTask = await this.getTask(parentTask.id); //fetch parentTask performer
-      performerIdWhitelist = performerIdWhitelist.concat(
-        parentTask.performers.map((item) => item.id),
-      );
-      parentTask = parentTask.parentTask;
-    }
-
-    if (!mandatoryCheck || !task.isMandatory) {
-      performerIdWhitelist = performerIdWhitelist.concat(task.performers.map((item) => item.id));
-    }
-    if (!performerIdWhitelist.includes(userId))
-      throw new ForbiddenException("You are not permitted task's performer");
-    return task;
-  }
 
   async isParentTaskInStates(task: Task | number, states: TaskState[]) {
     if (!(task instanceof Task)) task = await this.getTask(task);
@@ -51,45 +26,68 @@ export class TaskService {
   async createTask(
     options: {
       name?: string;
-      performers?: User[] | number[] | string[];
-      description?: string;
-      isMandatory?: boolean;
+      members?: User[] | number[] | string[];
     } = {},
     executor?: User | number | string,
   ) {
     let task = new Task();
+    task.name = options.name || '';
+    task = await this.manager.save(task);
 
-    if (options.performers) {
-      if (!isUserArray(options.performers)) {
-        let _performers: User[] = [];
-        for (const identify of options.performers) {
-          _performers.push((await this.userService.getUser(identify))!);
-        }
-        task.performers = _performers;
-      } else {
-        task.performers = options.performers;
-      }
+    for (const member of options.members) {
+      await this.createMember(task, member);
     }
 
-    task.name = options.name || '';
-    if (options.description) task.description = options.description;
-    if (options.isMandatory) task.isMandatory = options.isMandatory;
-
-    task = await this.manager.save(task)
-    let content = new TaskContent();
-    content.task = task
-    content = await this.manager.save(content);
-
     await this.createTaskLog(task, ActionType.CREATE, executor);
-
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
-  async getTask(identify: number) {
-    const task = await this.manager.findOne(Task, identify, {
-      relations: ['performers', 'contents', 'subTasks', 'parentTask', 'logs'],
-    });
-    if (!task) throw new ForbiddenException('Task was not found.');
+  async createMember(task: Task | number, user: User | number | string, access: string[] = ['*']) {
+    //check if task and user are exsited
+    task = task instanceof Task ? task : await this.getTask(task, false);
+    user = user instanceof User ? user : await this.userService.getUser(user, false);
+    let member = await this.getMember(task.id, user.id, false);
+    if (!task || !user || member) return;
+
+    member = new Member();
+    member.user = user;
+    member.task = task;
+    member.access = access;
+    return await this.manager.save(member);
+  }
+
+  async getMember(taskIdentify: number, userIdentify: number | string, exception = true) {
+    let query = this.manager
+      .createQueryBuilder(Member, 'member')
+      .leftJoinAndSelect('member.task', 'task')
+      .leftJoinAndSelect('member.user', 'user')
+      .where('task.id = :taskIdentify', { taskIdentify });
+
+    query =
+      typeof userIdentify === 'number'
+        ? query.andWhere('user.id = :userIdentify', { userIdentify })
+        : query.andWhere('user.username = :userIdentify', { userIdentify });
+
+    const member = await query.getOne();
+    if (!member && exception) throw new NotFoundException('Member was not found.');
+
+    return member;
+  }
+
+  async getTask(identify: number, exception = true) {
+    let query = this.manager
+      .createQueryBuilder(Task, 'task')
+      .leftJoinAndSelect('task.logs', 'log')
+      .leftJoinAndSelect('log.executor', 'executor')
+      .leftJoinAndSelect('task.members', 'member')
+      .leftJoinAndSelect('member.user', 'user')
+      .leftJoinAndSelect('task.contents', 'content')
+      .leftJoinAndSelect('task.parentTask', 'parentTask');
+    query = query.where('task.id = :id', { id: identify });
+
+    const task = await query.getOne();
+    if (!task && exception) throw new NotFoundException('Task was not found.');
+
     return task;
   }
 
@@ -97,7 +95,8 @@ export class TaskService {
     let query = this.manager
       .createQueryBuilder(Task, 'task')
       .leftJoinAndSelect('task.logs', 'log')
-      .leftJoinAndSelect('task.performers', 'performer')
+      .leftJoinAndSelect('task.members', 'member')
+      .leftJoinAndSelect('member.user', 'user')
       .leftJoinAndSelect('task.contents', 'content')
       .leftJoinAndSelect('task.parentTask', 'parentTask');
     if (options.state) {
@@ -118,7 +117,7 @@ export class TaskService {
     const parentTaskId = parentTask instanceof Task ? parentTask.id : parentTask;
     let query = this.manager
       .createQueryBuilder(Task, 'task')
-      .leftJoinAndSelect('task.performers', 'performer')
+      .leftJoinAndSelect('task.members', 'member')
       .leftJoinAndSelect('task.contents', 'content')
       .leftJoinAndSelect('task.parentTask', 'parentTask');
     if (options.state) {
@@ -143,8 +142,8 @@ export class TaskService {
 
     return await this.manager
       .createQueryBuilder(Task, 'task')
-      .leftJoin('task.performers', 'performer')
-      .where('performer.id = :id', { id: userId })
+      .leftJoin('task.members', 'member')
+      .where('member.id = :id', { id: userId })
       .skip((options.current - 1) * options.pageSize || 0)
       .take(options.pageSize || 5)
       .getMany();
@@ -157,10 +156,10 @@ export class TaskService {
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
 
     task.state = TaskState.IN_PROGRESS;
-
+    await this.manager.save(task);
     await this.createTaskLog(task, ActionType.START, executor);
 
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async restartTask(task: Task | number, executor?: User | number | string) {
@@ -169,10 +168,10 @@ export class TaskService {
       throw new ForbiddenException('Task is not completed, forbidden initialization.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
-
+    await this.manager.save(task);
     await this.createTaskLog(task, ActionType.RESTART, executor);
 
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async suspendTask(task: Task | number, executor?: User | number | string) {
@@ -181,10 +180,10 @@ export class TaskService {
       throw new ForbiddenException('Task is not in progress, forbidden suspension.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.SUSPENDED;
-
+    await this.manager.save(task);
     await this.createTaskLog(task, ActionType.SUSPEND, executor);
 
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async completeTask(task: Task | number, executor?: User | number | string) {
@@ -194,23 +193,20 @@ export class TaskService {
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     this.completeSubTask(task, executor);
     task.state = TaskState.COMPLETED;
-
+    await this.manager.save(task);
     await this.createTaskLog(task, ActionType.COMPLETE, executor);
 
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async completeSubTask(task: Task | number, executor?: User | number | string) {
     if (!(task instanceof Task)) task = await this.getTask(task);
-    console.log(task.subTasks);
     if (!task.subTasks) return;
     for (const subTask of task.subTasks) {
       await this.completeSubTask(subTask, executor);
       subTask.state = TaskState.COMPLETED;
-
-      await this.createTaskLog(subTask, ActionType.COMPLETE, executor);
-
       await this.manager.save(subTask);
+      await this.createTaskLog(subTask, ActionType.COMPLETE, executor);
     }
   }
 
@@ -231,7 +227,7 @@ export class TaskService {
     const lastContent = task.contents[task.contents.length - 1];
     lastContent.content = content;
     await this.manager.save(lastContent);
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async commitOnTask(task: Task | number, executor?: User | number | string) {
@@ -240,8 +236,9 @@ export class TaskService {
       throw new ForbiddenException('Task is not in progress, forbidden submittion.');
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.UNCONFIRMED;
+    await this.manager.save(task);
     await this.createTaskLog(task, ActionType.COMMIT, executor);
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async refuseToCommit(task: Task | number, executor?: User | number | string) {
@@ -251,6 +248,7 @@ export class TaskService {
 
     await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
+    await this.manager.save(task);
     await this.createTaskLog(task, ActionType.REFUSE, executor);
     if (task.contents.length > 0) {
       let cloneContent = new TaskContent();
@@ -258,29 +256,26 @@ export class TaskService {
       cloneContent.task = task;
       cloneContent = await this.manager.save(cloneContent);
     }
-    return await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 
   async createTaskLog(task: Task | number, action: ActionType, executor?: User | number | string) {
-    task = task instanceof Task ? task : await this.getTask(task);
+    task = task instanceof Task ? task : await this.getTask(task, false);
     let taskLog = new TaskLog();
     if (executor)
       taskLog.executor =
-        executor instanceof User ? executor : await this.userService.getUser(executor);
+        executor instanceof User ? executor : await this.userService.getUser(executor, false);
 
     taskLog.action = action;
-    taskLog.task = task
-    taskLog = await this.manager.save(taskLog);
-    return await this.manager.save(task);
+    taskLog.task = task;
+    return await this.manager.save(taskLog);
   }
 
   async createSubTask(
     task: Task | number,
     options: {
       name?: string;
-      performers?: User[] | number[] | string[];
-      description?: string;
-      isMandatory?: boolean;
+      members?: User[] | number[] | string[];
     } = {},
     executor?: User | number | string,
   ) {
@@ -295,6 +290,7 @@ export class TaskService {
 
     const subTask = await this.createTask(options, executor);
     task.subTasks.push(subTask);
-    return await this.manager.save(task);
+    await this.manager.save(task);
+    return await this.getTask(task.id);
   }
 }

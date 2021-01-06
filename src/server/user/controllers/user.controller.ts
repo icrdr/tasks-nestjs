@@ -11,7 +11,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { Perms } from '../perm.decorator';
+import { Access } from '../access.decorator';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { CreateUserDTO, GetUsersDTO, UserListRes } from '@dtos/user.dto';
@@ -25,7 +25,7 @@ export class UserController {
     private readonly logger: Logger,
   ) {}
 
-  @Perms('admin.user.browse', 'common.user.browse')
+  @Access('admin.user.browse', 'common.user.browse')
   @Get('/:id')
   async getUser(@Param() params: IdDTO) {
     const user = await this.userService.getUser(params.id);
