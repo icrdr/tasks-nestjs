@@ -1,7 +1,6 @@
 import {
   IsString,
   IsOptional,
-  IsBooleanString,
   IsNumber,
   IsEnum,
   IsArray,
@@ -12,22 +11,21 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { Task, TaskContent, TaskState } from '../server/task/entities/task.entity';
+import { ActionType, Member, Task, TaskContent, TaskLog, TaskState } from '../server/task/entities/task.entity';
 import { ListRes } from './misc.dto';
 import { OutputData } from '@editorjs/editorjs';
 import { CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
-import { ActionType, TaskLog } from '../server/task/entities/taskLog.entity';
-import { Member } from '../server/task/entities/member.entity';
+
 
 export class CreateTaskDTO {
   @IsString()
   name: string;
 
   @IsOptional()
-  @IsString()
-  description?: string;
+  @IsEnum(TaskState)
+  state?: TaskState;
 
   @IsOptional()
   @Type(() => Number)
@@ -35,13 +33,6 @@ export class CreateTaskDTO {
   memberId?: number[];
 }
 
-export class CreateSubTaskDTO extends CreateTaskDTO {
-  @Type(() => String)
-  @Transform((v) => v === 'true')
-  @IsBoolean()
-  @IsOptional()
-  isMandatory?: boolean;
-}
 
 export class GetTasksDTO {
   @IsOptional()
@@ -53,7 +44,7 @@ export class GetTasksDTO {
   current?: number;
 
   @IsOptional()
-  @Transform((v) => Object.values(TaskState))
+  @Transform((v) => Object.values(TaskState)) //check all state if is empty.
   @IsEnum(TaskState, { each: true })
   state?: TaskState[];
 }
@@ -173,7 +164,11 @@ export class TaskDetailRes {
 
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
-  parentTask: TaskRes;
+  superTask: TaskRes;
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : null))
+  subTasks: TaskRes[];
 
   constructor(partial: Partial<TaskRes>) {
     Object.assign(this, partial);
@@ -214,7 +209,11 @@ export class TaskMoreDetailRes {
 
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
-  parentTask: TaskRes;
+  superTask: TaskRes;
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : null))
+  subTasks: TaskRes[];
 
   constructor(partial: Partial<TaskMoreDetailRes>) {
     Object.assign(this, partial);

@@ -1,38 +1,20 @@
-import {
-  Body,
-  ClassSerializerInterceptor,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  SerializeOptions,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
-
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Access } from '@server/user/access.decorator';
-import { UserService } from '@server/user/services/user.service';
 import { CurrentUser, TargetTask } from '@server/user/user.decorator';
 import { TaskService } from '../services/task.service';
 import {
   CreateTaskDTO,
   GetTasksDTO,
-  ReviewTaskDTO,
-  CreateSubTaskDTO,
   TaskRes,
   TaskListRes,
   TaskDetailRes,
-  UpdateTaskDTO,
-  MemberRes,
   TaskMoreDetailRes,
 } from '@dtos/task.dto';
 import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
 import { User } from '@server/user/entities/user.entity';
-import { TaskAccessGuard } from '../../user/taskAccess.guard';
+import { TaskAccessGuard } from '@server/user/taskAccess.guard';
 import { Task } from '../entities/task.entity';
-import { unionArrays } from '../../../utils/utils';
+import { unionArrays } from '@utils/utils';
 
 @Controller('api/tasks')
 export class TaskController {
@@ -42,20 +24,26 @@ export class TaskController {
   @Post()
   async createTask(@Body() body: CreateTaskDTO, @CurrentUser() user: User) {
     const options = {
-      name: body.name,
       members: body.memberId ? unionArrays([...body.memberId, user.id]) : [user.id],
+      state: body.state,
     };
-    return new TaskMoreDetailRes(await this.taskService.createTask(options, user));
+    return new TaskMoreDetailRes(await this.taskService.createTask(body.name, user, options));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.view')
   @Get('/:id')
   async getTask(@TargetTask() task: Task) {
-    return new TaskMoreDetailRes(await this.taskService.getTask(task.id));
+    console.log(task.subTasks)
+    return new TaskMoreDetailRes(task);
   }
 
-  @Access('common.task.browse')
+  @Get('tree/:id')
+  async getTasksss(@Param() params: IdDTO,) {
+    return await this.taskService.getTasksss(params.id);
+  }
+
+  @Access('common.task.view')
   @Get()
   async getTasks(@Query() query: GetTasksDTO) {
     const tasks = await this.taskService.getTasks(query);
@@ -63,28 +51,28 @@ export class TaskController {
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.start')
+  @Access('common.task.update')
   @Put('/:id/start')
   async startTask(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.startTask(task, user));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.suspend')
+  @Access('common.task.update')
   @Put('/:id/suspend')
   async suspendTask(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.suspendTask(task, user));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.update')
   @Put('/:id/complete')
   async completeTask(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.completeTask(task, user));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.update')
   @Put('/:id/restart')
   async restartTask(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.restartTask(task, user));
@@ -102,41 +90,36 @@ export class TaskController {
   // }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.edit')
   @Put('/:id/commit')
   async commitTask(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.commitOnTask(task, user));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.update')
   @Put('/:id/refuse')
   async acceptCommit(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.refuseToCommit(task, user));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.create')
   @Post('/:id')
   async createSubTask(
     @TargetTask() task: Task,
-    @Body() body: CreateSubTaskDTO,
-    @CurrentUser() currentUser: User,
+    @Body() body: CreateTaskDTO,
+    @CurrentUser() user: User,
   ) {
-    return new TaskRes(
-      await this.taskService.createSubTask(
-        task,
-        {
-          name: body.name,
-          members: body.memberId || [currentUser.id],
-        },
-        currentUser.id,
-      ),
-    );
+    const options = {
+      members: body.memberId ? unionArrays([...body.memberId, user.id]) : [user.id],
+      state: body.state,
+    };
+    return new TaskDetailRes(await this.taskService.createSubTask(task, body.name, user.id, options));
   }
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.browse')
+  @Access('common.task.view')
   @Get('/:id/tasks')
   async getSubTasks(@TargetTask() task: Task, @Query() query: GetTasksDTO) {
     const tasks = await this.taskService.getSubTasks(task, query);

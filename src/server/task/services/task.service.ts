@@ -4,50 +4,55 @@ import { GetTasksDTO } from '@dtos/task.dto';
 import { isUserArray } from '@utils/typeGuard';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
-import { Task, TaskContent, TaskState } from '../entities/task.entity';
+import { ActionType, Member, Task, TaskContent, TaskLog, TaskState } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
-import { ActionType, TaskLog } from '../entities/taskLog.entity';
-import { Member } from '../entities/member.entity';
 
 @Injectable()
 export class TaskService {
   constructor(private userService: UserService, private manager: EntityManager) {}
 
-  async isParentTaskInStates(task: Task | number, states: TaskState[]) {
+  async checkParentTaskNotInStates(task: Task | number, states: TaskState[]) {
     if (!(task instanceof Task)) task = await this.getTask(task);
-    let parentTask = task.parentTask;
-    if (parentTask) {
-      if (!states.includes(parentTask.state))
+    let superTask = task.superTask;
+    if (superTask) {
+      if (!states.includes(superTask.state))
         throw new ForbiddenException(`Parent task is restricted, forbidden action.`);
-      this.isParentTaskInStates(parentTask, states);
+      this.checkParentTaskNotInStates(superTask, states);
     }
   }
 
   async createTask(
-    options: {
-      name?: string;
-      members?: User[] | number[] | string[];
-    } = {},
+    name: string,
     executor?: User | number | string,
+    options: {
+      members?: User[] | number[] | string[];
+      state?: TaskState;
+    } = {},
   ) {
     let task = new Task();
-    task.name = options.name || '';
+    task.name = name;
+    if (options.state) task.state = options.state;
     task = await this.manager.save(task);
 
     for (const member of options.members) {
-      await this.createMember(task, member);
+      await this.createUserMember(task, member);
     }
 
     await this.createTaskLog(task, ActionType.CREATE, executor);
     return await this.getTask(task.id);
   }
 
-  async createMember(task: Task | number, user: User | number | string, access: string[] = ['*']) {
+  async createUserMember(
+    task: Task | number,
+    user: User | number | string,
+    access: string[] = ['*'],
+  ) {
     //check if task and user are exsited
     task = task instanceof Task ? task : await this.getTask(task, false);
     user = user instanceof User ? user : await this.userService.getUser(user, false);
-    let member = await this.getMember(task.id, user.id, false);
-    if (!task || !user || member) return;
+    if (!task || !user) return;
+    let member = await this.getMemberByUser(task.id, user.id, false);
+    if (member) return member;
 
     member = new Member();
     member.user = user;
@@ -56,21 +61,90 @@ export class TaskService {
     return await this.manager.save(member);
   }
 
-  async getMember(taskIdentify: number, userIdentify: number | string, exception = true) {
+  async createInheritMember(task: Task | number, inherit: Task | number, access: string[] = ['*']) {
+    //check if task and inherit task are exsited
+    task = task instanceof Task ? task : await this.getTask(task, false);
+    inherit = inherit instanceof Task ? task : await this.getTask(inherit, false);
+    if (!task || !inherit) return;
+    let member = await this.getMemberByInherit(task.id, inherit.id, false);
+    if (member) return member;
+
+    member = new Member();
+    member.inherit = inherit;
+    member.task = task;
+    member.access = access;
+    return await this.manager.save(member);
+  }
+
+  async getMemberByUser(task: Task | number, user: User | number | string, exception = true) {
+    const taskId = await this.getTaskId(task);
+    const userId = await this.userService.getUserId(user);
     let query = this.manager
       .createQueryBuilder(Member, 'member')
       .leftJoinAndSelect('member.task', 'task')
       .leftJoinAndSelect('member.user', 'user')
-      .where('task.id = :taskIdentify', { taskIdentify });
-
-    query =
-      typeof userIdentify === 'number'
-        ? query.andWhere('user.id = :userIdentify', { userIdentify })
-        : query.andWhere('user.username = :userIdentify', { userIdentify });
+      .where('task.id = :taskId', { taskId })
+      .andWhere('user.id = :userId', { userId });
 
     const member = await query.getOne();
     if (!member && exception) throw new NotFoundException('Member was not found.');
 
+    return member;
+  }
+
+  async getMemberByInherit(task: Task | number, inherit: Task | number, exception = true) {
+    const taskId = this.getTaskId(task);
+    const inheritId = this.getTaskId(inherit);
+    let query = this.manager
+      .createQueryBuilder(Member, 'member')
+      .leftJoinAndSelect('member.task', 'task')
+      .leftJoinAndSelect('member.inherit', 'inherit')
+      .where('task.id = :taskId', { taskId })
+      .andWhere('inherit.id = :inheritId', { inheritId });
+
+    const member = await query.getOne();
+    if (!member && exception) throw new NotFoundException('Member was not found.');
+
+    return member;
+  }
+
+  // async getUserAccessOnTask(task: Task | number, user: User | number | string) {
+  //   task = task instanceof Task ? task : await this.getTask(task, false);
+  //   user = user instanceof User ? user : await this.userService.getUser(user, false);
+  //   function getAccess(members: Member[],userId:number){
+  //     for (const member of members) {
+  //       if(member.inherit)getAccess(this.getTask(member.inherit.id, false),userId)
+  //       if(member.user.id === userId){}
+  //     }
+  //   }
+  //   for (const member of task.members) {
+  //     if(member.inherit)
+  //   }
+
+  //   return member;
+  // }
+
+  async getTasksss(task: Task | number) {
+    task = task instanceof Task ? task : await this.getTask(task, false);
+    const tasks = await this.manager
+    .getTreeRepository(Task)
+    .createDescendantsQueryBuilder('task', 'taskClosure', task)
+    .getMany() 
+    // const tasks = await this.manager
+    // .getTreeRepository(Task).findTrees();
+    console.log(tasks)
+    return tasks;
+  }
+
+  async getAccessInTask(taskIdentify: number, inheritIdentify: number) {
+    let query = this.manager
+      .createQueryBuilder(Member, 'member')
+      .leftJoinAndSelect('member.task', 'task')
+      .leftJoinAndSelect('member.inherit', 'inherit')
+      .where('task.id = :taskIdentify', { taskIdentify })
+      .andWhere('inherit.id = :inheritIdentify', { inheritIdentify });
+
+    const member = await query.getOne();
     return member;
   }
 
@@ -82,11 +156,12 @@ export class TaskService {
       .leftJoinAndSelect('task.members', 'member')
       .leftJoinAndSelect('member.user', 'user')
       .leftJoinAndSelect('task.contents', 'content')
-      .leftJoinAndSelect('task.parentTask', 'parentTask');
+      // .leftJoinAndSelect('task.superTask', 'superTask')
     query = query.where('task.id = :id', { id: identify });
 
     const task = await query.getOne();
     if (!task && exception) throw new NotFoundException('Task was not found.');
+    // console.log(task.subTasks)
 
     return task;
   }
@@ -98,7 +173,7 @@ export class TaskService {
       .leftJoinAndSelect('task.members', 'member')
       .leftJoinAndSelect('member.user', 'user')
       .leftJoinAndSelect('task.contents', 'content')
-      .leftJoinAndSelect('task.parentTask', 'parentTask');
+      .leftJoinAndSelect('task.superTask', 'superTask');
     if (options.state) {
       query = query.where('task.state IN (:...states)', {
         states: [...options.state],
@@ -113,25 +188,29 @@ export class TaskService {
     return await query.getManyAndCount();
   }
 
-  async getSubTasks(parentTask: Task | number, options: GetTasksDTO = {}) {
-    const parentTaskId = parentTask instanceof Task ? parentTask.id : parentTask;
+  async getSubTasks(superTask: Task | number, options: GetTasksDTO = {}) {
+    const superTaskId = superTask instanceof Task ? superTask.id : superTask;
     let query = this.manager
       .createQueryBuilder(Task, 'task')
       .leftJoinAndSelect('task.members', 'member')
       .leftJoinAndSelect('task.contents', 'content')
-      .leftJoinAndSelect('task.parentTask', 'parentTask');
+      .leftJoinAndSelect('task.superTask', 'superTask');
     if (options.state) {
       query = query.where('task.state IN (:...states)', {
         states: [...options.state],
       });
     }
-    query = query.andWhere('parentTask.id =:id', { id: parentTaskId });
+    query = query.andWhere('superTask.id =:id', { id: superTaskId });
     query = query
       .orderBy('task.id', 'DESC')
       .skip((options.current - 1) * options.pageSize || 0)
       .take(options.pageSize || 5);
 
     return await query.getManyAndCount();
+  }
+
+  async getTaskId(task: Task | number) {
+    return task instanceof Task ? task.id : task;
   }
 
   async getTasksOfUser(
@@ -153,7 +232,7 @@ export class TaskService {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.SUSPENDED)
       throw new ForbiddenException('Task is not suspended, forbidden initialization.');
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
 
     task.state = TaskState.IN_PROGRESS;
     await this.manager.save(task);
@@ -166,7 +245,7 @@ export class TaskService {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.COMPLETED)
       throw new ForbiddenException('Task is not completed, forbidden initialization.');
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
     await this.manager.save(task);
     await this.createTaskLog(task, ActionType.RESTART, executor);
@@ -178,7 +257,7 @@ export class TaskService {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
       throw new ForbiddenException('Task is not in progress, forbidden suspension.');
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.SUSPENDED;
     await this.manager.save(task);
     await this.createTaskLog(task, ActionType.SUSPEND, executor);
@@ -190,7 +269,7 @@ export class TaskService {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state === TaskState.COMPLETED)
       throw new ForbiddenException('Task is already completed.');
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     this.completeSubTask(task, executor);
     task.state = TaskState.COMPLETED;
     await this.manager.save(task);
@@ -218,7 +297,7 @@ export class TaskService {
     if (!(task instanceof Task)) task = await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
       throw new ForbiddenException('Task is not in progress, forbidden suspension.');
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     if (task.contents.length === 0) {
       const content = new TaskContent();
       await this.manager.save(content);
@@ -234,7 +313,7 @@ export class TaskService {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
       throw new ForbiddenException('Task is not in progress, forbidden submittion.');
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.UNCONFIRMED;
     await this.manager.save(task);
     await this.createTaskLog(task, ActionType.COMMIT, executor);
@@ -246,7 +325,7 @@ export class TaskService {
     if (task.state !== TaskState.UNCONFIRMED)
       throw new ForbiddenException('Task does not wait for comfirmtion, forbidden response.');
 
-    await this.isParentTaskInStates(task, [TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
     await this.manager.save(task);
     await this.createTaskLog(task, ActionType.REFUSE, executor);
@@ -273,11 +352,12 @@ export class TaskService {
 
   async createSubTask(
     task: Task | number,
-    options: {
-      name?: string;
-      members?: User[] | number[] | string[];
-    } = {},
+    name: string,
     executor?: User | number | string,
+    options: {
+      members?: User[] | number[] | string[];
+      state?: TaskState;
+    } = {},
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state === TaskState.UNCONFIRMED || task.state === TaskState.COMPLETED)
@@ -286,11 +366,16 @@ export class TaskService {
         forbidden subtask creation.',
       );
 
-    await this.isParentTaskInStates(task, [TaskState.SUSPENDED, TaskState.IN_PROGRESS]);
+    await this.checkParentTaskNotInStates(task, [TaskState.SUSPENDED, TaskState.IN_PROGRESS]);
 
-    const subTask = await this.createTask(options, executor);
-    task.subTasks.push(subTask);
-    await this.manager.save(task);
+    const subTask = await this.createTask(name, executor, options);
+    subTask.superTask = task;
+    await this.manager.save(subTask);
+    // TODO: closure-table does not update when compounent'parent update yet. so we update it maunaly.
+    // await this.manager.query(
+    //   `UPDATE task_closure SET id_ancestor = ${task.id} WHERE id_descendant = ${subTask.id}`,
+    // );
+
     return await this.getTask(task.id);
   }
 }

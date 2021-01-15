@@ -15,12 +15,10 @@ import {
 } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { OutputData } from '@editorjs/editorjs';
-import { TaskLog } from './taskLog.entity';
 import { Comment } from './comment.entity';
-import { Member } from './member.entity';
-import { Header, Property } from './property.entity';
+import { View, Property } from './property.entity';
 import { Asset } from '@server/asset/asset.entity';
-import { View, ViewSet } from './view.entity';
+import { Group, Role, Space } from './space.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -30,15 +28,18 @@ export enum TaskState {
 }
 
 @Entity()
-@Tree('closure-table')
+@Tree('nested-set')
 export class Task extends BaseEntity {
+  @ManyToOne(() => Space, (space) => space.tasks)
+  space: Space;
+
   @Column()
   name: string;
 
   @Column({
     type: 'enum',
     enum: TaskState,
-    default: TaskState.SUSPENDED,
+    default: TaskState.IN_PROGRESS,
   })
   state: TaskState;
 
@@ -46,10 +47,13 @@ export class Task extends BaseEntity {
   startAt: Date;
 
   @Column({ nullable: true })
+  dueAt: Date;
+
+  @Column({ nullable: true })
   endAt: Date;
 
   @TreeParent()
-  parentTask: Task;
+  superTask: Task;
 
   @TreeChildren()
   subTasks: Task[];
@@ -57,11 +61,11 @@ export class Task extends BaseEntity {
   @DeleteDateColumn()
   deleteAt: Date;
 
-  @OneToMany(() => TaskContent, (taskContent) => taskContent.task)
-  contents: TaskContent[];
+  @OneToMany(() => Content, (content) => content.task)
+  contents: Content[];
 
-  @OneToMany(() => TaskLog, (taskLog) => taskLog.task)
-  logs: TaskLog[];
+  @OneToMany(() => Log, (log) => log.task)
+  logs: Log[];
 
   @OneToMany(() => Comment, (comment) => comment.task)
   comments: Comment[];
@@ -69,30 +73,60 @@ export class Task extends BaseEntity {
   @OneToMany(() => Property, (property) => property.task)
   properties: Property[];
 
-  @OneToMany(() => Member, (member) => member.task)
-  members: Member[];
+  @OneToMany(() => Access, (access) => access.task)
+  access: Access[];
 
   @OneToMany(() => Asset, (asset) => asset.task)
   assets: Asset[];
 
-  @OneToOne(() => ViewSet)
-  @JoinColumn()
-  subTaskViewSet: ViewSet;
-
-  @OneToOne(() => ViewSet)
-  @JoinColumn() 
-  assetViewSet: ViewSet;
-
-  @OneToOne(() => ViewSet)
-  @JoinColumn()
-  memberViewSet: ViewSet;
+  @OneToMany(() => View, (view) => view.task)
+  views: View[];
 }
 
 @Entity()
-export class TaskContent extends BaseEntity {
+export class Access extends BaseEntity {
+  @ManyToOne(() => Task, (task) => task.access)
+  task: Task;
+
+  @ManyToOne(() => Role, (role) => role.access)
+  role: Role;
+
+  @ManyToOne(() => Group, (group) => group.access)
+  group: Group;
+}
+
+@Entity()
+export class Content extends BaseEntity {
   @ManyToOne(() => Task, (task) => task.contents)
   task: Task;
 
   @Column('simple-json', { nullable: true })
   content: OutputData;
+}
+
+export enum ActionType {
+  START = 'start',
+  RESTART = 'restart',
+  SUSPEND = 'suspend',
+  COMPLETE = 'complete',
+  COMMIT = 'commit',
+  REFUSE = 'refuse',
+  CREATE = 'create',
+  UPDATA = 'update',
+  DELETE = 'delete',
+}
+
+@Entity()
+export class Log extends BaseEntity {
+  @ManyToOne(() => Task, (task) => task.logs)
+  task: Task;
+
+  @ManyToOne(() => User, (User) => User.logs, { nullable: true })
+  executor: User;
+
+  @Column({
+    type: 'enum',
+    enum: ActionType,
+  })
+  action: ActionType;
 }

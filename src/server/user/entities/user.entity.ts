@@ -9,15 +9,20 @@ import {
   Connection,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Task } from '@server/task/entities/task.entity';
+import { Task, Log } from '@server/task/entities/task.entity';
 import { Comment } from '@server/task/entities/comment.entity';
-import { TaskLog } from '@server/task/entities/taskLog.entity';
-import { Member } from '@server/task/entities/member.entity';
 import { Asset } from '@server/asset/asset.entity';
+import { Member } from '@server/task/entities/space.entity';
 
 export enum UserGender {
   MALE = 'male',
   FEMALE = 'female',
+}
+
+export enum RoleType {
+  ADMIN = 'admin',
+  USER = 'user',
+  GUEST = 'guest',
 }
 
 @Entity()
@@ -38,25 +43,18 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   mobile: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserGender,
-    nullable: true,
-  })
-  gender: UserGender;
-
-  @Column({ nullable: true })
-  idNumber: string;
-
-  @OneToMany(() => Member, member => member.user)
+  @OneToMany(() => Member, (member) => member.user)
   members: Member[];
 
-  @ManyToMany(() => Role, (role) => role.users)
-  @JoinTable()
-  roles: Role[];
+  @Column({
+    type: 'enum',
+    enum: RoleType,
+    default: RoleType.USER,
+  })
+  role: string;
 
-  @OneToMany(() => TaskLog, (taskLog) => taskLog.executor)
-  taskLogs: TaskLog[];
+  @OneToMany(() => Log, (log) => log.executor)
+  logs: Log[];
 
   @OneToMany(() => Comment, (comment) => comment.sender)
   comments: Comment[];
@@ -83,16 +81,4 @@ export class ThirdAuth extends BaseEntity {
 
   @Column()
   uid: string;
-}
-
-@Entity()
-export class Role extends BaseEntity {
-  @Column({ unique: true })
-  name: string;
-
-  @Column('simple-json', { nullable: true })
-  access: string[];
-
-  @ManyToMany(() => User, (user) => user.roles)
-  users: User[];
 }

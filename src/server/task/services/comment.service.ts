@@ -6,7 +6,6 @@ import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
 import { Task, TaskContent, TaskState } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
-import { ActionType, TaskLog } from '../entities/taskLog.entity';
 import { TaskService } from './task.service';
 import { serialize } from 'class-transformer';
 import { Socket, Server } from 'ws';
