@@ -15,7 +15,7 @@ import { Logger } from 'winston';
 import { Socket, Server } from 'ws';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Access } from '@server/user/access.decorator';
-import { AccessGuard } from '@server/user/access.guard';
+import { RoleAccessGuard } from '@server/user/roleAccess.guard';
 import { UserService } from '@server/user/services/user.service';
 import { WsExceptionFilter } from '@server/error/wsError.filter';
 import { CommentDTO } from '@dtos/task.dto';
@@ -23,7 +23,7 @@ import { CommentService } from '../services/comment.service';
 
 
 @UseFilters(WsExceptionFilter)
-@UseGuards(AccessGuard)
+@UseGuards(RoleAccessGuard)
 @WebSocketGateway()
 export class CommentGateway implements OnGatewayConnection {
   constructor(

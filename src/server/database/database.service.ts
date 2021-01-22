@@ -2,14 +2,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Connection } from 'typeorm';
 import { OptionService } from '../option/option.service';
-import { RoleService } from '../user/services/role.service';
 import { UserService } from '../user/services/user.service';
 import { internet } from 'faker';
+import { RoleType } from '../user/entities/user.entity';
 
 @Injectable()
 export class DatabaseService {
   constructor(
-    private roleService: RoleService,
     private optionService: OptionService,
     private connection: Connection,
     private userService: UserService,
@@ -31,27 +30,19 @@ export class DatabaseService {
   }
 
   async createDefault() {
-    const options = this.configService.get('options') as {
+    const options = this.configService.get('defaultOptions') as {
       [key: string]: string;
-    };
-    const defaultRoles = this.configService.get('defaultRoles') as {
-      [key: string]: string[];
     };
 
     // create default options
     await this.optionService.setOptionValue('options', options);
-
-    // create default roles
-    for (const key in defaultRoles) {
-      await this.roleService.setRole(key, defaultRoles[key]);
-    }
 
     //create default user (admin)
     await this.userService.createUser(
       this.configService.get('adminUsername'),
       this.configService.get('adminPassword'),
       {
-        roles: ['admin'],
+        role: RoleType.ADMIN,
       },
     );
   }

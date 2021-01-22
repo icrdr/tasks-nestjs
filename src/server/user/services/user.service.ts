@@ -7,17 +7,13 @@ import {
 } from '@nestjs/common';
 import { OptionService } from '../../option/option.service';
 import { EntityManager } from 'typeorm';
-import { User, Role } from '../entities/user.entity';
-import { RoleService } from './role.service';
-import { isRoleArray } from '@utils/typeGuard';
+import { User, RoleType } from '../entities/user.entity';
 import { hash } from '@utils/utils';
 import { GetUsersDTO } from '@dtos/user.dto';
 
 @Injectable()
 export class UserService {
   constructor(
-    private optionService: OptionService,
-    private roleService: RoleService,
     private manager: EntityManager,
   ) {}
 
@@ -39,7 +35,6 @@ export class UserService {
   async getUser(identify: string | number, exception = true) {
     let query = this.manager
       .createQueryBuilder(User, 'user')
-      .leftJoinAndSelect('user.roles', 'role');
 
     query =
       typeof identify === 'number'
@@ -76,33 +71,18 @@ export class UserService {
       fullName?: string;
       email?: string;
       mobile?: string;
-      roles?: Role[] | number[] | string[];
+      role?: RoleType;
     } = {},
   ) {
     await this.isUsernameAvailable(username);
 
     const user = new User();
-    const roles = options.roles;
-    if (roles) {
-      if (!isRoleArray(roles)) {
-        let _roles: Role[] = [];
-        for (const identify of roles) {
-          _roles.push((await this.roleService.getRole(identify))!);
-        }
-        user.roles = _roles;
-      } else {
-        user.roles = roles;
-      }
-    } else {
-      const options: any = await this.optionService.getOptionValue('options');
-      user.roles = [(await this.roleService.getRole(options.defaultRole))!];
-    }
-
     user.username = username;
     user.password = hash(username + password);
     if (options.fullName) user.fullName = options.fullName;
     if (options.email) user.email = options.email;
     if (options.mobile) user.mobile = options.mobile;
+    if (options.role) user.role = options.role;
     await this.manager.save(user);
     return user;
   }

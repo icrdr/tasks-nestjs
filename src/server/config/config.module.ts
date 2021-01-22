@@ -18,12 +18,17 @@ export const configModule = ConfigModule.forRoot({
         jwtSecret: process.env.JWT_SECRET || 'app',
         logLevel: process.env.NODE_ENV === 'prod' ? 'http' : 'debug',
         logSilent: process.env.NODE_ENV === 'test',
-        defaultRoles: {
+        roleAccess: {
           admin: ['*'],
-          user: ['common.*', 'common.user.*'],
+          user: ['common.*'],
+          guest: [],
         },
-        options: {
-          defaultRole: 'user',
+        taskAccess: {
+          full: ['common.task.*'],
+          edit: ['common.task.edit', 'common.task.view'],
+          view: ['common.task.view'],
+        },
+        defaultOptions: {
           registrable: '1',
         },
         ossRegion: process.env.OSS_REGION,
@@ -31,7 +36,7 @@ export const configModule = ConfigModule.forRoot({
         ossRoleArn: process.env.OSS_ROLE_ARN,
         ossAccessKeyId: process.env.OSS_ACCESSKEYID,
         ossAccessKeySecret: process.env.OSS_ACCESSKEYSECRET,
-        yGcEnabled: process.env.Y_GC !== "false",
+        yGcEnabled: process.env.Y_GC !== 'false',
         yPersistenceDir: process.env.Y_PERSISTENCE_DIR,
       };
     },

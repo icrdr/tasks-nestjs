@@ -18,7 +18,6 @@ import { EntityManager } from 'typeorm';
 export class TaskAccessGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private configService: ConfigService,
     private taskService: TaskService,
   ) {}
 
@@ -31,16 +30,11 @@ export class TaskAccessGuard implements CanActivate {
     const taskId = req.params?.id || undefined;
     if (!userId || !taskId || !/(^[1-9]\d*$)/.test(taskId)) return false;
 
-    // const member = await this.taskService.getMember(taskId,userId);
-    // if (!member) return false;
-
-    // const ownedAccess = member.access;
-    // const validAccess =
-    //   neededAccess.length === 0 ? ownedAccess : getValidAccess(neededAccess, ownedAccess);
-    // if (validAccess.length === 0) return false;
-
+    const ownedAccess = await this.taskService.getMemberAccess(taskId,userId)
+    const validAccess =
+      neededAccess.length === 0 ? ownedAccess : getValidAccess(neededAccess, ownedAccess);
+    if (validAccess.length === 0) return false;
     req['targetTask'] = this.taskService.getTask(taskId);
-    // req['currentUser'] = member.user;
     return true;
   }
 }

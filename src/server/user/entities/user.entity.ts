@@ -6,18 +6,12 @@ import {
   ManyToMany,
   DeleteDateColumn,
   OneToMany,
-  Connection,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Task, Log } from '@server/task/entities/task.entity';
+import { Log } from '@server/task/entities/task.entity';
 import { Comment } from '@server/task/entities/comment.entity';
 import { Asset } from '@server/asset/asset.entity';
-import { Member } from '@server/task/entities/space.entity';
-
-export enum UserGender {
-  MALE = 'male',
-  FEMALE = 'female',
-}
+import { Member } from '@server/task/entities/space';
 
 export enum RoleType {
   ADMIN = 'admin',
@@ -43,7 +37,7 @@ export class User extends BaseEntity {
   @Column({ nullable: true })
   mobile: string;
 
-  @OneToMany(() => Member, (member) => member.user)
+  @ManyToMany(() => Member, (member) => member.user)
   members: Member[];
 
   @Column({
@@ -51,7 +45,7 @@ export class User extends BaseEntity {
     enum: RoleType,
     default: RoleType.USER,
   })
-  role: string;
+  role: RoleType;
 
   @OneToMany(() => Log, (log) => log.executor)
   logs: Log[];
@@ -77,7 +71,7 @@ export class ThirdAuth extends BaseEntity {
     type: 'enum',
     enum: ThirdAuthType,
   })
-  type: string;
+  type: ThirdAuthType;
 
   @Column()
   uid: string;

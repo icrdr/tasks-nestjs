@@ -4,21 +4,19 @@ import {
   Column,
   JoinTable,
   ManyToMany,
-  DeleteDateColumn,
   ManyToOne,
   OneToMany,
-  TreeParent,
-  TreeChildren,
-  Tree,
-  OneToOne,
-  JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
-import { OutputData } from '@editorjs/editorjs';
-import { Comment } from './comment.entity';
-import { View, Property, PropertyType } from './property.entity';
-import { Asset } from '@server/asset/asset.entity';
-import { Access, Task } from './task.entity';
+import { PropertyValue } from './property.entity';
+import { Task } from './task.entity';
+
+export enum AccessType {
+  FULL = 'full',
+  EDIT = 'edit',
+  VIEW = 'view',
+}
 
 @Entity()
 export class Space extends BaseEntity {
@@ -28,35 +26,17 @@ export class Space extends BaseEntity {
   @OneToMany(() => Role, (role) => role.space)
   roles: Role[];
 
-  @OneToMany(() => PropertyType, (propertyType) => propertyType.space)
-  properties: PropertyType[];
+  @OneToMany(() => Group, (group) => group.space)
+  tasks: Task[];
 
-  @OneToMany(() => View, (view) => view.task)
-  views: View[];
-
-  @OneToMany(() => Group, (task) => task.space)
+  @OneToMany(() => Group, (group) => group.space)
   groups: Group[];
 
   @OneToMany(() => Member, (member) => member.space)
   members: Member[];
 
-  @OneToMany(() => Task, (task) => task.space)
-  tasks: Task[];
-}
-
-@Entity()
-export class Group extends BaseEntity {
-  @ManyToOne(() => Space, (space) => space.groups)
-  space: Space;
-
-  @Column()
-  name: string;
-
-  @OneToMany(() => Access, (access) => access.group)
-  access: Access[];
-
-  @OneToMany(() => Member, (member) => member.space)
-  members: Member[];
+  @DeleteDateColumn()
+  deleteAt: Date;
 }
 
 @Entity()
@@ -72,13 +52,31 @@ export class Role extends BaseEntity {
 }
 
 @Entity()
-export class Member extends BaseEntity {
-  @ManyToOne(() => Space, (space) => space.members)
+export class Group extends BaseEntity {
+  @ManyToOne(() => Space, (space) => space.groups)
   space: Space;
+
+  @Column()
+  name: string;
+
+  @ManyToMany(() => Member)
+  @JoinTable()
+  members: Member[];
+
+  @OneToMany(() => Access, (access) => access.group)
+  access: Access[];
+}
+
+@Entity()
+export class Member extends BaseEntity {
+  @ManyToOne(() => Task, (group) => group.members)
+  task: Task;
 
   @ManyToOne(() => User, (user) => user.members)
   user: User;
 
-  @OneToMany(() => Property, (property) => property.member)
-  properties: Property[];
+  @OneToMany(() => PropertyValue, (propertyValue) => propertyValue.member)
+  properties: PropertyValue[];
 }
+
+

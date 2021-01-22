@@ -15,7 +15,7 @@ import { getValidAccess, unionArrays } from '@utils/utils';
 import { UserService } from './services/user.service';
 
 @Injectable()
-export class AccessGuard implements CanActivate {
+export class RoleAccessGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private configService: ConfigService,
@@ -35,8 +35,7 @@ export class AccessGuard implements CanActivate {
       throw new UnauthorizedException('bad token');
     }
     const currentUser = await this.userService.getUser(payload.id);
-    const allAccess = currentUser.roles.map((role) => role.access);
-    const ownedAccess = unionArrays(allAccess);
+    const ownedAccess = this.configService.get('roleAccess')[currentUser.role];
     const validAccess =
       neededAccess.length === 0 ? ownedAccess : getValidAccess(neededAccess, ownedAccess);
     if (validAccess.length === 0) return false;
@@ -47,7 +46,7 @@ export class AccessGuard implements CanActivate {
   }
 }
 
-export const accessGuard = {
+export const roleAccessGuard = {
   provide: APP_GUARD,
-  useClass: AccessGuard,
+  useClass: RoleAccessGuard,
 };

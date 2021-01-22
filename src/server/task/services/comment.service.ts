@@ -4,7 +4,7 @@ import { GetTasksDTO, CommentDTO, CommentRes } from '@dtos/task.dto';
 import { isUserArray } from '@utils/typeGuard';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
-import { Task, TaskContent, TaskState } from '../entities/task.entity';
+import { Task, TaskState } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
 import { TaskService } from './task.service';
 import { serialize } from 'class-transformer';

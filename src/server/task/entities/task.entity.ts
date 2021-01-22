@@ -16,9 +16,9 @@ import {
 import { User } from '@server/user/entities/user.entity';
 import { OutputData } from '@editorjs/editorjs';
 import { Comment } from './comment.entity';
-import { View, Property } from './property.entity';
+import { View, Property, PropertyValue } from './property.entity';
 import { Asset } from '@server/asset/asset.entity';
-import { Group, Role, Space } from './space.entity';
+import { Access, Group, Member } from './space.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -30,27 +30,17 @@ export enum TaskState {
 @Entity()
 @Tree('nested-set')
 export class Task extends BaseEntity {
-  @ManyToOne(() => Space, (space) => space.tasks)
-  space: Space;
-
   @Column()
   name: string;
 
-  @Column({
-    type: 'enum',
-    enum: TaskState,
-    default: TaskState.IN_PROGRESS,
-  })
-  state: TaskState;
+  @Column()
+  isCompleted: boolean;
 
   @Column({ nullable: true })
-  startAt: Date;
+  completeAt: Date;
 
-  @Column({ nullable: true })
-  dueAt: Date;
-
-  @Column({ nullable: true })
-  endAt: Date;
+  @DeleteDateColumn()
+  deleteAt: Date;
 
   @TreeParent()
   superTask: Task;
@@ -58,20 +48,14 @@ export class Task extends BaseEntity {
   @TreeChildren()
   subTasks: Task[];
 
-  @DeleteDateColumn()
-  deleteAt: Date;
-
   @OneToMany(() => Content, (content) => content.task)
   contents: Content[];
-
-  @OneToMany(() => Log, (log) => log.task)
-  logs: Log[];
 
   @OneToMany(() => Comment, (comment) => comment.task)
   comments: Comment[];
 
-  @OneToMany(() => Property, (property) => property.task)
-  properties: Property[];
+  @OneToMany(() => PropertyValue, (propertyValue) => propertyValue.task)
+  properties: PropertyValue[];
 
   @OneToMany(() => Access, (access) => access.task)
   access: Access[];
@@ -88,11 +72,14 @@ export class Access extends BaseEntity {
   @ManyToOne(() => Task, (task) => task.access)
   task: Task;
 
-  @ManyToOne(() => Role, (role) => role.access)
-  role: Role;
-
   @ManyToOne(() => Group, (group) => group.access)
   group: Group;
+
+  @Column({
+    type: 'enum',
+    enum: AccessType,
+  })
+  access: AccessType;
 }
 
 @Entity()

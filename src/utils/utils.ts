@@ -15,6 +15,10 @@ export function unionArrays(arr: Array<any>) {
   return [...new Set([].concat(...arr))];
 }
 
+export function unionEntityArrays(arr: Array<any>) {
+  return arr.filter((entity, index, self) => index === self.findIndex((t) => t.id === entity.id));
+}
+
 export function getValidAccess(neededAccess: string[], ownedAccess: string[]) {
   const validAccess: string[] = [];
   for (const neededPerm of neededAccess) {

@@ -10,7 +10,6 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { DatabaseService } from './database.service';
 import { UserService } from '../user/services/user.service';
 import { OptionService } from '../option/option.service';
-import { RoleService } from '../user/services/role.service';
 import { join } from 'path';
 
 @Injectable()
@@ -40,6 +39,6 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
       useClass: TypeOrmConfigService,
     }),
   ],
-  providers: [DatabaseService, OptionService, UserService, RoleService],
+  providers: [DatabaseService, OptionService, UserService],
 })
 export class DatabaseModule {}

@@ -14,13 +14,13 @@ import { Logger } from 'winston';
 import { Socket, Server } from 'ws';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { YjsService } from '../services/yjs.service';
-import { AccessGuard } from '@server/user/access.guard';
+import { RoleAccessGuard } from '@server/user/roleAccess.guard';
 
 import { WsExceptionFilter } from '@server/error/wsError.filter';
 
 
 @UseFilters(WsExceptionFilter)
-@UseGuards(AccessGuard)
+@UseGuards(RoleAccessGuard)
 @WebSocketGateway()
 export class YjsGateway implements OnGatewayConnection {
   constructor(

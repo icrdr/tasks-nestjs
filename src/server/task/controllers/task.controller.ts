@@ -24,7 +24,7 @@ export class TaskController {
   @Post()
   async createTask(@Body() body: CreateTaskDTO, @CurrentUser() user: User) {
     const options = {
-      members: body.memberId ? unionArrays([...body.memberId, user.id]) : [user.id],
+      members: body.memberId ? unionArrays([...[body.memberId], user.id]) : [user.id],
       state: body.state,
     };
     return new TaskMoreDetailRes(await this.taskService.createTask(body.name, user, options));
@@ -34,13 +34,7 @@ export class TaskController {
   @Access('common.task.view')
   @Get('/:id')
   async getTask(@TargetTask() task: Task) {
-    console.log(task.subTasks)
     return new TaskMoreDetailRes(task);
-  }
-
-  @Get('tree/:id')
-  async getTasksss(@Param() params: IdDTO,) {
-    return await this.taskService.getTasksss(params.id);
   }
 
   @Access('common.task.view')
@@ -112,10 +106,12 @@ export class TaskController {
     @CurrentUser() user: User,
   ) {
     const options = {
-      members: body.memberId ? unionArrays([...body.memberId, user.id]) : [user.id],
+      members: body.memberId ? unionArrays([...[body.memberId]]) : undefined,
       state: body.state,
     };
-    return new TaskDetailRes(await this.taskService.createSubTask(task, body.name, user.id, options));
+    return new TaskDetailRes(
+      await this.taskService.createSubTask(task, body.name, user.id, options),
+    );
   }
 
   @UseGuards(TaskAccessGuard)

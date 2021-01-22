@@ -3,7 +3,7 @@ import { User } from '@server/user/entities/user.entity';
 import { Task } from './task.entity';
 import { BaseEntity } from '@server/common/common.entity';
 import { Asset } from '@server/asset/asset.entity';
-import { Member, Space } from './space.entity';
+import { Member } from './space.entity';
 
 export enum PropertyType {
   MEMBER = 'member',
@@ -33,9 +33,6 @@ export class View extends BaseEntity {
   @ManyToOne(() => Task, (task) => task.views)
   task: Task;
 
-  @ManyToOne(() => Space, (space) => space.views)
-  space: Space;
-
   @Column()
   name: string;
 
@@ -51,7 +48,7 @@ export class View extends BaseEntity {
   })
   form: ViewForm;
 
-  @OneToMany(() => Property, (propertyType) => Property.view)
+  @OneToMany(() => Property, (property) => property.view)
   properties: Property[];
 
   @Column('simple-json', { nullable: true })
@@ -69,25 +66,22 @@ export class Property extends BaseEntity {
   @ManyToOne(() => View, (view) => view.properties)
   view: View;
 
-  @ManyToOne(() => Space, (task) => space.properties)
-  space: Space;
-
   @Column()
   name: string;
 
   @Column({
     type: 'enum',
-    enum: PropertyForm,
+    enum: PropertyType,
   })
-  type: PropertyForm;
+  type: PropertyType;
 
   @Column({
     type: 'enum',
     enum: PropertyForm,
   })
-  type: PropertyForm;
+  form: PropertyForm;
 
-  @Column('simple-json') 
+  @Column('simple-json')
   items: any[];
 }
 

@@ -11,13 +11,13 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { ActionType, Member, Task, TaskContent, TaskLog, TaskState } from '../server/task/entities/task.entity';
+import { ActionType, Task, Content, Log, TaskState } from '../server/task/entities/task.entity';
 import { ListRes } from './misc.dto';
 import { OutputData } from '@editorjs/editorjs';
 import { CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
-
+import { Group, Member } from '../server/task/entities/space.entity';
 
 export class CreateTaskDTO {
   @IsString()
@@ -32,7 +32,6 @@ export class CreateTaskDTO {
   @IsNumber({}, { each: true })
   memberId?: number[];
 }
-
 
 export class GetTasksDTO {
   @IsOptional()
@@ -159,7 +158,7 @@ export class TaskDetailRes {
   createAt: Date;
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : null))
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
   members: Member[] | MemberRes[];
 
   @Expose()
@@ -167,10 +166,28 @@ export class TaskDetailRes {
   superTask: TaskRes;
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : null))
+  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : []))
   subTasks: TaskRes[];
 
   constructor(partial: Partial<TaskRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class GroupRes {
+  @Expose()
+  name: string;
+
+  @Expose()
+  @Transform((i) => (i ? new TaskRes(i) : null))
+  task: TaskRes;
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
+  members: Member[] | MemberRes[];
+
+  constructor(partial: Partial<GroupRes>) {
     Object.assign(this, partial);
   }
 }
@@ -196,15 +213,15 @@ export class TaskMoreDetailRes {
   endAt: Date;
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: TaskContent) => new ContentRes(i)) : null))
+  @Transform((a) => (a ? a.map((i: Content) => new ContentRes(i)) : []))
   contents: ContentRes[];
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: TaskLog) => new LogRes(i)) : null))
-  logs: LogRes[];
+  @Transform((a) => (a ? a.map((i: Group) => new GroupRes(i)) : []))
+  groups: GroupRes[];
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : null))
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
   members: Member[] | MemberRes[];
 
   @Expose()
@@ -212,7 +229,7 @@ export class TaskMoreDetailRes {
   superTask: TaskRes;
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : null))
+  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : []))
   subTasks: TaskRes[];
 
   constructor(partial: Partial<TaskMoreDetailRes>) {
@@ -221,7 +238,7 @@ export class TaskMoreDetailRes {
 }
 
 export class TaskListRes extends ListRes {
-  @Transform((a) => (a ? a.map((i: Task) => new TaskDetailRes(i)) : null))
+  @Transform((a) => (a ? a.map((i: Task) => new TaskDetailRes(i)) : []))
   list: TaskDetailRes[];
 
   constructor(partial: Partial<TaskListRes>) {
