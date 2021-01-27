@@ -2,22 +2,25 @@ import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { Task } from '@server/task/entities/task.entity';
 import { BaseEntity } from '@server/common/common.entity';
 import { User } from '@server/user/entities/user.entity';
-import { PropertyValue } from '@server/task/entities/property.entity';
-
-export enum SubTaskViewType {
-  TABLE = 'table',
-}
+import { property } from './property.entity';
+import { Space } from './space.entity';
 
 @Entity()
 export class Asset extends BaseEntity {
+  @Column()
+  name: string;
+
+  @ManyToOne(() => Space, (space) => space.assets)
+  space: Space;
+
   @ManyToOne(() => Task, (task) => task.assets)
   task: Task;
 
   @ManyToOne(() => User, (user) => user.assets)
-  creator: User;
+  uploader: User;
 
-  @OneToMany(() => PropertyValue, (propertyValue) => propertyValue.asset)
-  properties: PropertyValue[];
+  @Column('simple-json', { nullable: true })
+  properties: property[];
 
   @Column()
   location: string;

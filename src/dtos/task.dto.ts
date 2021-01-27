@@ -11,15 +11,18 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { ActionType, Task, Content, Log, TaskState } from '../server/task/entities/task.entity';
-import { ListRes } from './misc.dto';
+import { Task, Content, TaskState } from '../server/task/entities/task.entity';
+import { ListDTO, ListRes } from './misc.dto';
 import { OutputData } from '@editorjs/editorjs';
 import { CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
-import { Group, Member } from '../server/task/entities/space.entity';
+import { Assignment, Member, Role } from '../server/task/entities/space.entity';
 
 export class CreateTaskDTO {
+  @IsNumber()
+  spaceId?: number;
+
   @IsString()
   name: string;
 
@@ -33,15 +36,7 @@ export class CreateTaskDTO {
   memberId?: number[];
 }
 
-export class GetTasksDTO {
-  @IsOptional()
-  @IsNumber()
-  pageSize?: number;
-
-  @IsOptional()
-  @IsNumber()
-  current?: number;
-
+export class GetTasksDTO extends ListDTO {
   @IsOptional()
   @Transform((v) => Object.values(TaskState)) //check all state if is empty.
   @IsEnum(TaskState, { each: true })
@@ -96,22 +91,22 @@ export class ContentRes {
   }
 }
 
-@Exclude()
-export class LogRes {
-  @Expose()
-  createAt: Date;
+// @Exclude()
+// export class LogRes {
+//   @Expose()
+//   createAt: Date;
 
-  @Expose()
-  @Transform((i) => (i ? new UserRes(i) : null))
-  executor: UserRes;
+//   @Expose()
+//   @Transform((i) => (i ? new UserRes(i) : null))
+//   executor: UserRes;
 
-  @Expose()
-  action: ActionType;
+//   @Expose()
+//   action: ActionType;
 
-  constructor(partial: Partial<LogRes>) {
-    Object.assign(this, partial);
-  }
-}
+//   constructor(partial: Partial<LogRes>) {
+//     Object.assign(this, partial);
+//   }
+// }
 
 @Exclude()
 export class MemberRes {
@@ -128,6 +123,29 @@ export class MemberRes {
   }
 
   constructor(partial: Partial<MemberRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class AssignmentRes {
+  role: Role;
+
+  @Expose()
+  get roleName(): string {
+    return this.role.name;
+  }
+
+  @Expose()
+  get roleAccess(): string {
+    return this.role.access;
+  }
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
+  members: Member[] | MemberRes[];
+
+  constructor(partial: Partial<AssignmentRes>) {
     Object.assign(this, partial);
   }
 }
@@ -169,25 +187,7 @@ export class TaskDetailRes {
   @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : []))
   subTasks: TaskRes[];
 
-  constructor(partial: Partial<TaskRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-@Exclude()
-export class GroupRes {
-  @Expose()
-  name: string;
-
-  @Expose()
-  @Transform((i) => (i ? new TaskRes(i) : null))
-  task: TaskRes;
-
-  @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
-  members: Member[] | MemberRes[];
-
-  constructor(partial: Partial<GroupRes>) {
+  constructor(partial: Partial<TaskDetailRes>) {
     Object.assign(this, partial);
   }
 }
@@ -217,8 +217,8 @@ export class TaskMoreDetailRes {
   contents: ContentRes[];
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Group) => new GroupRes(i)) : []))
-  groups: GroupRes[];
+  @Transform((a) => (a ? a.map((i: Assignment) => new AssignmentRes(i)) : []))
+  assignments: Assignment[] | AssignmentRes[];
 
   @Expose()
   @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))

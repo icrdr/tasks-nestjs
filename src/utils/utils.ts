@@ -11,6 +11,10 @@ export function stringMatch(str: string, rule: string) {
   return new RegExp('^' + rule.split('*').map(escapeRegex).join('.*') + '$').test(str);
 }
 
+export function isIntString(str: string) {
+  return /(^[1-9]\d*$)/.test(str);
+}
+
 export function unionArrays(arr: Array<any>) {
   return [...new Set([].concat(...arr))];
 }

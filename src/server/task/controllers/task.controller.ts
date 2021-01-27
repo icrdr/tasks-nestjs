@@ -24,10 +24,28 @@ export class TaskController {
   @Post()
   async createTask(@Body() body: CreateTaskDTO, @CurrentUser() user: User) {
     const options = {
-      members: body.memberId ? unionArrays([...[body.memberId], user.id]) : [user.id],
       state: body.state,
     };
-    return new TaskMoreDetailRes(await this.taskService.createTask(body.name, user, options));
+    return new TaskMoreDetailRes(
+      await this.taskService.createTask(body.spaceId, body.name, user, options),
+    );
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.create')
+  @Post('/:id')
+  async createSubTask(
+    @TargetTask() task: Task,
+    @Body() body: CreateTaskDTO,
+    @CurrentUser() user: User,
+  ) {
+    const options = {
+      members: body.memberId ? unionArrays([...[body.memberId]]) : undefined,
+      state: body.state,
+    };
+    return new TaskDetailRes(
+      await this.taskService.createSubTask(task, body.name, user.id, options),
+    );
   }
 
   @UseGuards(TaskAccessGuard)
@@ -37,10 +55,19 @@ export class TaskController {
     return new TaskMoreDetailRes(task);
   }
 
+  @UseGuards(TaskAccessGuard)
   @Access('common.task.view')
-  @Get()
-  async getTasks(@Query() query: GetTasksDTO) {
-    const tasks = await this.taskService.getTasks(query);
+  @Get('/:id/tasks')
+  async getSubTasks(
+    @TargetTask() task: Task,
+    @Query() query: GetTasksDTO,
+    @CurrentUser() user: User,
+  ) {
+    const tasks = await this.taskService.getTasks({
+      superTask: task,
+      user: user,
+      ...query,
+    });
     return ListResSerialize(tasks, TaskListRes);
   }
 
@@ -95,30 +122,5 @@ export class TaskController {
   @Put('/:id/refuse')
   async acceptCommit(@CurrentUser() user: User, @TargetTask() task: Task) {
     return new TaskDetailRes(await this.taskService.refuseToCommit(task, user));
-  }
-
-  @UseGuards(TaskAccessGuard)
-  @Access('common.task.create')
-  @Post('/:id')
-  async createSubTask(
-    @TargetTask() task: Task,
-    @Body() body: CreateTaskDTO,
-    @CurrentUser() user: User,
-  ) {
-    const options = {
-      members: body.memberId ? unionArrays([...[body.memberId]]) : undefined,
-      state: body.state,
-    };
-    return new TaskDetailRes(
-      await this.taskService.createSubTask(task, body.name, user.id, options),
-    );
-  }
-
-  @UseGuards(TaskAccessGuard)
-  @Access('common.task.view')
-  @Get('/:id/tasks')
-  async getSubTasks(@TargetTask() task: Task, @Query() query: GetTasksDTO) {
-    const tasks = await this.taskService.getSubTasks(task, query);
-    return ListResSerialize(tasks, TaskListRes);
   }
 }

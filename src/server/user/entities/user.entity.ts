@@ -1,17 +1,9 @@
 import { BaseEntity } from '@server/common/common.entity';
-import {
-  Entity,
-  Column,
-  JoinTable,
-  ManyToMany,
-  DeleteDateColumn,
-  OneToMany,
-} from 'typeorm';
+import { Entity, Column, JoinTable, ManyToMany, DeleteDateColumn, OneToMany } from 'typeorm';
 import { Exclude } from 'class-transformer';
-import { Log } from '@server/task/entities/task.entity';
 import { Comment } from '@server/task/entities/comment.entity';
-import { Asset } from '@server/asset/asset.entity';
-import { Member } from '@server/task/entities/space';
+import { Asset } from '@server/task/entities/asset.entity';
+import { Member } from '@server/task/entities/space.entity';
 
 export enum RoleType {
   ADMIN = 'admin',
@@ -47,13 +39,10 @@ export class User extends BaseEntity {
   })
   role: RoleType;
 
-  @OneToMany(() => Log, (log) => log.executor)
-  logs: Log[];
-
   @OneToMany(() => Comment, (comment) => comment.sender)
   comments: Comment[];
 
-  @OneToMany(() => Asset, (asset) => asset.creator)
+  @OneToMany(() => Asset, (asset) => asset.uploader)
   assets: Asset[];
 
   @DeleteDateColumn()

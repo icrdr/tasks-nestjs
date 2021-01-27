@@ -7,9 +7,11 @@ import { YjsGateway } from './controllers/yjs.gateway';
 import { YjsService } from './services/yjs.service';
 import { CommentGateway } from './controllers/comment.gateway';
 import { CommentService } from './services/comment.service';
+import { SpaceService } from './services/space.service';
+import { SpaceController } from './controllers/space.controller';
 @Module({
   imports: [CommonModule, UserModule],
-  providers: [TaskService, CommentGateway, CommentService, YjsGateway, YjsService],
-  controllers: [TaskController],
+  providers: [TaskService, SpaceService, CommentGateway, CommentService, YjsGateway, YjsService],
+  controllers: [TaskController,SpaceController],
 })
 export class TaskModule {}

@@ -10,12 +10,11 @@ import { EntityManager } from 'typeorm';
 import { User, RoleType } from '../entities/user.entity';
 import { hash } from '@utils/utils';
 import { GetUsersDTO } from '@dtos/user.dto';
+import { useResponsive } from 'ahooks';
 
 @Injectable()
 export class UserService {
-  constructor(
-    private manager: EntityManager,
-  ) {}
+  constructor(private manager: EntityManager) {}
 
   async isUsernameAvailable(username: string) {
     const user = await this.manager.findOne(User, { username: username });
@@ -23,18 +22,12 @@ export class UserService {
   }
 
   async getUserId(user: User | string | number) {
-    if (user instanceof User) {
-      return user.id;
-    } else if (typeof user === 'string') {
-      return (await this.getUser(user)).id;
-    } else {
-      return user;
-    }
+    user = user instanceof User ? user : await this.getUser(user);
+    return user.id;
   }
 
   async getUser(identify: string | number, exception = true) {
-    let query = this.manager
-      .createQueryBuilder(User, 'user')
+    let query = this.manager.createQueryBuilder(User, 'user');
 
     query =
       typeof identify === 'number'

@@ -1,5 +1,15 @@
 import { ClassType } from 'react';
-import { IsNumber, IsNumberString } from 'class-validator';
+import { IsNumber, IsNumberString, IsOptional } from 'class-validator';
+
+export class ListDTO {
+  @IsOptional()
+  @IsNumber()
+  current?: number;
+
+  @IsOptional()
+  @IsNumber()
+  pageSize?: number;
+}
 
 export class ListRes {
   current?: number;

@@ -2,8 +2,8 @@ import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { Task } from './task.entity';
 import { BaseEntity } from '@server/common/common.entity';
-import { Asset } from '@server/asset/asset.entity';
-import { Member } from './space.entity';
+import { Asset } from '@server/task/entities/asset.entity';
+import { Member, Space } from './space.entity';
 
 export enum PropertyType {
   MEMBER = 'member',
@@ -28,11 +28,16 @@ export enum ViewType {
   ASSET = 'asset',
 }
 
+export interface viewOption {
+  form: ViewForm;
+  sorts: any;
+  filters: any;
+  properties: number[];
+  options: any;
+}
+
 @Entity()
 export class View extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.views)
-  task: Task;
-
   @Column()
   name: string;
 
@@ -42,29 +47,17 @@ export class View extends BaseEntity {
   })
   type: ViewType;
 
-  @Column({
-    type: 'enum',
-    enum: ViewForm,
-  })
-  form: ViewForm;
-
-  @OneToMany(() => Property, (property) => property.view)
-  properties: Property[];
-
   @Column('simple-json', { nullable: true })
-  sorts: any;
+  options: viewOption;
 
-  @Column('simple-json', { nullable: true })
-  filters: any;
-
-  @Column('simple-json', { nullable: true })
-  options: any;
+  @ManyToOne(() => Space, (space) => space.views)
+  space: Space;
 }
 
 @Entity()
 export class Property extends BaseEntity {
-  @ManyToOne(() => View, (view) => view.properties)
-  view: View;
+  @ManyToOne(() => Space, (space) => space.properties)
+  space: Space;
 
   @Column()
   name: string;
@@ -82,23 +75,10 @@ export class Property extends BaseEntity {
   form: PropertyForm;
 
   @Column('simple-json')
-  items: any[];
+  items: string[];
 }
 
-@Entity()
-export class PropertyValue extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.properties)
-  task: Task;
-
-  @ManyToOne(() => Member, (member) => member.properties)
-  member: Member;
-
-  @ManyToOne(() => Asset, (asset) => asset.properties)
-  asset: Asset;
-
-  @ManyToOne(() => Property, (property) => property)
-  property: Property;
-
-  @Column('simple-json')
+export interface property {
+  id: number;
   value: any;
 }

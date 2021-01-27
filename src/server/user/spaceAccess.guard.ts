@@ -11,12 +11,11 @@ import { APP_GUARD } from '@nestjs/core';
 import { Request } from 'express';
 import { verify } from 'jsonwebtoken';
 import { getValidAccess, isIntString } from '@utils/utils';
-import { TaskService } from '../task/services/task.service';
-import { EntityManager } from 'typeorm';
+import { SpaceService } from '../task/services/space.service';
 
 @Injectable()
-export class TaskAccessGuard implements CanActivate {
-  constructor(private reflector: Reflector, private taskService: TaskService) {}
+export class SpaceAccessGuard implements CanActivate {
+  constructor(private reflector: Reflector, private spaceService: SpaceService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const neededAccess = this.reflector.get<string[]>('access', context.getHandler());
@@ -24,19 +23,19 @@ export class TaskAccessGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest();
     const userId = req.currentUser?.id;
-    const taskId = req.params?.id || undefined;
-    if (!userId || !taskId || !isIntString(taskId)) return false;
+    const spaceId = req.params?.id || undefined;
+    if (!userId || !spaceId || !isIntString(spaceId)) return false;
 
-    const ownedAccess = await this.taskService.getTaskAccess(taskId, userId);
+    const ownedAccess = await this.spaceService.getSpaceAccess(spaceId, userId);
     const validAccess =
       neededAccess.length === 0 ? ownedAccess : getValidAccess(neededAccess, ownedAccess);
     if (validAccess.length === 0) return false;
-    req['targetTask'] = this.taskService.getTask(taskId);
+    req['targetSpace'] = this.spaceService.getSpace(spaceId);
     return true;
   }
 }
 
-export const taskAccessGuard = {
+export const spaceAccessGuard = {
   provide: APP_GUARD,
-  useClass: TaskAccessGuard,
+  useClass: SpaceAccessGuard,
 };

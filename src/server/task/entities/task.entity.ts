@@ -16,9 +16,9 @@ import {
 import { User } from '@server/user/entities/user.entity';
 import { OutputData } from '@editorjs/editorjs';
 import { Comment } from './comment.entity';
-import { View, Property, PropertyValue } from './property.entity';
-import { Asset } from '@server/asset/asset.entity';
-import { Access, Group, Member } from './space.entity';
+import { property } from './property.entity';
+import { Asset } from '@server/task/entities/asset.entity';
+import { accessLevel, Assignment, Space } from './space.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -33,8 +33,17 @@ export class Task extends BaseEntity {
   @Column()
   name: string;
 
-  @Column()
-  isCompleted: boolean;
+  @Column({
+    type: 'enum',
+    enum: TaskState,
+  })
+  state: TaskState;
+
+  @Column({ nullable: true })
+  beginAt: Date;
+
+  @Column({ nullable: true })
+  dueAt: Date;
 
   @Column({ nullable: true })
   completeAt: Date;
@@ -48,38 +57,30 @@ export class Task extends BaseEntity {
   @TreeChildren()
   subTasks: Task[];
 
+  @ManyToOne(() => Space, (space) => space.tasks)
+  space: Space;
+
   @OneToMany(() => Content, (content) => content.task)
   contents: Content[];
 
   @OneToMany(() => Comment, (comment) => comment.task)
   comments: Comment[];
 
-  @OneToMany(() => PropertyValue, (propertyValue) => propertyValue.task)
-  properties: PropertyValue[];
+  @Column('simple-json', { nullable: true })
+  properties: property[];
 
-  @OneToMany(() => Access, (access) => access.task)
-  access: Access[];
+  @ManyToMany(() => Assignment, (assignment) => assignment.space)
+  assignments: Assignment[]; 
 
   @OneToMany(() => Asset, (asset) => asset.task)
   assets: Asset[];
 
-  @OneToMany(() => View, (view) => view.task)
-  views: View[];
-}
-
-@Entity()
-export class Access extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.access)
-  task: Task;
-
-  @ManyToOne(() => Group, (group) => group.access)
-  group: Group;
-
   @Column({
     type: 'enum',
-    enum: AccessType,
+    enum: accessLevel,
+    nullable: true,
   })
-  access: AccessType;
+  access: accessLevel;
 }
 
 @Entity()
@@ -89,31 +90,4 @@ export class Content extends BaseEntity {
 
   @Column('simple-json', { nullable: true })
   content: OutputData;
-}
-
-export enum ActionType {
-  START = 'start',
-  RESTART = 'restart',
-  SUSPEND = 'suspend',
-  COMPLETE = 'complete',
-  COMMIT = 'commit',
-  REFUSE = 'refuse',
-  CREATE = 'create',
-  UPDATA = 'update',
-  DELETE = 'delete',
-}
-
-@Entity()
-export class Log extends BaseEntity {
-  @ManyToOne(() => Task, (task) => task.logs)
-  task: Task;
-
-  @ManyToOne(() => User, (User) => User.logs, { nullable: true })
-  executor: User;
-
-  @Column({
-    type: 'enum',
-    enum: ActionType,
-  })
-  action: ActionType;
 }
