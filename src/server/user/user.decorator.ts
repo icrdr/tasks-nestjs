@@ -15,3 +15,10 @@ export const TargetTask = createParamDecorator(
     return req.targetTask;
   },
 );
+
+export const TargetSpace = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): Task => {
+    const req = ctx.switchToHttp().getRequest();
+    return req.targetSpace;
+  },
+);

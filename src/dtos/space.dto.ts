@@ -17,7 +17,7 @@ import { OutputData } from '@editorjs/editorjs';
 import { CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
-import { Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
+import { accessLevel, Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
 
 export class CreateSpaceDTO {
   @IsString()
@@ -26,8 +26,15 @@ export class CreateSpaceDTO {
   @IsOptional()
   @Type(() => Number)
   @IsNumber({}, { each: true })
+  adminId?: number[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({}, { each: true })
   memberId?: number[];
 }
+
+export class GetSpacesDTO extends ListDTO {}
 
 @Exclude()
 export class SpaceRes {
@@ -36,6 +43,48 @@ export class SpaceRes {
   @Expose()
   name: string;
   constructor(partial: Partial<SpaceRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class MemberRes {
+  user: User;
+
+  @Expose()
+  get userId(): number {
+    return this.user.id;
+  }
+
+  @Expose()
+  get username(): string {
+    return this.user.username;
+  }
+
+  constructor(partial: Partial<MemberRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class AssignmentRes {
+  role: Role;
+
+  @Expose()
+  get roleName(): string {
+    return this.role.name;
+  }
+
+  @Expose()
+  get roleAccess(): string {
+    return this.role.access;
+  }
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
+  members: Member[] | MemberRes[];
+
+  constructor(partial: Partial<AssignmentRes>) {
     Object.assign(this, partial);
   }
 }
@@ -50,6 +99,13 @@ export class SpaceDetailRes {
 
   @Expose()
   createAt: Date;
+
+  @Expose()
+  access: accessLevel;
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
+  members: Member[] | MemberRes[];
 
   constructor(partial: Partial<SpaceDetailRes>) {
     Object.assign(this, partial);

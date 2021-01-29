@@ -26,12 +26,12 @@ export class TaskAccessGuard implements CanActivate {
     const userId = req.currentUser?.id;
     const taskId = req.params?.id || undefined;
     if (!userId || !taskId || !isIntString(taskId)) return false;
-
-    const ownedAccess = await this.taskService.getTaskAccess(taskId, userId);
+    const task = await this.taskService.getTask(taskId);
+    const ownedAccess = await this.taskService.getTaskAccess(task, userId);
     const validAccess =
       neededAccess.length === 0 ? ownedAccess : getValidAccess(neededAccess, ownedAccess);
     if (validAccess.length === 0) return false;
-    req['targetTask'] = this.taskService.getTask(taskId);
+    req['targetTask'] = task;
     return true;
   }
 }

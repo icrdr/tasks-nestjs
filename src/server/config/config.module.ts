@@ -24,9 +24,9 @@ export const configModule = ConfigModule.forRoot({
           guest: [],
         },
         taskAccess: {
-          full: ['common.task.*','common.space.*'],
-          edit: ['common.task.edit', 'common.task.view'],
-          view: ['common.task.view'],
+          full: ['common.task.*', 'common.space.*'],
+          edit: ['common.task.edit', 'common.task.view', 'common.space.edit', 'common.space.view'],
+          view: ['common.task.view', 'common.space.view'],
         },
         defaultOptions: {
           registrable: '1',

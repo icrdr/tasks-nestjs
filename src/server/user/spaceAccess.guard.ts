@@ -25,12 +25,13 @@ export class SpaceAccessGuard implements CanActivate {
     const userId = req.currentUser?.id;
     const spaceId = req.params?.id || undefined;
     if (!userId || !spaceId || !isIntString(spaceId)) return false;
-
-    const ownedAccess = await this.spaceService.getSpaceAccess(spaceId, userId);
+    
+    const space = await this.spaceService.getSpace(spaceId);
+    const ownedAccess = await this.spaceService.getSpaceAccess(space, userId);
     const validAccess =
       neededAccess.length === 0 ? ownedAccess : getValidAccess(neededAccess, ownedAccess);
     if (validAccess.length === 0) return false;
-    req['targetSpace'] = this.spaceService.getSpace(spaceId);
+    req['targetSpace'] = space;
     return true;
   }
 }

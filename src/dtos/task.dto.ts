@@ -18,11 +18,9 @@ import { CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
 import { Assignment, Member, Role } from '../server/task/entities/space.entity';
+import { AssignmentRes } from './space.dto';
 
 export class CreateTaskDTO {
-  @IsNumber()
-  spaceId?: number;
-
   @IsString()
   name: string;
 
@@ -108,47 +106,7 @@ export class ContentRes {
 //   }
 // }
 
-@Exclude()
-export class MemberRes {
-  user: User;
 
-  @Expose()
-  get userId(): number {
-    return this.user.id;
-  }
-
-  @Expose()
-  get username(): string {
-    return this.user.username;
-  }
-
-  constructor(partial: Partial<MemberRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-@Exclude()
-export class AssignmentRes {
-  role: Role;
-
-  @Expose()
-  get roleName(): string {
-    return this.role.name;
-  }
-
-  @Expose()
-  get roleAccess(): string {
-    return this.role.access;
-  }
-
-  @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
-  members: Member[] | MemberRes[];
-
-  constructor(partial: Partial<AssignmentRes>) {
-    Object.assign(this, partial);
-  }
-}
 
 @Exclude()
 export class TaskRes {
@@ -173,11 +131,10 @@ export class TaskDetailRes {
   name: string;
 
   @Expose()
-  createAt: Date;
+  access: string;
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
-  members: Member[] | MemberRes[];
+  createAt: Date;
 
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
@@ -213,16 +170,15 @@ export class TaskMoreDetailRes {
   endAt: Date;
 
   @Expose()
+  access: string;
+
+  @Expose()
   @Transform((a) => (a ? a.map((i: Content) => new ContentRes(i)) : []))
   contents: ContentRes[];
 
   @Expose()
   @Transform((a) => (a ? a.map((i: Assignment) => new AssignmentRes(i)) : []))
   assignments: Assignment[] | AssignmentRes[];
-
-  @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
-  members: Member[] | MemberRes[];
 
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))

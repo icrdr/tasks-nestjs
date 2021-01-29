@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Access } from '@server/user/access.decorator';
-import { CurrentUser, TargetTask } from '@server/user/user.decorator';
+import { CurrentUser, TargetSpace, TargetTask } from '@server/user/user.decorator';
 import { TaskService } from '../services/task.service';
 import {
   CreateTaskDTO,
@@ -16,30 +16,78 @@ import { TaskAccessGuard } from '@server/user/taskAccess.guard';
 import { Task } from '../entities/task.entity';
 import { unionArrays } from '@utils/utils';
 import { SpaceService } from '../services/space.service';
-import { CreateSpaceDTO, SpaceDetailRes } from '@dtos/space.dto';
+import { CreateSpaceDTO, GetSpacesDTO, SpaceDetailRes, SpaceListRes } from '@dtos/space.dto';
+import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
+import { accessLevel, Space } from '../entities/space.entity';
 
 @Controller('api/spaces')
 export class SpaceController {
   constructor(private taskService: TaskService, private spaceService: SpaceService) {}
 
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.create')
+  @Post('/:id/tasks')
+  async createSpaceTask(
+    @Body() body: CreateTaskDTO,
+    @TargetSpace() space: Space,
+    @CurrentUser() user: User,
+  ) {
+    const options = (await this.spaceService.isPersonalSpace(space))
+      ? {
+          state: body.state,
+          access: accessLevel.FULL,
+        }
+      : {
+          state: body.state,
+          admins: [user],
+          access: accessLevel.VIEW,
+        };
+    return new TaskMoreDetailRes(
+      await this.taskService.createTask(space, body.name, user, options),
+    );
+  }
+
+  @UseGuards(SpaceAccessGuard)
   @Access('common.space.view')
   @Get('/:id/tasks')
   async getSpaceTasks(
-    @Param() param: IdDTO,
+    @TargetSpace() space: Space,
     @Query() query: GetTasksDTO,
     @CurrentUser() user: User,
   ) {
     const tasks = await this.taskService.getTasks({
-      space: param.id,
+      space: space,
       user: user,
       ...query,
     });
     return ListResSerialize(tasks, TaskListRes);
   }
 
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.space.view')
+  @Get('/:id')
+  async getSpace(@TargetSpace() space: Space) {
+    return new SpaceDetailRes(space);
+  }
+
+  @Access('common.space.view')
+  @Get()
+  async getSpaces(@Query() query: GetSpacesDTO, @CurrentUser() user: User) {
+    const spaces = await this.spaceService.getSpaces({
+      user: user,
+      ...query,
+    });
+    return ListResSerialize(spaces, SpaceListRes);
+  }
+
   @Access('common.space.create')
   @Post()
-  async createSpace(@Body() body: CreateSpaceDTO, @CurrentUser() user: User) {
-    return new SpaceDetailRes(await this.spaceService.createSpace(body.name, user));
+  async createTeamSpace(@Body() body: CreateSpaceDTO, @CurrentUser() user: User) {
+    const options = {
+      members: body.memberId ? unionArrays([...[body.memberId]]) : undefined,
+      admins: body.adminId ? unionArrays([...[body.adminId], user]) : [user],
+      access: accessLevel.VIEW,
+    };
+    return new SpaceDetailRes(await this.spaceService.createSpace(body.name, user, options));
   }
 }

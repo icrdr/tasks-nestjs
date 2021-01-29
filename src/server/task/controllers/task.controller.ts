@@ -20,17 +20,6 @@ import { unionArrays } from '@utils/utils';
 export class TaskController {
   constructor(private taskService: TaskService) {}
 
-  @Access('common.task.create')
-  @Post()
-  async createTask(@Body() body: CreateTaskDTO, @CurrentUser() user: User) {
-    const options = {
-      state: body.state,
-    };
-    return new TaskMoreDetailRes(
-      await this.taskService.createTask(body.spaceId, body.name, user, options),
-    );
-  }
-
   @UseGuards(TaskAccessGuard)
   @Access('common.task.create')
   @Post('/:id')

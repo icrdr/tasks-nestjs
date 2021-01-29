@@ -69,8 +69,9 @@ export class Task extends BaseEntity {
   @Column('simple-json', { nullable: true })
   properties: property[];
 
-  @ManyToMany(() => Assignment, (assignment) => assignment.space)
-  assignments: Assignment[]; 
+  @ManyToMany(() => Assignment, (assignment) => assignment.tasks)
+  @JoinTable()
+  assignments: Assignment[];
 
   @OneToMany(() => Asset, (asset) => asset.task)
   assets: Asset[];

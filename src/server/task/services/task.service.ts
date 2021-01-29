@@ -1,24 +1,34 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { EntityManager, In, IsNull, Not } from 'typeorm';
-import { GetTasksDTO } from '@dtos/task.dto';
-import { isUserArray } from '@utils/typeGuard';
+import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
 import { Task, Content, TaskState } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
-import { Assignment, LogAction, Member, Space } from '../entities/space.entity';
-import { unionArrays, unionEntityArrays } from '@utils/utils';
+import { accessLevel, Space } from '../entities/space.entity';
+import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { SpaceService } from './space.service';
 
 @Injectable()
 export class TaskService {
+  taskQuery: SelectQueryBuilder<Task>;
   constructor(
     private userService: UserService,
     private spaceService: SpaceService,
     private configService: ConfigService,
     private manager: EntityManager,
-  ) {}
+  ) {
+    this.taskQuery = this.manager
+      .createQueryBuilder(Task, 'task')
+      .leftJoinAndSelect('task.assignments', 'assignment')
+      .leftJoinAndSelect('assignment.members', 'member')
+      .leftJoinAndSelect('member.user', 'user')
+      .leftJoinAndSelect('assignment.role', 'role')
+      .leftJoinAndSelect('task.space', 'space')
+      .leftJoinAndSelect('task.contents', 'content')
+      .leftJoinAndSelect('task.superTask', 'superTask')
+      .leftJoinAndSelect('task.subTasks', 'subTask');
+  }
 
   async checkParentTaskNotInStates(task: Task | number, states: TaskState[]) {
     if (!(task instanceof Task)) task = await this.getTask(task);
@@ -35,16 +45,26 @@ export class TaskService {
     name: string,
     executor?: User | number | string,
     options: {
+      admins?: User[] | number[] | string[];
       state?: TaskState;
+      access?: accessLevel;
     } = {},
   ) {
     space = space instanceof Space ? space : await this.spaceService.getSpace(space);
     let task = new Task();
     task.space = space;
     task.name = name;
+    if (options.access) task.access = options.access;
     if (options.state) task.state = options.state;
     task = await this.manager.save(task);
     //log
+    if (options.admins) {
+      const adminMembers = [];
+      for (const admin of options.admins) {
+        adminMembers.push(await this.spaceService.createMember(space, admin));
+      }
+      await this.spaceService.createAssignment(task, 'admin', accessLevel.FULL, adminMembers);
+    }
     return await this.getTask(task.id);
   }
 
@@ -77,17 +97,15 @@ export class TaskService {
 
   async getTaskAccess(task: Task | number, user: User | number | string) {
     task = task instanceof Task ? task : await this.getTask(task);
-    const taskId = task.id;
-    const userId = await this.userService.getUserId(user);
-    let query = this.manager
-      .createQueryBuilder(Assignment, 'assignment')
-      .leftJoinAndSelect('assignment.tasks', 'task')
-      .leftJoinAndSelect('assignment.members', 'member')
-      .leftJoinAndSelect('member.user', 'user')
-      .where('task.id = :taskId', { taskId })
-      .andWhere('user.id = :userId', { userId });
 
-    const assignments = await query.getMany();
+    // 1. cheack if is space member
+    if (!(await this.spaceService.getMember(task.space, user))) return [];
+
+    // 2. cheack if is scope admin
+    if (!(await this.spaceService.isScopeAdmin(task, user))) return ['common.*'];
+
+    // 3. cheack all assignments of task and task default access
+    const assignments = await this.spaceService.getAssignments(task, user);
     let access = this.configService.get('taskAccess')[task.access];
     assignments.forEach(
       (a) => (access = access.concat(this.configService.get('taskAccess')[a.role.access])),
@@ -95,23 +113,10 @@ export class TaskService {
     return unionArrays(access);
   }
 
-  async getTask(identify: number, exception = true) {
-    let query = this.manager
-      .createQueryBuilder(Task, 'task')
-      .leftJoinAndSelect('task.groups', 'group')
-      .leftJoinAndSelect('group.members', 'gMember')
-      .leftJoinAndSelect('gMember.user', 'gUser')
-      .leftJoinAndSelect('group.task', 'gTask')
-      .leftJoinAndSelect('task.members', 'member')
-      .leftJoinAndSelect('member.user', 'user')
-      .leftJoinAndSelect('task.contents', 'content')
-      .leftJoinAndSelect('task.superTask', 'superTask')
-      .leftJoinAndSelect('task.subTasks', 'subTask');
-    query = query.where('task.id = :id', { id: identify });
-
+  async getTask(id: number, exception = true) {
+    const query = this.taskQuery.clone().where('task.id = :id', { id });
     const task = await query.getOne();
     if (!task && exception) throw new NotFoundException('Task was not found.');
-
     return task;
   }
 
@@ -125,24 +130,21 @@ export class TaskService {
       current?: number;
     } = {},
   ) {
-    let query = this.manager
-      .createQueryBuilder(Task, 'task')
-      .leftJoin('task.space', 'space')
-      .leftJoinAndSelect('task.assignments', 'assignment')
-      .leftJoinAndSelect('assignment.members', 'member')
-      .leftJoinAndSelect('member.user', 'user')
-      .leftJoinAndSelect('task.contents', 'content')
-      .leftJoinAndSelect('task.superTask', 'superTask');
+    let query = this.taskQuery.clone();
+
     if (options.space) {
       const spaceId = await this.spaceService.getSpaceId(options.space);
       query = query.andWhere('space.id = :spaceId', { spaceId });
     }
     if (options.user) {
       const userId = await this.userService.getUserId(options.user);
-      query = query
-        .andWhere('user.id = :userId', { userId })
-        .orWhere('space.access IS NOT NULL')
-        .orWhere('task.access IS NOT NULL');
+      query = query.andWhere(
+        new Brackets((qb) => {
+          qb.where('user.id = :userId', { userId })
+            .orWhere('space.access IS NOT NULL')
+            .orWhere('task.access IS NOT NULL');
+        }),
+      );
     }
     if (options.superTask) {
       const superTaskId = await this.getTaskId(options.superTask);
@@ -153,6 +155,11 @@ export class TaskService {
         states: [...options.state],
       });
     }
+
+    query = query
+      .leftJoinAndSelect('task.assignments', '_assignment')
+      .leftJoinAndSelect('_assignment.members', '_member')
+      .leftJoinAndSelect('_member.user', '_user');
 
     query = query
       .orderBy('task.id', 'DESC')
