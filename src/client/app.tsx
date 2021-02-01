@@ -4,6 +4,7 @@ import { RequestConfig } from 'umi';
 import { getCurrentUser, initialState, getStsToken } from './pages/layout/layout.service';
 import Footer from './pages/layout/components/layout.Footer';
 import RightContent from './pages/layout/components/layout.RightContent';
+import MenuHeader from './pages/layout/components/layout.MenuHeader';
 import Cookies from 'js-cookie';
 import { history } from 'umi';
 
@@ -32,6 +33,7 @@ export const layout = (): BasicLayoutProps => {
   return {
     rightContentRender: () => <RightContent />,
     footerRender: () => <Footer />,
+    menuHeaderRender: () => <MenuHeader />,
   };
 };
 

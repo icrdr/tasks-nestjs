@@ -42,12 +42,10 @@ const RightContent: React.FC<{}> = () => {
   }
 
   return (
-    <Access>
-      <Space size="middle">
-        <HeaderAvatar currentUser={initialState.currentUser} />
-        <SelectLang />
-      </Space>
-    </Access>
+    <Space size="middle">
+      <HeaderAvatar currentUser={initialState.currentUser} />
+      <SelectLang />
+    </Space>
   );
 };
 export default RightContent;

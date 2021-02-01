@@ -6,69 +6,29 @@
     routes: [{ component: 'login/login.page' }],
   },
   {
-    path: '/dashboard',
-    name: 'dashboard',
-    icon: 'Dashboard',
-    component: 'dashboard/dashboard.page',
+    path: '/member',
+    name: 'member',
+    icon: 'UserOutlined',
+    component: 'adminUser/adminUser.page',
   },
   {
     path: '/task',
     name: 'task',
-    icon: 'CheckSquareOutlined',
-    component: 'task/task.page',
+    icon: 'ContainerOutlined',
+    component: 'adminTask/adminTask.page',
   },
   {
     path: '/task/:id',
     name: 'task.detail',
-    component: 'task/taskDetail.page',
+    component: 'adminTask/adminTaskDetail.page',
     hideInMenu: true,
     parentKeys: ['/task'],
   },
   {
-    path: '/resource',
-    name: 'resource',
+    path: '/asset',
+    name: 'asset',
     icon: 'PictureOutlined',
-    component: 'resource/resource.page',
-  },
-  {
-    path: '/admin',
-    name: 'admin',
-    icon: 'FolderOpenOutlined',
-    access: 'hasAdmin',
-    routes: [
-      {
-        path: '/admin/task',
-        name: 'task',
-        component: 'adminTask/adminTask.page',
-      },
-      {
-        path: '/admin/task/:id',
-        name: 'task.detail',
-        component: 'adminTask/adminTaskDetail.page',
-        hideInMenu: true,
-        parentKeys: ['/admin/task'],
-      },
-      {
-        path: '/admin/user',
-        name: 'user',
-        component: 'adminUser/adminUser.page',
-      },
-      {
-        path: '/admin/group',
-        name: 'group',
-        component: 'adminTask/adminTask.page',
-      },
-      {
-        path: '/admin/perm',
-        name: 'perm',
-        component: 'adminTask/adminTask.page',
-      },
-      {
-        path: '/admin/finance',
-        name: 'finance',
-        component: 'adminTask/adminTask.page',
-      },
-    ],
+    component: 'asset/asset.page',
   },
   {
     path: '/exception',
@@ -82,7 +42,7 @@
   },
   {
     path: '/',
-    redirect: '/dashboard',
+    redirect: '/task',
   },
   {
     redirect: '/exception/404',

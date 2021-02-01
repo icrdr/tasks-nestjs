@@ -1,10 +1,10 @@
 import React from 'react';
 import { Access as UmiAccess, useAccess } from 'umi';
 
-const Access: React.FC<{ perms?: string[] }> = ({ children, perms }) => {
+const Access: React.FC<{ roles?: string[] }> = ({ children, roles }) => {
   const access = useAccess();
   return (
-    <UmiAccess accessible={access.hasPerms(perms)} fallback={<div>Can not read content.</div>}>
+    <UmiAccess accessible={access.inRoles(roles)} fallback={<div>Can not read content.</div>}>
       {children}
     </UmiAccess>
   );

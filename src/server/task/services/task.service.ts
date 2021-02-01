@@ -102,7 +102,7 @@ export class TaskService {
     if (!(await this.spaceService.getMember(task.space, user))) return [];
 
     // 2. cheack if is scope admin
-    if (!(await this.spaceService.isScopeAdmin(task, user))) return ['common.*'];
+    if ((await this.spaceService.isScopeAdmin(task, user))) return ['common.*'];
 
     // 3. cheack all assignments of task and task default access
     const assignments = await this.spaceService.getAssignments(task, user);
@@ -110,6 +110,7 @@ export class TaskService {
     assignments.forEach(
       (a) => (access = access.concat(this.configService.get('taskAccess')[a.role.access])),
     );
+    
     return unionArrays(access);
   }
 
