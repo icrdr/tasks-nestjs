@@ -13,7 +13,7 @@ const map = require('lib0/dist/map.cjs');
 const syncProtocol = require('y-protocols/dist/sync.cjs');
 const awarenessProtocol = require('y-protocols/dist/awareness.cjs');
 
-const CALLBACK_DEBOUNCE_WAIT = 2000;
+const CALLBACK_DEBOUNCE_WAIT = 1000;
 const CALLBACK_DEBOUNCE_MAXWAIT = 10000;
 
 const wsReadyStateConnecting = 0;

@@ -1,4 +1,8 @@
 export default {
+  'createSpaceFrom.createSpace.btn': '新空间',
+  'createSpaceFrom.name.tit': '空间名',
+  'createSpaceFrom.name.phd': '空间的简称',
+  'createSpaceFrom.name.required': '空间名是必须的',
   'menu.member': '成员',
   'menu.task': '任务',
   'menu.task.detail': '任务详情',

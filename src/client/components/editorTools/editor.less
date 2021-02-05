@@ -1,3 +1,9 @@
+.ce-state-icon {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+}
+
 .ce-block__content {
   max-width: none;
 }
@@ -86,8 +92,7 @@
 
 .cdx-input {
   border: @border-width-base @border-style-base @border-color-base;
-  padding: calc(@input-padding-vertical-base - 0.5px)
-    @input-padding-horizontal-base;
+  padding: calc(@input-padding-vertical-base - 0.5px) @input-padding-horizontal-base;
   color: @text-color-secondary;
   font-size: @font-size-base - 1px;
   line-height: @line-height-base;
@@ -95,13 +100,13 @@
   &::placeholder {
     color: @input-placeholder-color;
   }
-  &[contenteditable="false"] {
+  &[contenteditable='false'] {
     border: none;
     box-shadow: none;
     padding: calc(@input-padding-vertical-base - 0.5px) 0;
   }
 
-  &[contenteditable="false"]:empty {
+  &[contenteditable='false']:empty {
     display: none;
   }
 }

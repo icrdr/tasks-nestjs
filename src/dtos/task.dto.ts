@@ -82,6 +82,12 @@ export class CommentRes {
 @Exclude()
 export class ContentRes {
   @Expose()
+  id: number;
+
+  @Expose()
+  createAt: Date;
+
+  @Expose()
   content: OutputData;
 
   constructor(partial: Partial<ContentRes>) {

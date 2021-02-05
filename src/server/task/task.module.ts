@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TaskService } from './services/task.service';
 import { TaskController } from './controllers/task.controller';
 import { CommonModule } from '../common/common.module';
@@ -10,8 +10,9 @@ import { CommentService } from './services/comment.service';
 import { SpaceService } from './services/space.service';
 import { SpaceController } from './controllers/space.controller';
 @Module({
-  imports: [CommonModule, UserModule],
+  imports: [CommonModule, forwardRef(() => UserModule)],
   providers: [TaskService, SpaceService, CommentGateway, CommentService, YjsGateway, YjsService],
-  controllers: [TaskController,SpaceController],
+  controllers: [TaskController, SpaceController],
+  exports: [TaskService, SpaceService],
 })
 export class TaskModule {}

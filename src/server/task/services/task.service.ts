@@ -240,18 +240,22 @@ export class TaskService {
     content: OutputData,
     executor?: User | number | string,
   ) {
+    
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
       throw new ForbiddenException('Task is not in progress, forbidden suspension.');
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
+
     if (task.contents.length === 0) {
       const content = new Content();
       await this.manager.save(content);
       task.contents.push(content);
+      await this.manager.save(task);
     }
     const lastContent = task.contents[task.contents.length - 1];
     lastContent.content = content;
     await this.manager.save(lastContent);
+
     return await this.getTask(task.id);
   }
 

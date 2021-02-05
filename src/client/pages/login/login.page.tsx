@@ -11,15 +11,17 @@ const { Title } = Typography;
 const LoginForm: React.FC = () => {
   const intl = useIntl();
 
-  const { setInitialState } = useModel('@@initialState');
+  const { initialState, setInitialState } = useModel('@@initialState');
   const loginReq = useRequest(login, {
     manual: true,
     onSuccess: (res) => {
       try {
-        console.log(res)
+        console.log(res);
         const currentUser = res.currentUser;
-        setInitialState({ currentUser });
+        const currentSpace = res.personalSpace
+        setInitialState({ ...initialState, currentUser, currentSpace });
         Cookies.set('token', res.token);
+        Cookies.set('space', currentSpace.id.toString());
         message.success(successMsg);
         history.push('/');
       } catch {}

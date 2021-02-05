@@ -34,7 +34,13 @@ export class CreateSpaceDTO {
   memberId?: number[];
 }
 
-export class GetSpacesDTO extends ListDTO {}
+export class GetSpacesDTO extends ListDTO {
+  @Type(() => String)
+  @Transform((v) => v === 'true')
+  @IsBoolean()
+  @IsOptional()
+  isPersonal: boolean;
+}
 
 @Exclude()
 export class SpaceRes {
@@ -108,6 +114,16 @@ export class SpaceDetailRes {
   members: Member[] | MemberRes[];
 
   constructor(partial: Partial<SpaceDetailRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+export class MemberListRes extends ListRes {
+  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
+  list: MemberRes[];
+
+  constructor(partial: Partial<MemberListRes>) {
+    super();
     Object.assign(this, partial);
   }
 }

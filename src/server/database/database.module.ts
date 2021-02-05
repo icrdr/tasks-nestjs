@@ -1,16 +1,14 @@
 import { Inject, Injectable, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  TypeOrmOptionsFactory,
-  TypeOrmModuleOptions,
-  TypeOrmModule,
-} from '@nestjs/typeorm';
+import { TypeOrmOptionsFactory, TypeOrmModuleOptions, TypeOrmModule } from '@nestjs/typeorm';
 import { configModule } from '../config/config.module';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { DatabaseService } from './database.service';
 import { UserService } from '../user/services/user.service';
 import { OptionService } from '../option/option.service';
 import { join } from 'path';
+import { SpaceService } from '../task/services/space.service';
+import { TaskService } from '../task/services/task.service';
 
 @Injectable()
 class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -39,6 +37,6 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
       useClass: TypeOrmConfigService,
     }),
   ],
-  providers: [DatabaseService, OptionService, UserService],
+  providers: [DatabaseService, OptionService, UserService, SpaceService],
 })
 export class DatabaseModule {}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, message, Spin } from 'antd';
 import { BackgroundColor } from 'chalk';
-import { useIntl, history, Link, useRequest } from 'umi';
+import { useIntl, history, Link, useRequest, useModel } from 'umi';
 import Mock from 'mockjs';
 
 import ProForm, {
@@ -11,16 +11,18 @@ import ProForm, {
   ProFormSelect,
 } from '@ant-design/pro-form';
 import { PlusOutlined } from '@ant-design/icons';
-import { createSubTask, createTask, getUsersByfullName } from '../adminTask.service';
+import { createSubTask, createSpaceTask, getUsersByfullName } from '../task.service';
 
-const TaskForm: React.FC<{ disabled?: boolean; parentTaskId?: number; onSuccess?: Function }> = ({
+const CreateTaskForm: React.FC<{ disabled?: boolean; superTaskId?: number; onSuccess?: Function }> = ({
   onSuccess = () => {},
-  parentTaskId,
+  superTaskId,
   disabled = false,
 }) => {
+  const { initialState } = useModel('@@initialState');
+  const { currentSpace } = initialState;
   const intl = useIntl();
 
-  const createTaskReq = useRequest(createTask, {
+  const createSpaceTaskReq = useRequest(createSpaceTask, {
     manual: true,
   });
 
@@ -46,70 +48,53 @@ const TaskForm: React.FC<{ disabled?: boolean; parentTaskId?: number; onSuccess?
   const [valueEnum, setValueEnum] = useState({});
 
   const createTaskBtn = intl.formatMessage({
-    id: 'taskFrom.createTask.btn',
+    id: 'createTaskFrom.createTask.btn',
   });
 
   const createSubTaskBtn = intl.formatMessage({
-    id: 'taskFrom.createSubTask.btn',
+    id: 'createTaskFrom.createSubTask.btn',
   });
 
   const nameTit = intl.formatMessage({
-    id: 'taskFrom.name.tit',
+    id: 'createTaskFrom.name.tit',
   });
 
   const namePhd = intl.formatMessage({
-    id: 'taskFrom.name.phd',
+    id: 'createTaskFrom.name.phd',
   });
 
-  const descriptionTit = intl.formatMessage({
-    id: 'taskFrom.description.tit',
+  const membersTit = intl.formatMessage({
+    id: 'createTaskFrom.members.tit',
   });
 
-  const descriptionPhd = intl.formatMessage({
-    id: 'taskFrom.description.phd',
-  });
-
-  const performersTit = intl.formatMessage({
-    id: 'taskFrom.performers.tit',
-  });
-
-  const performersPhd = intl.formatMessage({
-    id: 'taskFrom.performers.phd',
+  const membersPhd = intl.formatMessage({
+    id: 'createTaskFrom.members.phd',
   });
 
   const nameRule = [
     {
       required: true,
       message: intl.formatMessage({
-        id: 'taskFrom.name.required',
-      }),
-    },
-  ];
-
-  const descriptionRule = [
-    {
-      required: true,
-      message: intl.formatMessage({
-        id: 'taskFrom.description.required',
+        id: 'createTaskFrom.name.required',
       }),
     },
   ];
 
   return (
     <ModalForm
-      title={parentTaskId ? createSubTaskBtn : createTaskBtn}
+      title={superTaskId ? createSubTaskBtn : createTaskBtn}
       trigger={
-        <Button type="primary" disabled={disabled || createTaskReq.loading}>
+        <Button type="primary" disabled={disabled || createSpaceTaskReq.loading}>
           <PlusOutlined />
-          {parentTaskId ? createSubTaskBtn : createTaskBtn}
+          {superTaskId ? createSubTaskBtn : createTaskBtn}
         </Button>
       }
       onFinish={async (value: any) => {
         console.log(value)
         try {
-          parentTaskId
-            ? await createSubTaskReq.run(parentTaskId, value)
-            : await createTaskReq.run(value);
+          superTaskId
+            ? await createSubTaskReq.run(superTaskId, value)
+            : await createSpaceTaskReq.run(currentSpace.id, value);
           onSuccess();
           return true;
         } catch (error) {
@@ -119,17 +104,11 @@ const TaskForm: React.FC<{ disabled?: boolean; parentTaskId?: number; onSuccess?
     >
       <ProForm.Group>
         <ProFormText width="m" name="name" label={nameTit} placeholder={namePhd} rules={nameRule} />
-        <ProFormText
-          width="l"
-          name="description"
-          label={descriptionTit}
-          placeholder={descriptionPhd}
-        />
         <ProFormSelect
           width="m"
-          name="performerId"
-          label={performersTit}
-          placeholder={performersPhd}
+          name="memberId"
+          label={membersTit}
+          placeholder={membersPhd}
           valueEnum={valueEnum}
           fieldProps={{
             mode: 'multiple',
@@ -142,4 +121,4 @@ const TaskForm: React.FC<{ disabled?: boolean; parentTaskId?: number; onSuccess?
   );
 };
 
-export default TaskForm;
+export default CreateTaskForm;

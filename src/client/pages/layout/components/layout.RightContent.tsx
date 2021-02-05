@@ -26,7 +26,7 @@ const HeaderAvatar: React.FC<{ currentUser: CurrentUserRes | undefined }> = ({ c
   return (
     <Dropdown overlay={menu}>
       <Space>
-        <Avatar size="small" style={{ backgroundColor: '#87d068' }} src={currentUser.username}>
+        <Avatar size="small" style={{ backgroundColor: '#87d068' }} src={currentUser?.username}>
           {currentUser?.username[0].toUpperCase()}
         </Avatar>
       </Space>
@@ -35,15 +35,15 @@ const HeaderAvatar: React.FC<{ currentUser: CurrentUserRes | undefined }> = ({ c
 };
 
 const RightContent: React.FC<{}> = () => {
-  const handleSearch = () => {};
   const { initialState } = useModel('@@initialState');
-  if (!initialState.currentUser) {
+  const { currentUser } = initialState;
+  if (!currentUser) {
     history.push('/login');
   }
 
   return (
     <Space size="middle">
-      <HeaderAvatar currentUser={initialState.currentUser} />
+      <HeaderAvatar currentUser={currentUser} />
       <SelectLang />
     </Space>
   );

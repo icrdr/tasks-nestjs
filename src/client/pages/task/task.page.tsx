@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Card } from 'antd';
-
-
+import { useRequest } from 'umi';
+import { Space } from 'antd';
+import TaskTable from './components/TaskTable';
 
 const Task: React.FC<{}> = () => {
+
   return (
-    <PageContainer>
-      <Card>
-      </Card>
+    <PageContainer content="管理所有任务">
+        <TaskTable/>
     </PageContainer>
   );
 };

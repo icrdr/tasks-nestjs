@@ -3,23 +3,25 @@ import { PlusOutlined, EllipsisOutlined } from '@ant-design/icons';
 import { Button, Tag, Space, Menu, Dropdown, Avatar } from 'antd';
 import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro-table';
 import { PageContainer } from '@ant-design/pro-layout';
-import { useIntl } from 'umi';
-import { getUsers } from './adminUser.service';
-import { UserRes } from '@dtos/user.dto';
+import { useIntl, useModel } from 'umi';
+import { getSpaceMembers } from './member.service';
+import { MemberRes } from '@dtos/space.dto';
 
 const UserList: React.FC<{}> = () => {
+  const { initialState } = useModel('@@initialState');
+  const { currentSpace } = initialState;
   const actionRef = useRef<ActionType>();
   const intl = useIntl();
 
   const createUserBtn = intl.formatMessage({
-    id: 'page.adminUser.table.createUser.btn',
+    id: 'page.member.table.createUser.btn',
   });
 
   const usernameTit = intl.formatMessage({
-    id: 'page.adminUser.table.username.tit',
+    id: 'page.member.table.username.tit',
   });
 
-  const columns: ProColumns<UserRes>[] = [
+  const columns: ProColumns<MemberRes>[] = [
     {
       dataIndex: 'username',
       title: usernameTit,
@@ -27,12 +29,12 @@ const UserList: React.FC<{}> = () => {
   ];
 
   return (
-    <ProTable<UserRes>
-      rowKey="id"
+    <ProTable<MemberRes>
+      rowKey="userId"
       columns={columns}
       actionRef={actionRef}
       request={async (params, sorter, filter) => {
-        const res = await getUsers(params);
+        const res = await getSpaceMembers(currentSpace.id, params);
         console.log(res);
         return {
           data: res.list,

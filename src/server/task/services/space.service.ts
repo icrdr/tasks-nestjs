@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
@@ -14,6 +14,7 @@ export class SpaceService {
   spaceQuery: SelectQueryBuilder<Space>;
 
   constructor(
+    @Inject(forwardRef(() => UserService))
     private userService: UserService,
     private configService: ConfigService,
     private manager: EntityManager,
@@ -37,11 +38,6 @@ export class SpaceService {
       .createQueryBuilder(Member, 'member')
       .leftJoinAndSelect('member.space', 'space')
       .leftJoinAndSelect('member.user', 'user');
-  }
-
-  async isPersonalSpace(space: Space | number) {
-    space = space instanceof Space ? space : await this.getSpace(space);
-    return space.members.length === 1 && space.assignments.length === 0;
   }
 
   async createRole(space: Space | number, name: string, access: accessLevel) {
@@ -99,10 +95,12 @@ export class SpaceService {
       admins?: User[] | number[] | string[];
       members?: User[] | number[] | string[];
       access?: accessLevel;
+      isPersonal?: boolean;
     } = {},
   ) {
     let space = new Space();
     space.name = name;
+    space.isPersonal = options.isPersonal || false;
     if (options.access) space.access = options.access;
     space = await this.manager.save(space);
     //TODO: add log
@@ -151,6 +149,28 @@ export class SpaceService {
     const member = await query.getOne();
     if (!member && exception) throw new NotFoundException('Member was not found.');
     return member;
+  }
+
+  async getMembers(
+    options: {
+      space?: Space | number;
+      pageSize?: number;
+      current?: number;
+    } = {},
+  ) {
+    let query = this.memberQuery.clone();
+
+    if (options.space) {
+      const spaceId = await this.getSpaceId(options.space);
+      query = query.where('space.id = :spaceId', { spaceId });
+    }
+
+    query = query
+      .orderBy('space.id', 'DESC')
+      .skip((options.current - 1) * options.pageSize || 0)
+      .take(options.pageSize || 5);
+
+    return await query.getManyAndCount();
   }
 
   // async createLog(space: Space | number, action: LogAction, executor?: User | number | string) {
@@ -230,6 +250,7 @@ export class SpaceService {
   async getSpaces(
     options: {
       user?: User | number;
+      isPersonal?: boolean;
       pageSize?: number;
       current?: number;
     } = {},
@@ -238,7 +259,11 @@ export class SpaceService {
 
     if (options.user) {
       const userId = await this.userService.getUserId(options.user);
-      query = query.where('user.id = :userId', { userId });
+      query = query.andWhere('user.id = :userId', { userId });
+    }
+    
+    if (options.isPersonal) {
+      query = query.andWhere('space.isPersonal = :isPersonal', { isPersonal: true });
     }
 
     // add all other member back.

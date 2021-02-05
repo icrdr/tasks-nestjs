@@ -22,10 +22,10 @@ const serveStaticModule = ServeStaticModule.forRoot({
     LoggerModule,
     DatabaseModule,
     UserModule,
+    TaskModule,
     AssetModule,
     OptionModule,
-    TaskModule,
-    TagModule,
+    // TagModule,
   ],
   providers: [roleAccessGuard],
 })

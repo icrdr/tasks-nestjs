@@ -5,6 +5,7 @@ import {  User } from '@server/user/entities/user.entity';
 import { isStringArray } from '@utils/typeGuard';
 import { StsTokenRes } from './asset.dto';
 import { unionArrays } from '../utils/utils';
+import { SpaceDetailRes } from './space.dto';
 
 export class LoginDTO {
   @IsString()
@@ -97,6 +98,8 @@ export class CurrentUserRes {
 export class CurrentUserTokenRes {
   @Transform((i) => (i ? new CurrentUserRes(i) : null))
   currentUser: User | CurrentUserRes;
+
+  personalSpace: SpaceDetailRes;
 
   token: string;
 

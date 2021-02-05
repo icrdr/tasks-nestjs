@@ -2,15 +2,17 @@ import React, { useRef } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, Avatar, Table, Space } from 'antd';
 import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro-table';
-import { useIntl, history, Link } from 'umi';
-import { getSubTasks, getTasks } from '../adminTask.service';
+import { useIntl, history, Link, useModel } from 'umi';
+import { getSpaceTasks, getSubTasks } from '../task.service';
 import { TaskDetailRes, TaskRes } from '@dtos/task.dto';
-import TaskForm from './TaskForm';
+import CreateTask from './CreateTaskForm';
 
 const TaskTable: React.FC<{
   headerTitle?: string;
-  parentTask?: TaskDetailRes;
-}> = ({ headerTitle = '', parentTask }) => {
+  superTask?: TaskDetailRes;
+}> = ({ headerTitle = '', superTask }) => {
+  const { initialState } = useModel('@@initialState');
+  const { currentSpace } = initialState;
   const actionRef = useRef<ActionType>();
   const intl = useIntl();
   const actionMenu = [
@@ -34,8 +36,8 @@ const TaskTable: React.FC<{
     id: 'taskTable.tag.tit',
   });
 
-  const performersTit = intl.formatMessage({
-    id: 'taskTable.performers.tit',
+  const membersTit = intl.formatMessage({
+    id: 'taskTable.members.tit',
   });
 
   const createDataTit = intl.formatMessage({
@@ -64,7 +66,7 @@ const TaskTable: React.FC<{
       dataIndex: 'name',
       title: nameTit,
       render: (_, record) => (
-        <a onClick={() => history.push('/admin/task/' + record.id)}>{record.name}</a>
+        <a onClick={() => history.push('/task/' + record.id)}>{record.name}</a>
       ),
     },
     {
@@ -91,18 +93,18 @@ const TaskTable: React.FC<{
         },
       },
     },
-    {
-      title: performersTit,
-      render: (_, record) => (
-        <Avatar.Group>
-          {record.performers.map(({ id, username }) => (
-            <Avatar key={id} size="small">
-              {username[0].toUpperCase()}
-            </Avatar>
-          ))}
-        </Avatar.Group>
-      ),
-    },
+    // {
+    //   title: membersTit,
+    //   render: (_, record) => (
+    //     <Avatar.Group>
+    //       {record.members.map(({ id, username }) => (
+    //         <Avatar key={id} size="small">
+    //           {username[0].toUpperCase()}
+    //         </Avatar>
+    //       ))}
+    //     </Avatar.Group>
+    //   ),
+    // },
     {
       dataIndex: 'createAt',
       title: createDataTit,
@@ -117,14 +119,6 @@ const TaskTable: React.FC<{
     },
   ];
 
-  if (!parentTask)
-    columns.splice(0, 0, {
-      title: parentTit,
-      render: (_, record) => (
-        <Link to={`/admin/task/${record.parentTask?.id}`}>{record.parentTask?.name}</Link>
-      ),
-    });
-
   return (
     <ProTable<TaskRes>
       headerTitle={headerTitle}
@@ -132,9 +126,9 @@ const TaskTable: React.FC<{
       columns={columns}
       actionRef={actionRef}
       request={async (params, sorter, filter) => {
-        const res = parentTask
-          ? await getSubTasks(parentTask.id, { ...params, ...filter })
-          : await getTasks({ ...params, ...filter });
+        const res = superTask
+          ? await getSubTasks(superTask.id, { ...params, ...filter })
+          : await getSpaceTasks(currentSpace.id, { ...params, ...filter });
 
         console.log(res);
         return {
@@ -168,10 +162,12 @@ const TaskTable: React.FC<{
         );
       }}
       toolBarRender={() => [
-        <TaskForm
+        <CreateTask
           key="1"
-          disabled={parentTask && parentTask?.state !== 'inProgress' && parentTask?.state !== 'suspended'}
-          parentTaskId={parentTask?.id}
+          disabled={
+            superTask && superTask?.state !== 'inProgress' && superTask?.state !== 'suspended'
+          }
+          superTaskId={superTask?.id}
           onSuccess={() => actionRef.current.reload()}
         />,
       ]}

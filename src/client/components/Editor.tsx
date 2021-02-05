@@ -8,7 +8,6 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 // import { IndexeddbPersistence } from "y-indexeddb";
 import { EditorBinding } from './EditorBinding';
-import { CloudOutlined, DisconnectOutlined, SyncOutlined } from '@ant-design/icons';
 
 const { IndexeddbPersistence } = require('y-indexeddb/dist/y-indexeddb.cjs');
 
@@ -18,17 +17,20 @@ const Editor: React.FC<{
   currentUser?: { id: number; username: string };
   editable?: boolean;
   loading?: boolean;
+  onChange?: Function;
 }> = ({
   wsRoom,
   data,
   currentUser = { id: 0, username: 'unkown' },
   editable = false,
   loading = false,
+  onChange = () => {},
 }) => {
   const bindingRef = useRef<EditorBinding>();
   const editorRef = useRef<EditorJS>();
   const yDocRef = useRef<Y.Doc>();
   const [isReady, setReady] = useState(false);
+
   const [isConnect, setConnect] = useState(false);
   const isReadyRef = useRef<boolean>();
   const isConnectRef = useRef<boolean>();
@@ -65,21 +67,24 @@ const Editor: React.FC<{
       logLevel: 'ERROR' as LogLevels,
       readOnly: !editable && !wsRoom,
       onReady: () => {
+        if (data) setReady(true);
         if (editable || wsRoom) new DragDrop(editor);
+      },
+      onChange: () => {
+        onChange();
       },
     });
     editorRef.current = editor;
-
     if (wsRoom && !data) {
       // wss://demos.yjs.dev
       // ws://localhost:3000
       const ydoc = new Y.Doc();
       const yArray = ydoc.getArray('editorjs');
       const indexeddbProvider = new IndexeddbPersistence(wsRoom, ydoc);
-      const websocketProvider = new WebsocketProvider('ws://localhost:3000', wsRoom, ydoc,{
-        params:{
-          target:'editorjs'
-        }
+      const websocketProvider = new WebsocketProvider('ws://localhost:3000', wsRoom, ydoc, {
+        params: {
+          target: 'editorjs',
+        },
       });
       indexeddbProvider.on('synced', async () => {
         await editor.isReady;
@@ -102,16 +107,17 @@ const Editor: React.FC<{
       if (websocketProviderRef.current) websocketProviderRef.current.destroy();
       if (indexeddbProviderRef.current) indexeddbProviderRef.current.destroy();
     };
-  }, []);
+  }, [data, wsRoom]);
 
-  useEffect(() => {
-    if (data) {
-      editorRef.current.isReady.then(async () => {
-        await editorRef.current.render(data);
-        setReady(true);
-      });
-    }
-  }, [data]);
+  // useEffect(() => {
+  //   if (data) {
+  //     console.log(data)
+  //     editorRef.current.isReady.then(async () => {
+  //       if (data.blocks.length > 0) await editorRef.current.render(data);
+  //       setReady(true);
+  //     });
+  //   }
+  // }, [data]);
 
   const showSaved = () => {
     console.log(
@@ -123,11 +129,11 @@ const Editor: React.FC<{
   };
 
   return (
-    <Card style={{ padding: 10 }} extra={isConnect ? <CloudOutlined /> : <DisconnectOutlined />}>
+    <div style={{ padding: 10 }}>
       {/* <Button onClick={showSaved}>showSaved</Button> */}
       {(loading || !isReady) && <Spin />}
       <div id="editorjs" style={{ visibility: loading || !isReady ? 'hidden' : 'visible' }}></div>
-    </Card>
+    </div>
   );
 };
 export default Editor;

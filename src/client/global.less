@@ -1,7 +1,8 @@
-@import "~antd/es/style/themes/default.less";
-@import "components/editorTools/editor.less";
-@import "components/editorTools/header.less";
-@import "components/editorTools/image.less";
+@import '~antd/es/style/themes/default.less';
+@import 'components/editorTools/editor.less';
+@import 'components/editorTools/header.less';
+@import 'components/editorTools/image.less';
+@import '~emoji-mart/css/emoji-mart.css';
 
 html,
 body,
@@ -61,3 +62,39 @@ ol {
 //   display: block;
 //   font-size: 12px;
 // }
+
+.Resizer {
+  background: #000;
+  opacity: 0.2;
+  z-index: 1;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+  -moz-background-clip: padding;
+  -webkit-background-clip: padding;
+  background-clip: padding-box;
+}
+
+// .gutter {
+//   background: @disabled-color-dark;
+//   flex-shrink: 0;
+// }
+
+.gutter {
+  background-color: @disabled-color-dark;
+  background-repeat: no-repeat;
+  background-position: 50%;
+}
+
+.gutter-horizontal {
+  cursor: ew-resize;
+}
+
+.gutter-vertical {
+  cursor: ns-resize;
+}
+
+.chat-container {
+  background: @shadow-color;
+  height: 100%;
+}

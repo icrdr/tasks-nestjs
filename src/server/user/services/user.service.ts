@@ -11,10 +11,12 @@ import { User, RoleType } from '../entities/user.entity';
 import { hash } from '@utils/utils';
 import { GetUsersDTO } from '@dtos/user.dto';
 import { useResponsive } from 'ahooks';
+import { SpaceService } from '../../task/services/space.service';
+import { accessLevel } from '../../task/entities/space.entity';
 
 @Injectable()
 export class UserService {
-  constructor(private manager: EntityManager) {}
+  constructor(private manager: EntityManager, private spaceService: SpaceService) {}
 
   async isUsernameAvailable(username: string) {
     const user = await this.manager.findOne(User, { username: username });
@@ -69,14 +71,21 @@ export class UserService {
   ) {
     await this.isUsernameAvailable(username);
 
-    const user = new User();
+    let user = new User();
     user.username = username;
     user.password = hash(username + password);
     if (options.fullName) user.fullName = options.fullName;
     if (options.email) user.email = options.email;
     if (options.mobile) user.mobile = options.mobile;
     if (options.role) user.role = options.role;
-    await this.manager.save(user);
+    user = await this.manager.save(user);
+
+    //create personal space
+    await this.spaceService.createSpace(`${username}'s Space`, undefined, {
+      members: [user],
+      access: accessLevel.FULL,
+      isPersonal: true,
+    });
     return user;
   }
 

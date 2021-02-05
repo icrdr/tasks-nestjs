@@ -16,7 +16,7 @@ import { TaskAccessGuard } from '@server/user/taskAccess.guard';
 import { Task } from '../entities/task.entity';
 import { unionArrays } from '@utils/utils';
 import { SpaceService } from '../services/space.service';
-import { CreateSpaceDTO, GetSpacesDTO, SpaceDetailRes, SpaceListRes } from '@dtos/space.dto';
+import { CreateSpaceDTO, GetSpacesDTO, MemberListRes, SpaceDetailRes, SpaceListRes } from '@dtos/space.dto';
 import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
 import { accessLevel, Space } from '../entities/space.entity';
 
@@ -32,7 +32,7 @@ export class SpaceController {
     @TargetSpace() space: Space,
     @CurrentUser() user: User,
   ) {
-    const options = (await this.spaceService.isPersonalSpace(space))
+    const options = space.isPersonal
       ? {
           state: body.state,
           access: accessLevel.FULL,
@@ -45,6 +45,20 @@ export class SpaceController {
     return new TaskMoreDetailRes(
       await this.taskService.createTask(space, body.name, user, options),
     );
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.space.view')
+  @Get('/:id/members')
+  async getSpaceMembers(
+    @TargetSpace() space: Space,
+    @Query() query: GetTasksDTO,
+  ) {
+    const members = await this.spaceService.getMembers({
+      space: space,
+      ...query,
+    });
+    return ListResSerialize(members, MemberListRes);
   }
 
   @UseGuards(SpaceAccessGuard)
