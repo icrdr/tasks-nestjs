@@ -9,6 +9,8 @@ import {
   TaskListRes,
   TaskDetailRes,
   TaskMoreDetailRes,
+  GetCommentsDTO,
+  CommentListRes,
 } from '@dtos/task.dto';
 import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
 import { User } from '@server/user/entities/user.entity';
@@ -35,6 +37,21 @@ export class TaskController {
     return new TaskDetailRes(
       await this.taskService.createSubTask(task, body.name, user.id, options),
     );
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.view')
+  @Get('/:id/comments')
+  async getTaskComments(
+    @TargetTask() task: Task,
+    @Query() query: GetCommentsDTO,
+    @CurrentUser() user: User,
+  ) {
+    const comments = await this.taskService.getTaskComments({
+      task: task,
+      ...query,
+    });
+    return ListResSerialize(comments, CommentListRes);
   }
 
   @UseGuards(TaskAccessGuard)

@@ -1,6 +1,8 @@
 import { request } from 'umi';
 import {
+  CommentListRes,
   CreateTaskDTO,
+  GetCommentsDTO,
   GetTasksDTO,
   ReviewTaskDTO,
   TaskDetailRes,
@@ -25,6 +27,15 @@ export const createSubTask = async (id: number, body: CreateTaskDTO): Promise<Ta
   return request(`/api/tasks/${id}`, {
     method: 'POST',
     data: body,
+  });
+};
+
+export const getTaskComments = async (
+  id: number,
+  params?: GetCommentsDTO,
+): Promise<CommentListRes> => {
+  return request(`/api/tasks/${id}/comments`, {
+    params,
   });
 };
 
@@ -57,5 +68,3 @@ export const updateTask = async (id: number, body: UpdateTaskDTO): Promise<TaskD
     data: body,
   });
 };
-
-

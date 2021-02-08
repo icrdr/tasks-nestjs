@@ -26,7 +26,7 @@ export class RoleAccessGuard implements CanActivate {
     const neededAccess = this.reflector.get<string[]>('access', context.getHandler());
     if (!neededAccess) return true;
     const req = context.switchToHttp().getRequest();
-    const token = req.headers['authorization']?.split(' ')[1] || req._protocol;
+    const token = req.headers?.authorization?.split(' ')[1] || req._protocol;
     if (!token) throw new UnauthorizedException('no authorization token was found');
     let payload: tokenPayload;
     try {

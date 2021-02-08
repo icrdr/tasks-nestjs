@@ -10,13 +10,20 @@ import {
   TaskDetailRes,
   TaskMoreDetailRes,
 } from '@dtos/task.dto';
-import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
+import { IdDTO, ListResSerialize, UserIdDTO } from '@dtos/misc.dto';
 import { User } from '@server/user/entities/user.entity';
 import { TaskAccessGuard } from '@server/user/taskAccess.guard';
 import { Task } from '../entities/task.entity';
 import { unionArrays } from '@utils/utils';
 import { SpaceService } from '../services/space.service';
-import { CreateSpaceDTO, GetSpacesDTO, MemberListRes, SpaceDetailRes, SpaceListRes } from '@dtos/space.dto';
+import {
+  CreateSpaceDTO,
+  GetSpacesDTO,
+  MemberListRes,
+  MemberRes,
+  SpaceDetailRes,
+  SpaceListRes,
+} from '@dtos/space.dto';
 import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
 import { accessLevel, Space } from '../entities/space.entity';
 
@@ -48,12 +55,20 @@ export class SpaceController {
   }
 
   @UseGuards(SpaceAccessGuard)
+  @Access('common.task.create')
+  @Post('/:id/members/:userId')
+  async addSpaceMember(
+    @Param() param: UserIdDTO,
+    @TargetSpace() space: Space,
+    @CurrentUser() user: User,
+  ) {
+    return new MemberRes(await this.spaceService.createMember(space, param.userId));
+  }
+
+  @UseGuards(SpaceAccessGuard)
   @Access('common.space.view')
   @Get('/:id/members')
-  async getSpaceMembers(
-    @TargetSpace() space: Space,
-    @Query() query: GetTasksDTO,
-  ) {
+  async getSpaceMembers(@TargetSpace() space: Space, @Query() query: GetTasksDTO) {
     const members = await this.spaceService.getMembers({
       space: space,
       ...query,

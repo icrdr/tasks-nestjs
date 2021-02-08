@@ -7,3 +7,9 @@ export async function getSpaceMembers(id: number, params?: GetUsersDTO): Promise
     params,
   });
 }
+
+export async function addSpaceMember(id: number, userId: number): Promise<MemberRes> {
+  return request(`/api/spaces/${id}/members/${userId}`, {
+    method: 'POST',
+  });
+}

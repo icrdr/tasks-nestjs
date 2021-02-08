@@ -6,6 +6,8 @@ import { PageContainer } from '@ant-design/pro-layout';
 import { useIntl, useModel } from 'umi';
 import { getSpaceMembers } from './member.service';
 import { MemberRes } from '@dtos/space.dto';
+import addMemberForm from './components/AddMemberForm';
+import AddMemberForm from './components/AddMemberForm';
 
 const UserList: React.FC<{}> = () => {
   const { initialState } = useModel('@@initialState');
@@ -43,11 +45,7 @@ const UserList: React.FC<{}> = () => {
         };
       }}
       search={false}
-      toolBarRender={() => [
-        <Button key="button" icon={<PlusOutlined />} type="primary">
-          {createUserBtn}
-        </Button>,
-      ]}
+      toolBarRender={() => [<AddMemberForm key="1" onSuccess={() => actionRef.current.reload()} />]}
     />
   );
 };

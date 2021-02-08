@@ -8,10 +8,12 @@ import { accessLevel, Space } from '../entities/space.entity';
 import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { SpaceService } from './space.service';
+import { Comment } from '../entities/comment.entity';
 
 @Injectable()
 export class TaskService {
   taskQuery: SelectQueryBuilder<Task>;
+  commentQuery: SelectQueryBuilder<Comment>;
   constructor(
     private userService: UserService,
     private spaceService: SpaceService,
@@ -28,6 +30,11 @@ export class TaskService {
       .leftJoinAndSelect('task.contents', 'content')
       .leftJoinAndSelect('task.superTask', 'superTask')
       .leftJoinAndSelect('task.subTasks', 'subTask');
+
+    this.commentQuery = this.manager
+      .createQueryBuilder(Comment, 'comment')
+      .leftJoinAndSelect('comment.sender', 'sender')
+      .leftJoinAndSelect('comment.task', 'task');
   }
 
   async checkParentTaskNotInStates(task: Task | number, states: TaskState[]) {
@@ -102,7 +109,7 @@ export class TaskService {
     if (!(await this.spaceService.getMember(task.space, user))) return [];
 
     // 2. cheack if is scope admin
-    if ((await this.spaceService.isScopeAdmin(task, user))) return ['common.*'];
+    if (await this.spaceService.isScopeAdmin(task, user)) return ['common.*'];
 
     // 3. cheack all assignments of task and task default access
     const assignments = await this.spaceService.getAssignments(task, user);
@@ -110,7 +117,7 @@ export class TaskService {
     assignments.forEach(
       (a) => (access = access.concat(this.configService.get('taskAccess')[a.role.access])),
     );
-    
+
     return unionArrays(access);
   }
 
@@ -119,6 +126,41 @@ export class TaskService {
     const task = await query.getOne();
     if (!task && exception) throw new NotFoundException('Task was not found.');
     return task;
+  }
+
+  async getTaskComments(
+    options: {
+      user?: User | number;
+      task?: Task | number;
+      pageSize?: number;
+      current?: number;
+      skip?: number;
+      take?: number;
+    } = {},
+  ) {
+    let query = this.commentQuery.clone();
+
+    if (options.user) {
+      const userId = await this.userService.getUserId(options.user);
+      query = query.andWhere('sender.id = :userId', { userId });
+    }
+
+    if (options.task) {
+      const taskId = await this.getTaskId(options.task);
+      query = query.andWhere('task.id = :taskId', { taskId });
+    }
+
+    query = query.orderBy('comment.id', 'ASC');
+
+    if (options.pageSize && options.current) {
+      query = query.skip((options.current - 1) * options.pageSize || 0).take(options.pageSize || 5);
+    }
+
+    if (options.skip !== undefined && options.take) {
+      query = query.skip(options.skip).take(options.take);
+    }
+
+    return await query.getManyAndCount();
   }
 
   async getTasks(
@@ -240,7 +282,6 @@ export class TaskService {
     content: OutputData,
     executor?: User | number | string,
   ) {
-    
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
       throw new ForbiddenException('Task is not in progress, forbidden suspension.');

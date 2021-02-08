@@ -22,6 +22,11 @@ export class IdDTO {
   id: number;
 }
 
+export class UserIdDTO {
+  @IsNumber()
+  userId: number;
+}
+
 export function ListResSerialize(list: any[], Class: any) {
   return new Class({
     list: list[0],

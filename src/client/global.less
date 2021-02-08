@@ -3,6 +3,7 @@
 @import 'components/editorTools/header.less';
 @import 'components/editorTools/image.less';
 @import '~emoji-mart/css/emoji-mart.css';
+@import '~react-virtualized/styles.css';
 
 html,
 body,
@@ -97,4 +98,13 @@ ol {
 .chat-container {
   background: @shadow-color;
   height: 100%;
+}
+
+.chat-message-card-me {
+  background: @alert-info-bg-color !important;
+  border: 1px solid @alert-info-border-color !important;
+}
+
+.chat-message-card-other {
+  background: @card-background !important;
 }

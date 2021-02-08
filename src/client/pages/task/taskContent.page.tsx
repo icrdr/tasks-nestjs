@@ -199,12 +199,12 @@ const TaskContent: React.FC<{}> = () => {
       tab: tabContents,
     },
     {
-      key: 'subTasks',
-      tab: tabSubTasks,
-    },
-    {
       key: 'assets',
       tab: tabAssets,
+    },
+    {
+      key: 'subTasks',
+      tab: tabSubTasks,
     },
   ];
 
@@ -287,7 +287,7 @@ const TaskContent: React.FC<{}> = () => {
             </div>
           </Affix>
         </Split>
-        <Affix offsetTop={0} style={{ position: 'absolute', top: '0', left: '-50px' }}>
+        <Affix offsetTop={0} style={{ position: 'absolute', top: '0', right: '-40px' }}>
           <Button icon={<HistoryOutlined />} size={'large'} onClick={handleHistoryOpen} />
         </Affix>
       </div>
@@ -295,7 +295,7 @@ const TaskContent: React.FC<{}> = () => {
         title="历史内容"
         closable={false}
         width={300}
-        placement="left"
+        placement="right"
         visible={historyVisible}
         onClose={handleHistoryClose}
         getContainer={false}

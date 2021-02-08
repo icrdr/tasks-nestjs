@@ -5,7 +5,7 @@ import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro
 import { useIntl, history, Link, useModel } from 'umi';
 import { getSpaceTasks, getSubTasks } from '../task.service';
 import { TaskDetailRes, TaskRes } from '@dtos/task.dto';
-import CreateTask from './CreateTaskForm';
+import CreateTaskForm from './CreateTaskForm';
 
 const TaskTable: React.FC<{
   headerTitle?: string;
@@ -162,7 +162,7 @@ const TaskTable: React.FC<{
         );
       }}
       toolBarRender={() => [
-        <CreateTask
+        <CreateTaskForm
           key="1"
           disabled={
             superTask && superTask?.state !== 'inProgress' && superTask?.state !== 'suspended'

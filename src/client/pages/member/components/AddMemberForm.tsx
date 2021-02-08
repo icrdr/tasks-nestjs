@@ -11,23 +11,22 @@ import ProForm, {
   ProFormSelect,
 } from '@ant-design/pro-form';
 import { PlusOutlined } from '@ant-design/icons';
-import { createSubTask, createSpaceTask, getUsersByfullName } from '../task.service';
+import { getUsersByfullName } from '../../task/task.service';
+import { addSpaceMember } from '../member.service';
 
-const CreateTaskForm: React.FC<{
+const AddMemberForm: React.FC<{
   disabled?: boolean;
-  superTaskId?: number;
   onSuccess?: Function;
-}> = ({ onSuccess = () => {}, superTaskId, disabled = false }) => {
+}> = ({ onSuccess = () => {}, disabled = false }) => {
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const intl = useIntl();
 
-  const createSpaceTaskReq = useRequest(createSpaceTask, {
+  const addSpaceMemberReq = useRequest(addSpaceMember, {
     manual: true,
-  });
-
-  const createSubTaskReq = useRequest(createSubTask, {
-    manual: true,
+    onSuccess: (res) => {
+      onSuccess();
+    },
   });
 
   const getUsersReq = useRequest(getUsersByfullName, {
@@ -47,69 +46,49 @@ const CreateTaskForm: React.FC<{
   const [state, setstate] = useState([]);
   const [valueEnum, setValueEnum] = useState({});
 
-  const createTaskBtn = intl.formatMessage({
-    id: 'createTaskFrom.createTask.btn',
-  });
-
-  const createSubTaskBtn = intl.formatMessage({
-    id: 'createTaskFrom.createSubTask.btn',
-  });
-
-  const nameTit = intl.formatMessage({
-    id: 'createTaskFrom.name.tit',
-  });
-
-  const namePhd = intl.formatMessage({
-    id: 'createTaskFrom.name.phd',
+  const addMemberBtn = intl.formatMessage({
+    id: 'addMemberForm.addMember.btn',
   });
 
   const membersTit = intl.formatMessage({
-    id: 'createTaskFrom.members.tit',
+    id: 'addMemberForm.members.tit',
   });
 
   const membersPhd = intl.formatMessage({
-    id: 'createTaskFrom.members.phd',
+    id: 'addMemberForm.members.phd',
   });
 
-  const nameRule = [
-    {
-      required: true,
-      message: intl.formatMessage({
-        id: 'createTaskFrom.name.required',
-      }),
-    },
-  ];
+  // const nameRule = [
+  //   {
+  //     required: true,
+  //     message: intl.formatMessage({
+  //       id: 'addMemberForm.name.required',
+  //     }),
+  //   },
+  // ];
 
   return (
     <ModalForm
-      title={superTaskId ? createSubTaskBtn : createTaskBtn}
+      title={addMemberBtn}
       trigger={
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          disabled={disabled || createSpaceTaskReq.loading}
+          disabled={disabled || addSpaceMemberReq.loading}
         >
-          {superTaskId ? createSubTaskBtn : createTaskBtn}
+          {addMemberBtn}
         </Button>
       }
       onFinish={async (value: any) => {
-        console.log(value);
-        try {
-          superTaskId
-            ? await createSubTaskReq.run(superTaskId, value)
-            : await createSpaceTaskReq.run(currentSpace.id, value);
-          onSuccess();
-          return true;
-        } catch (error) {
-          return false;
-        }
+        // console.log(value.userId);
+        addSpaceMemberReq.run(currentSpace.id, value.userId[0]);
+        return true;
       }}
     >
       <ProForm.Group>
-        <ProFormText width="m" name="name" label={nameTit} placeholder={namePhd} rules={nameRule} />
         <ProFormSelect
           width="m"
-          name="memberId"
+          name="userId"
           label={membersTit}
           placeholder={membersPhd}
           valueEnum={valueEnum}
@@ -124,4 +103,4 @@ const CreateTaskForm: React.FC<{
   );
 };
 
-export default CreateTaskForm;
+export default AddMemberForm;

@@ -35,7 +35,7 @@ export class CommentService {
     comment.content = content.content;
     comment.type = content.type;
     comment = await this.manager.save(comment);
-    
+
     taskRooms
       .get(task.id.toString())
       .forEach((client) => client.send(serialize(new CommentRes(comment))));
@@ -43,7 +43,7 @@ export class CommentService {
 
   async join(taskRoom: string, client: Socket) {
     if (!taskRoom) return;
-    console.log(taskRoom);
+    console.log('comment join room', taskRoom);
     if (taskRooms.has(taskRoom)) {
       taskRooms.get(taskRoom).add(client);
     } else {
