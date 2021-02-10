@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   Comment,
   Button,
@@ -39,42 +39,69 @@ import {
   WindowScroller,
 } from 'react-virtualized';
 import VList from 'react-virtualized/dist/commonjs/List';
+import { useSize, useThrottleEffect } from 'ahooks';
+import { sleep } from '@utils/utils';
 const { Text, Link } = Typography;
 
-const TaskComment: React.FC<{
-  taskId: number;
-}> = ({ taskId }) => {
+const TaskComment = ({ taskId }, ref) => {
   const { initialState } = useModel('@@initialState');
   const { currentUser, currentSpace } = initialState;
   const commentListEle = useRef(null);
+  const vListRef = useRef<VList>(null);
   const [form] = Form.useForm();
   // const [commentList, setCommentList] = useState<CommentRes[]>([]);
   const [commentListMap, setCommentListMap] = useState(new Map<number, CommentRes>());
-  const [commentCount, setCommentCount] = useState(42);
+  const [commentCount, setCommentCount] = useState(0);
   const [memberList, setMemberList] = useState<MemberRes[]>([]);
-
+  const commentCountRef = useRef<number>();
+  const [first, setFirst] = useState(false);
+  commentCountRef.current = commentCount;
+  // const size = useSize(commentListEle)
   useRequest(() => getTaskComments(taskId), {
-    onSuccess: (res) => {
-      // setCommentCount(res.total);
-      // handleScrollDown();
+    onSuccess: async (res) => {
+      console.log(res);
+      setCommentCount(res.total);
+      // scrollToBottom();
     },
   });
 
+  const recomputeRowHeights = () => {
+    cache.clearAll();
+    vListRef.current.recomputeRowHeights();
+  };
+
+  const scrollToBottom = async () => {
+    vListRef.current.scrollToRow(commentCountRef.current);
+  };
+
+  useImperativeHandle(ref, () => ({
+    recomputeRowHeights,
+  }));
+
   const getCommentsReq = useRequest(getTaskComments, {
+    debounceInterval: 1000,
+    ready: !first,
     manual: true,
     onSuccess: (res, params) => {
       for (let index = 0; index < params[1].take; index++) {
         commentListMap.set(index + params[1].skip, res.list[index]);
       }
+      console.log(res.list);
       console.log(commentListMap);
       setCommentListMap(commentListMap);
-      // setCommentCount(res.total);
-      // handleScrollDown();
+      setCommentCount(res.total);
+      recomputeRowHeights();
+      console.log(params[1].skip + params[1].take);
+      console.log(res.total);
+      if (params[1].skip + params[1].take === res.total) {
+        scrollToBottom();
+        setFirst(true);
+      }
     },
   });
 
   const getSpaceMembersReq = useRequest(getSpaceMembers, {
-    debounceInterval: 500,
+    debounceInterval: 1000,
     manual: true,
     onSuccess: (res) => {
       // console.log(res);
@@ -96,21 +123,26 @@ const TaskComment: React.FC<{
       const data = JSON.parse(msg.data);
       console.log(data);
       if (!data.status) {
-        // setCommentList([...commentListRef.current, data]);
-        // handleScrollDown();
+        commentListMap.set(commentCountRef.current, data);
+        setCommentListMap(commentListMap);
+        setCommentCount(commentCountRef.current + 1);
+        recomputeRowHeights();
+        if (data.sender.id === currentUser.id) {
+          scrollToBottom();
+        }
       } else {
         message.error(data.message);
       }
     },
   });
 
-  const handleScrollDown = () => {
-    if (
-      commentListEle.current.scrollTop + 200 >
-      commentListEle.current.scrollHeight - commentListEle.current.clientHeight
-    )
-      commentListEle.current.scrollTop = commentListEle.current.scrollHeight;
-  };
+  // const handleScrollDown = () => {
+  //   if (
+  //     commentListEle.current.scrollTop + 200 >
+  //     commentListEle.current.scrollHeight - commentListEle.current.clientHeight
+  //   )
+  //     commentListEle.current.scrollTop = commentListEle.current.scrollHeight;
+  // };
 
   const handleSend = (values) => {
     console.log(values);
@@ -123,7 +155,7 @@ const TaskComment: React.FC<{
     const sendData = JSON.stringify({ event: 'comment', data });
     sendMessage(sendData);
     form.resetFields();
-    commentListEle.current.scrollTop = commentListEle.current.scrollHeight;
+    // commentListEle.current.scrollTop = commentListEle.current.scrollHeight;
   };
 
   const handleEmojiSelete = (emoji) => {
@@ -145,67 +177,60 @@ const TaskComment: React.FC<{
   function loadMoreRows({ startIndex, stopIndex }) {
     console.log(startIndex);
     console.log(stopIndex);
-    return getCommentsReq.run(taskId, { skip: startIndex, take: stopIndex - startIndex });
+    return getCommentsReq.run(taskId, { skip: startIndex, take: stopIndex - startIndex + 1 });
   }
   const cache = new CellMeasurerCache({
-    defaultHeight: 100,
-    minHeight: 70,
+    defaultHeight: 82,
+    minHeight: 82,
     fixedWidth: true,
   });
-
   function rowRenderer({ key, index, style, parent }) {
     const comment = commentListMap.get(index);
     return (
       <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
-        <ReplyMessage
-          style={style}
-          type={comment?.type}
-          isMe={comment?.sender?.id === currentUser.id}
-          author={comment?.sender?.username}
-          datetime={comment?.createAt}
-          avatar={comment?.sender?.username}
-          content={comment?.content}
-        />
+        {({ registerChild }) => (
+          <div ref={registerChild} style={{ ...style }}>
+            <ReplyMessage
+              type={comment?.type}
+              isMe={comment?.sender?.id === currentUser.id}
+              isLoading={!comment}
+              author={comment?.sender?.username}
+              datetime={comment?.createAt}
+              avatar={comment?.sender?.username}
+              content={comment?.content}
+            />
+          </div>
+        )}
       </CellMeasurer>
     );
   }
 
-  // const infiniteLoader = (
-  //   <WindowScroller>
-  //     {({ height, isScrolling, onChildScroll, scrollTop }) => (
-  //       <InfiniteLoader isRowLoaded={isRowLoaded} loadMoreRows={loadMoreRows} rowCount={10}>
-  //         {({ onRowsRendered }) => (
-  //           <VList
-  //             autoHeight
-  //             height={height}
-  //             width={300}
-  //             rowCount={10}
-  //             rowHeight={20}
-  //             rowRenderer={rowRenderer}
-  //             onRowsRendered={onRowsRendered}
-  //             isScrolling={isScrolling}
-  //             onScroll={onChildScroll}
-  //             scrollTop={scrollTop}
-  //           />
-  //         )}
-  //       </InfiniteLoader>
-  //     )}
-  //   </WindowScroller>
-  // );
-
   const infiniteLoader = (
-    <InfiniteLoader isRowLoaded={isRowLoaded} loadMoreRows={loadMoreRows} rowCount={commentCount}>
+    <InfiniteLoader
+      isRowLoaded={isRowLoaded}
+      loadMoreRows={loadMoreRows}
+      threshold={1}
+      rowCount={commentCount}
+    >
       {({ onRowsRendered, registerChild }) => (
-        <AutoSizer disableHeight>
-          {({ width }) => (
+        <AutoSizer>
+          {({ width, height }) => (
             <VList
-              ref={registerChild}
-              height={600}
+              style={{ outline: 'none', padding: '20px 10px' }}
+              ref={(ref) => {
+                vListRef.current = ref;
+                registerChild(ref);
+              }}
+              height={height}
               width={width}
               rowCount={commentCount}
-              rowHeight={70}
+              rowHeight={cache.rowHeight}
               rowRenderer={rowRenderer}
               onRowsRendered={onRowsRendered}
+              overscanRowCount={1}
+              estimatedRowSize={82}
+              deferredMeasurementCache={cache}
+              scrollToIndex={commentCount}
             />
           )}
         </AutoSizer>
@@ -214,32 +239,13 @@ const TaskComment: React.FC<{
   );
 
   return (
-    <div style={{ height: '100%', minWidth: '250px', position: 'relative' }}>
+    <div ref={commentListEle} style={{ height: '100%', minWidth: '250px', position: 'relative' }}>
       <Card
         bordered={false}
         style={{ height: 'calc(100vh - 300px)' }}
         bodyStyle={{ height: '100%', padding: 0 }}
       >
         {infiniteLoader}
-        {/* <div
-          ref={commentListEle}
-          style={{ height: '100%', overflowY: 'scroll', padding: '10px 20px' }}
-        >
-          <List
-            dataSource={commentList}
-            itemLayout="horizontal"
-            renderItem={(comment) => (
-              <ReplyMessage
-                type={comment.type}
-                isMe={comment.sender?.id === currentUser.id}
-                author={comment.sender?.username}
-                datetime={comment.createAt}
-                avatar={comment.sender?.username}
-                content={comment.content}
-              />
-            )}
-          />
-        </div> */}
       </Card>
       <Form form={form} onFinish={handleSend}>
         <div style={{ padding: '10px 0', width: '100%' }}>
@@ -283,7 +289,23 @@ const TaskComment: React.FC<{
           </Mentions>
         </Form.Item>
       </Form>
+      <Button
+        onClick={() => {
+          // vListRef.current.scrollToRow(commentCount);
+          cache.clearAll();
+          vListRef.current.recomputeRowHeights();
+        }}
+      >
+        resize
+      </Button>
+      <Button
+        onClick={() => {
+          vListRef.current.scrollToRow(commentCount);
+        }}
+      >
+        vvv
+      </Button>
     </div>
   );
 };
-export default TaskComment;
+export default forwardRef(TaskComment);

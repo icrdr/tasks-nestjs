@@ -152,7 +152,7 @@ export class TaskService {
 
     query = query.orderBy('comment.id', 'ASC');
 
-    if (options.pageSize && options.current) {
+    if (!options.skip || !options.take) {
       query = query.skip((options.current - 1) * options.pageSize || 0).take(options.pageSize || 5);
     }
 

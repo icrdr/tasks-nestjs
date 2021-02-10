@@ -42,7 +42,7 @@ const TaskContent: React.FC<{}> = () => {
   const [contentIndex, setContentIndex] = useState(0);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [isSynced, setSync] = useState(true);
-
+  const taskCommentRef = useRef(null)
   const intl = useIntl();
 
   const getTaskReq = useRequest(() => getTask(params.id), {
@@ -239,7 +239,9 @@ const TaskContent: React.FC<{}> = () => {
       tabList={tabList}
     >
       <div style={{ position: 'relative', width: '100%', margin: '0px auto', maxWidth: '1200px' }}>
-        <Split style={{ display: 'flex' }} sizes={[66, 33]} minSize={[300, 0]} gutterSize={12}>
+        <Split style={{ display: 'flex' }} sizes={[66, 33]} minSize={[300, 0]} gutterSize={12} onDragEnd={()=>{
+          taskCommentRef.current.recomputeRowHeights()
+        }}>
           <div style={{ overflowY: 'auto', overflowX: 'hidden' }}>
             <Card bordered={false} style={{ minWidth: '300px' }}>
               <div className="ce-state-icon">
@@ -283,7 +285,7 @@ const TaskContent: React.FC<{}> = () => {
                 overflowX: 'hidden',
               }}
             >
-              <TaskComment taskId={data?.id} />
+              <TaskComment taskId={data?.id} ref ={taskCommentRef}/>
             </div>
           </Affix>
         </Split>

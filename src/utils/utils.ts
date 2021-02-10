@@ -14,6 +14,9 @@ export function stringMatch(str: string, rule: string) {
 export function isIntString(str: string) {
   return /(^[1-9]\d*$)/.test(str);
 }
+export function sleep(ms:number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 export function unionArrays(arr: Array<any>) {
   return [...new Set([].concat(...arr))];
