@@ -34,6 +34,7 @@ const Editor: React.FC<{
   const [isConnect, setConnect] = useState(false);
   const isReadyRef = useRef<boolean>();
   const isConnectRef = useRef<boolean>();
+  const dragDropRef = useRef();
   isReadyRef.current = isReady;
   isConnectRef.current = isConnect;
   const websocketProviderRef = useRef<WebsocketProvider>();
@@ -67,8 +68,9 @@ const Editor: React.FC<{
       logLevel: 'ERROR' as LogLevels,
       readOnly: !editable && !wsRoom,
       onReady: () => {
+        const holder = document.getElementById('editorjs');
         if (data) setReady(true);
-        if (editable || wsRoom) new DragDrop(editor);
+        if ((editable || wsRoom) && holder) new DragDrop(editor);
       },
       onChange: () => {
         onChange();

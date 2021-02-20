@@ -9,6 +9,8 @@ import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { SpaceService } from './space.service';
 import { Comment } from '../entities/comment.entity';
+import { DateRange } from '@dtos/misc.dto';
+import moment from 'moment';
 
 @Injectable()
 export class TaskService {
@@ -128,10 +130,34 @@ export class TaskService {
     return task;
   }
 
+  async getComment(id: number, exception = true) {
+    const query = this.commentQuery.clone().where('comment.id = :id', { id });
+    const comment = await query.getOne();
+    if (!comment && exception) throw new NotFoundException('Comment was not found.');
+    return comment;
+  }
+
+  async getCommentIndex(comment: Comment | number) {
+    comment = comment instanceof Comment ? comment : await this.getComment(comment);
+
+    let query = this.commentQuery.clone();
+    query = query.andWhere('task.id = :taskId', { taskId: comment.task.id });
+    query = query.orderBy('comment.id', 'ASC');
+    const Comments = await query.getMany();
+    const commentIds = Comments.map((comment) => {
+      return comment.id;
+    });
+    const index = commentIds.indexOf(comment.id);
+    console.log(index);
+    return index;
+  }
+
   async getTaskComments(
     options: {
       user?: User | number;
       task?: Task | number;
+      dateAfter?: Date;
+      dateBefore?: Date;
       pageSize?: number;
       current?: number;
       skip?: number;
@@ -139,15 +165,30 @@ export class TaskService {
     } = {},
   ) {
     let query = this.commentQuery.clone();
+    let taskCommentIds = [];
+    if (options.task) {
+      const taskId = await this.getTaskId(options.task);
+      query = query.andWhere('task.id = :taskId', { taskId });
+      taskCommentIds = (await query.getMany()).map((comment) => {
+        return comment.id;
+      });
+    }
 
     if (options.user) {
       const userId = await this.userService.getUserId(options.user);
       query = query.andWhere('sender.id = :userId', { userId });
     }
 
-    if (options.task) {
-      const taskId = await this.getTaskId(options.task);
-      query = query.andWhere('task.id = :taskId', { taskId });
+    if (options.dateAfter) {
+      const after = options.dateAfter
+      console.log(after)
+      query = query.andWhere('comment.createAt >= :after', { after });
+    }
+
+    if (options.dateBefore) {
+      const before = options.dateBefore
+      console.log(before)
+      query = query.andWhere('comment.createAt < :before', { before });
     }
 
     query = query.orderBy('comment.id', 'ASC');
@@ -159,8 +200,15 @@ export class TaskService {
     if (options.skip !== undefined && options.take) {
       query = query.skip(options.skip).take(options.take);
     }
-
-    return await query.getManyAndCount();
+    const commentsList = await query.getManyAndCount();
+    if (taskCommentIds) {
+      const comments = commentsList[0].map((comment) => {
+        comment['index'] = taskCommentIds.indexOf(comment.id);
+        return comment;
+      });
+      commentsList[0] = comments;
+    }
+    return commentsList;
   }
 
   async getTasks(
@@ -214,6 +262,10 @@ export class TaskService {
 
   async getTaskId(task: Task | number) {
     return task instanceof Task ? task.id : task;
+  }
+
+  async getCommentId(comment: Comment | number) {
+    return comment instanceof Comment ? comment.id : comment;
   }
 
   async startTask(task: Task | number, executor?: User | number | string) {

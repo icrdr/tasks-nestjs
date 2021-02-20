@@ -20,9 +20,13 @@
   {
     path: '/task/:id',
     name: 'task.detail',
-    component: 'task/taskContent.page',
+    component: 'task/taskDetail.page',
     hideInMenu: true,
     parentKeys: ['/task'],
+    routes: [
+      { path: '/task/:id/content', component: 'task/taskContent.page' },
+      { path: '/task/:id/asset', component: 'task/taskAsset.page' },
+    ],
   },
   {
     path: '/asset',

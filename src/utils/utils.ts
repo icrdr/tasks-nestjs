@@ -11,6 +11,12 @@ export function stringMatch(str: string, rule: string) {
   return new RegExp('^' + rule.split('*').map(escapeRegex).join('.*') + '$').test(str);
 }
 
+export function getBase64(img, callback) {
+  const reader = new FileReader();
+  reader.addEventListener('load', () => callback(reader.result));
+  reader.readAsDataURL(img);
+}
+
 export function isIntString(str: string) {
   return /(^[1-9]\d*$)/.test(str);
 }

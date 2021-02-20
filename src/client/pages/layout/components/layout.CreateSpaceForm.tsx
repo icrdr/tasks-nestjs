@@ -58,6 +58,7 @@ const CreateSpaceForm: React.FC<{ disabled?: boolean }> = ({ disabled = false })
           console.log(currentSpace);
           setInitialState({ ...initialState, currentSpace });
           Cookies.set('space', currentSpace.id.toString());
+          history.push('/');
           return true;
         } catch (error) {
           return false;

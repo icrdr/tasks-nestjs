@@ -43,6 +43,7 @@ export default function useWebSocket(socketUrl: string, options: Options = {}): 
   const reconnectTimesRef = useRef(0);
   const reconnectTimerRef = useRef<NodeJS.Timeout>();
   const websocketRef = useRef<WebSocket>();
+  const mountedRef = useRef<boolean>();
 
   const [latestMessage, setLatestMessage] = useState<WebSocketEventMap['message']>();
   const [readyState, setReadyState] = useState<ReadyState>(ReadyState.Closed);
@@ -76,21 +77,24 @@ export default function useWebSocket(socketUrl: string, options: Options = {}): 
       websocketRef.current.onerror = (event) => {
         reconnect();
         onError && onError(event);
-        setReadyState(websocketRef.current?.readyState || ReadyState.Closed);
+        if (mountedRef.current)
+          setReadyState(websocketRef.current?.readyState || ReadyState.Closed);
       };
       websocketRef.current.onopen = (event) => {
         onOpen && onOpen(event);
         reconnectTimesRef.current = 0;
-        setReadyState(websocketRef.current?.readyState || ReadyState.Closed);
+        if (mountedRef.current)
+          setReadyState(websocketRef.current?.readyState || ReadyState.Closed);
       };
       websocketRef.current.onmessage = (message: WebSocketEventMap['message']) => {
         onMessage && onMessage(message);
-        setLatestMessage(message);
+        if (mountedRef.current) setLatestMessage(message);
       };
       websocketRef.current.onclose = (event) => {
         reconnect();
         onClose && onClose(event);
-        setReadyState(websocketRef.current?.readyState || ReadyState.Closed);
+        if (mountedRef.current)
+          setReadyState(websocketRef.current?.readyState || ReadyState.Closed);
       };
     } catch (error) {
       throw error;
@@ -132,11 +136,20 @@ export default function useWebSocket(socketUrl: string, options: Options = {}): 
     if (!manual) {
       connect();
     }
+    // FIXME: cause react clear task warming
   }, [socketUrl, manual]);
 
-  useUnmount(() => {
-    disconnect();
-  });
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      disconnect();
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // useUnmount(() => {
+
+  // });
 
   return {
     latestMessage,

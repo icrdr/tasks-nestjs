@@ -1,5 +1,5 @@
 import { ClassType } from 'react';
-import { IsNumber, IsNumberString, IsOptional } from 'class-validator';
+import { IsDate, IsNumber, IsNumberString, IsOptional } from 'class-validator';
 
 export class ListDTO {
   @IsOptional()
@@ -9,6 +9,15 @@ export class ListDTO {
   @IsOptional()
   @IsNumber()
   pageSize?: number;
+}
+export class DateRange {
+  @IsOptional()
+  @IsDate()
+  after?: Date;
+
+  @IsOptional()
+  @IsDate()
+  before?: Date;
 }
 
 export class ListRes {

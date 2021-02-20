@@ -1,47 +1,29 @@
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import {
-  Comment,
-  Button,
-  Card,
-  Form,
-  Input,
-  List,
-  Mentions,
-  Avatar,
-  Popover,
-  Space,
-  Alert,
-  Typography,
-  message,
-} from 'antd';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { Button, Card, Form, Mentions, Popover, Space, message, Upload, Image } from 'antd';
 import Cookies from 'js-cookie';
-import { CommentDTO, CommentRes } from '@dtos/task.dto';
+import { CommentRes } from '@dtos/task.dto';
 import useWebSocket from '@hooks/useWebSocket';
 import { useModel, useRequest } from 'umi';
 import { getSpaceMembers } from '../../member/member.service';
 import { MemberRes } from '@dtos/space.dto';
 import {
-  FileImageOutlined,
+  LoadingOutlined,
   MessageOutlined,
   PictureOutlined,
+  PlusOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
-import moment from 'moment';
 import { Picker } from 'emoji-mart';
 import { getTaskComments } from '../task.service';
-import { CommentType } from '@server/task/entities/comment.entity';
 import ReplyMessage from './ReplyMessage';
-import {
-  AutoSizer,
-  CellMeasurer,
-  CellMeasurerCache,
-  InfiniteLoader,
-  WindowScroller,
-} from 'react-virtualized';
+import { AutoSizer, CellMeasurer, CellMeasurerCache, InfiniteLoader } from 'react-virtualized';
 import VList from 'react-virtualized/dist/commonjs/List';
-import { useSize, useThrottleEffect } from 'ahooks';
-import { sleep } from '@utils/utils';
-const { Text, Link } = Typography;
+import { useInterval } from 'ahooks';
+import { getBase64, sleep } from '@utils/utils';
+import moment from 'moment';
+import { getOssClient } from '../../layout/layout.service';
+import { RcFile } from 'antd/lib/upload';
+import { CommentType } from '../../../../server/task/entities/comment.entity';
 
 const TaskComment = ({ taskId }, ref) => {
   const { initialState } = useModel('@@initialState');
@@ -49,19 +31,28 @@ const TaskComment = ({ taskId }, ref) => {
   const commentListEle = useRef(null);
   const vListRef = useRef<VList>(null);
   const [form] = Form.useForm();
-  // const [commentList, setCommentList] = useState<CommentRes[]>([]);
   const [commentListMap, setCommentListMap] = useState(new Map<number, CommentRes>());
   const [commentCount, setCommentCount] = useState(0);
+  const [isUploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [afterFirstFetch, setAfterFirstFetch] = useState(false);
   const [memberList, setMemberList] = useState<MemberRes[]>([]);
+  const [scrollInterval, setScrollInterval] = useState(null);
+  const [scrollTargetIndex, setScrollTarget] = useState(0);
   const commentCountRef = useRef<number>();
-  const [first, setFirst] = useState(false);
+  const scrollTargetIndexRef = useRef<number>();
+  const afterFirstFetchRef = useRef<boolean>();
   commentCountRef.current = commentCount;
+  scrollTargetIndexRef.current = scrollTargetIndex;
+  afterFirstFetchRef.current = afterFirstFetch;
+
   // const size = useSize(commentListEle)
   useRequest(() => getTaskComments(taskId), {
-    onSuccess: async (res) => {
+    ready: !!taskId,
+    onSuccess: (res) => {
       console.log(res);
       setCommentCount(res.total);
-      // scrollToBottom();
+      vListRef.current.scrollToPosition(10000000000);
     },
   });
 
@@ -70,38 +61,70 @@ const TaskComment = ({ taskId }, ref) => {
     vListRef.current.recomputeRowHeights();
   };
 
-  const scrollToBottom = async () => {
-    vListRef.current.scrollToRow(commentCountRef.current);
+  const scrollToDate = (date: Date) => {
+    getTaskComments(taskId, { dateAfter: date }).then((res) => {
+      console.log(res.list[0].index);
+
+      sleep(0).then(() => {
+        setScrollTarget(res.list[0].index);
+        setScrollInterval(200);
+      });
+    });
   };
+
+  const scrollToBottom = () => {
+    sleep(0).then(() => {
+      setScrollTarget(commentCountRef.current - 1);
+      setScrollInterval(200);
+    });
+  };
+
+  useInterval(
+    () => {
+      const list = document.getElementsByClassName('v-list')[0];
+      const offset = vListRef.current.getOffsetForRow({
+        alignment: 'start',
+        index: scrollTargetIndex,
+      });
+
+      console.log('current top', list.scrollTop);
+      console.log('scroll to', offset);
+
+      if (list.scrollTop + 10 < offset || list.scrollTop - 10 > offset) {
+        vListRef.current.scrollToPosition(offset);
+      } else {
+        setScrollInterval(null);
+      }
+    },
+    scrollInterval,
+    { immediate: true },
+  );
 
   useImperativeHandle(ref, () => ({
     recomputeRowHeights,
+    scrollToDate,
+    scrollToBottom,
   }));
 
   const getCommentsReq = useRequest(getTaskComments, {
-    debounceInterval: 1000,
-    ready: !first,
+    debounceInterval: 500,
     manual: true,
-    onSuccess: (res, params) => {
-      for (let index = 0; index < params[1].take; index++) {
-        commentListMap.set(index + params[1].skip, res.list[index]);
+    onSuccess: (res) => {
+      console.log(res);
+      for (const comment of res.list) {
+        commentListMap.set(comment.index, comment);
       }
-      console.log(res.list);
-      console.log(commentListMap);
       setCommentListMap(commentListMap);
       setCommentCount(res.total);
       recomputeRowHeights();
-      console.log(params[1].skip + params[1].take);
-      console.log(res.total);
-      if (params[1].skip + params[1].take === res.total) {
+      if (res.list[res.list.length - 1].index === res.total - 1) {
         scrollToBottom();
-        setFirst(true);
       }
     },
   });
 
   const getSpaceMembersReq = useRequest(getSpaceMembers, {
-    debounceInterval: 1000,
+    debounceInterval: 500,
     manual: true,
     onSuccess: (res) => {
       // console.log(res);
@@ -127,7 +150,10 @@ const TaskComment = ({ taskId }, ref) => {
         setCommentListMap(commentListMap);
         setCommentCount(commentCountRef.current + 1);
         recomputeRowHeights();
-        if (data.sender.id === currentUser.id) {
+        const isUserSending = data.sender.id === currentUser.id;
+        const list = document.getElementsByClassName('v-list')[0];
+        const isNearBottom = list.scrollTop + list.clientHeight + 300 < list.scrollHeight;
+        if (isUserSending || isNearBottom) {
           scrollToBottom();
         }
       } else {
@@ -136,26 +162,16 @@ const TaskComment = ({ taskId }, ref) => {
     },
   });
 
-  // const handleScrollDown = () => {
-  //   if (
-  //     commentListEle.current.scrollTop + 200 >
-  //     commentListEle.current.scrollHeight - commentListEle.current.clientHeight
-  //   )
-  //     commentListEle.current.scrollTop = commentListEle.current.scrollHeight;
-  // };
-
-  const handleSend = (values) => {
-    console.log(values);
+  const handleSend = (content: string, type: string) => {
     const data = {
       taskId: taskId,
-      content: values.content,
-      type: 'text',
+      content: content,
+      type: type,
     };
 
     const sendData = JSON.stringify({ event: 'comment', data });
     sendMessage(sendData);
     form.resetFields();
-    // commentListEle.current.scrollTop = commentListEle.current.scrollHeight;
   };
 
   const handleEmojiSelete = (emoji) => {
@@ -175,22 +191,30 @@ const TaskComment = ({ taskId }, ref) => {
   }
 
   function loadMoreRows({ startIndex, stopIndex }) {
-    console.log(startIndex);
-    console.log(stopIndex);
-    return getCommentsReq.run(taskId, { skip: startIndex, take: stopIndex - startIndex + 1 });
+    //cancel the fetch right after the first bottom fetch.
+    if (stopIndex === commentCountRef.current - 1) {
+      setAfterFirstFetch(true);
+      sleep(1000).then(() => {
+        setAfterFirstFetch(false);
+      });
+    }
+    return afterFirstFetchRef.current
+      ? Promise.resolve()
+      : getCommentsReq.run(taskId, { skip: startIndex, take: stopIndex - startIndex + 1 });
   }
   const cache = new CellMeasurerCache({
-    defaultHeight: 82,
-    minHeight: 82,
+    defaultHeight: 126,
+    minHeight: 86,
     fixedWidth: true,
   });
   function rowRenderer({ key, index, style, parent }) {
     const comment = commentListMap.get(index);
     return (
       <CellMeasurer cache={cache} columnIndex={0} key={key} parent={parent} rowIndex={index}>
-        {({ registerChild }) => (
+        {({ measure, registerChild }) => (
           <div ref={registerChild} style={{ ...style }}>
             <ReplyMessage
+              onLoad={measure}
               type={comment?.type}
               isMe={comment?.sender?.id === currentUser.id}
               isLoading={!comment}
@@ -221,6 +245,7 @@ const TaskComment = ({ taskId }, ref) => {
                 vListRef.current = ref;
                 registerChild(ref);
               }}
+              className={'v-list'}
               height={height}
               width={width}
               rowCount={commentCount}
@@ -228,15 +253,44 @@ const TaskComment = ({ taskId }, ref) => {
               rowRenderer={rowRenderer}
               onRowsRendered={onRowsRendered}
               overscanRowCount={1}
-              estimatedRowSize={82}
+              estimatedRowSize={126}
               deferredMeasurementCache={cache}
-              scrollToIndex={commentCount}
             />
           )}
         </AutoSizer>
       )}
     </InfiniteLoader>
   );
+
+  const beforeUpload = (file: RcFile) => {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
+    if (!isJpgOrPng) {
+      message.error('You can only upload JPG/PNG file!');
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('Image must smaller than 2MB!');
+    }
+    if (isJpgOrPng && isLt2M) {
+      console.log(file);
+      getBase64(file, (base64) => setImageFile(base64));
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  const handleUpload = async () => {
+    setUploading(true);
+    const objectName = moment().format('YYYYMMDDhhmmss');
+    const ossClient = await getOssClient();
+    const image = await fetch(imageFile);
+    const blob = await image.blob();
+    await ossClient.put(objectName, blob);
+    handleSend(objectName, 'image');
+    setImageFile(false);
+    setUploading(false);
+  };
 
   return (
     <div ref={commentListEle} style={{ height: '100%', minWidth: '250px', position: 'relative' }}>
@@ -247,12 +301,12 @@ const TaskComment = ({ taskId }, ref) => {
       >
         {infiniteLoader}
       </Card>
-      <Form form={form} onFinish={handleSend}>
+      <Form form={form} onFinish={(v) => handleSend(v.content, 'text')}>
         <div style={{ padding: '10px 0', width: '100%' }}>
           <Space>
-            <Popover trigger={'click'} content={'upload'}>
+            <Upload disabled={isUploading} showUploadList={false} beforeUpload={beforeUpload}>
               <Button icon={<PictureOutlined />} />
-            </Popover>
+            </Upload>
             <Popover
               trigger={'click'}
               content={
@@ -267,44 +321,50 @@ const TaskComment = ({ taskId }, ref) => {
               <Button icon={<SmileOutlined />} />
             </Popover>
           </Space>
-          <Button style={{ float: 'right' }} type="primary" htmlType="submit">
-            发送
-          </Button>
+          {imageFile ? (
+            <Button
+              disabled={isUploading}
+              style={{ float: 'right' }}
+              icon={isUploading ? <LoadingOutlined /> : <PictureOutlined />}
+              type="primary"
+              onClick={handleUpload}
+            >
+              上传
+            </Button>
+          ) : (
+            <Button
+              icon={<MessageOutlined />}
+              style={{ float: 'right' }}
+              type="primary"
+              htmlType="submit"
+            >
+              发送
+            </Button>
+          )}
         </div>
-        <Form.Item name="content" rules={contentRule}>
-          <Mentions
-            style={{ width: '100%' }}
-            loading={getSpaceMembersReq.loading}
-            autoSize={{ minRows: 4, maxRows: 8 }}
-            onSearch={(text) => {
-              console.log('text');
-              getSpaceMembersReq.run(currentSpace.id, { username: text });
-            }}
-          >
-            {memberList.map((member) => (
-              <Mentions.Option key={member.userId.toString()} value={member.username}>
-                <span>{member.username}</span>
-              </Mentions.Option>
-            ))}
-          </Mentions>
-        </Form.Item>
+        {imageFile ? (
+          <Image src={imageFile} />
+        ) : (
+          <Form.Item name="content" rules={contentRule}>
+            <Mentions
+              placeholder={'输入@来提醒某成员'}
+              style={{ width: '100%' }}
+              loading={getSpaceMembersReq.loading}
+              autoSize={{ minRows: 4, maxRows: 8 }}
+              onSearch={(text) => {
+                console.log('text');
+                getSpaceMembersReq.run(currentSpace.id, { username: text });
+              }}
+            >
+              {memberList.map((member) => (
+                <Mentions.Option key={member.userId.toString()} value={member.username}>
+                  <span>{member.username}</span>
+                </Mentions.Option>
+              ))}
+            </Mentions>
+          </Form.Item>
+        )}
       </Form>
-      <Button
-        onClick={() => {
-          // vListRef.current.scrollToRow(commentCount);
-          cache.clearAll();
-          vListRef.current.recomputeRowHeights();
-        }}
-      >
-        resize
-      </Button>
-      <Button
-        onClick={() => {
-          vListRef.current.scrollToRow(commentCount);
-        }}
-      >
-        vvv
-      </Button>
     </div>
   );
 };

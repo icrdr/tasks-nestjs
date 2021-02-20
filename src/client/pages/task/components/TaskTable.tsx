@@ -66,7 +66,7 @@ const TaskTable: React.FC<{
       dataIndex: 'name',
       title: nameTit,
       render: (_, record) => (
-        <a onClick={() => history.push('/task/' + record.id)}>{record.name}</a>
+        <a onClick={() => history.push(`/task/${record.id}/content`)}>{record.name}</a>
       ),
     },
     {

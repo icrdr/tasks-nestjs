@@ -9,10 +9,13 @@ import {
   IsNumberString,
   IsBoolean,
   IsNotEmpty,
+  ValidateNested,
+  IsDate,
+  isDate,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
 import { Task, Content, TaskState } from '../server/task/entities/task.entity';
-import { ListDTO, ListRes } from './misc.dto';
+import { DateRange, ListDTO, ListRes } from './misc.dto';
 import { OutputData } from '@editorjs/editorjs';
 import { Comment, CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
@@ -35,6 +38,14 @@ export class CreateTaskDTO {
 }
 
 export class GetCommentsDTO extends ListDTO {
+  @IsOptional()
+  @IsDate()
+  dateAfter?: Date;
+
+  @IsOptional()
+  @IsDate()
+  dateBefore?: Date;
+
   @IsOptional()
   @IsNumber()
   skip?: number;
@@ -83,6 +94,9 @@ export class CommentRes {
 
   @Expose()
   type: CommentType;
+
+  @Expose()
+  index: number;
 
   constructor(partial: Partial<CommentRes>) {
     Object.assign(this, partial);
