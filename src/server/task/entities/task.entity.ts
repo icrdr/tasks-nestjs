@@ -18,7 +18,7 @@ import { OutputData } from '@editorjs/editorjs';
 import { Comment } from './comment.entity';
 import { property } from './property.entity';
 import { Asset } from '@server/task/entities/asset.entity';
-import { accessLevel, Assignment, Space } from './space.entity';
+import { AccessLevel, Assignment, Space } from './space.entity';
 
 export enum TaskState {
   IN_PROGRESS = 'inProgress',
@@ -67,7 +67,7 @@ export class Task extends BaseEntity {
   comments: Comment[];
 
   @Column('simple-json', { nullable: true })
-  properties: property[];
+  properties: any;
 
   @ManyToMany(() => Assignment, (assignment) => assignment.tasks)
   @JoinTable()
@@ -78,10 +78,10 @@ export class Task extends BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: accessLevel,
+    enum: AccessLevel,
     nullable: true,
   })
-  access: accessLevel;
+  access: AccessLevel;
 }
 
 @Entity()

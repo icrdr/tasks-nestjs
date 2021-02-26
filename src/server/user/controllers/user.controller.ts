@@ -14,7 +14,7 @@ import { UserService } from '../services/user.service';
 import { Access } from '../access.decorator';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { CreateUserDTO, GetUsersDTO, UserListRes } from '@dtos/user.dto';
+import { AddUserDTO, GetUsersDTO, UserListRes } from '@dtos/user.dto';
 import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
 
 @Controller('api/users')
@@ -39,8 +39,8 @@ export class UserController {
   }
 
   @Post()
-  async createUser(@Body() body: CreateUserDTO) {
-    return this.userService.createUser(body.username, body.password);
+  async addUser(@Body() body: AddUserDTO) {
+    return this.userService.addUser(body.username, body.password);
   }
 
   @Delete('/:id')

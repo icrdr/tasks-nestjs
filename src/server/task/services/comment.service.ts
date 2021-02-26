@@ -24,7 +24,7 @@ export class CommentService {
 
   async comment(
     task: Task | number,
-    sender: User | string | number,
+    sender: User | number,
     content: { content: string; type: CommentType },
   ) {
     task = task instanceof Task ? task : await this.taskService.getTask(task);

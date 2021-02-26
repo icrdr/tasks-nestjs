@@ -15,8 +15,8 @@ const UserList: React.FC<{}> = () => {
   const actionRef = useRef<ActionType>();
   const intl = useIntl();
 
-  const createUserBtn = intl.formatMessage({
-    id: 'page.member.table.createUser.btn',
+  const addUserBtn = intl.formatMessage({
+    id: 'page.member.table.addUser.btn',
   });
 
   const usernameTit = intl.formatMessage({
@@ -52,7 +52,7 @@ const UserList: React.FC<{}> = () => {
 
 const User: React.FC<{}> = () => {
   return (
-    <PageContainer content="管理所有用户">
+    <PageContainer content="管理所有成员">
       <UserList />
     </PageContainer>
   );

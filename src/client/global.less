@@ -108,3 +108,38 @@ ol {
 .chat-message-card-other {
   background: @card-background !important;
 }
+
+.file-card {
+  background-color: @layout-body-background;
+  background-repeat: no-repeat;
+  background-size: cover;
+  width: 100%;
+  padding-top: 75%;
+  position: relative;
+  overflow: hidden;
+
+  span {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 40px;
+    color: @primary-color;
+    text-align: center;
+    position: absolute;
+  }
+}
+
+.task-card {
+  background-color: @layout-body-background;
+  background-repeat: no-repeat;
+  background-size: cover;
+  width: 100%;
+  padding-top: 75%;
+  position: relative;
+  overflow: hidden;
+
+  .task-card-content {
+    top: 0;
+    position: absolute;
+  }
+}

@@ -18,13 +18,13 @@ class Uploader {
 
   async ossUpload(file) {
     const objectName = moment().format('YYYYMMDDhhmmss');
-    const ossClient = await getOssClient();
-    const res = await ossClient.put(objectName, file);
+    const oss = await getOssClient();
+    const res = await oss.put(objectName, file);
     console.log(res);
     return {
       success: 1,
       file: {
-        ossObject: objectName,
+        source: 'oss:' + objectName,
       },
     };
   }
@@ -49,12 +49,12 @@ class Uploader {
       });
   }
 
-  uploadByUrl(url:string) {
+  uploadByUrl(url: string) {
     const upload = new Promise(function (resolve, reject) {
       resolve({
         success: 1,
         file: {
-          url: url,
+          source: 'url:' + url,
         },
       });
     });
@@ -68,7 +68,7 @@ class Uploader {
       });
   }
 
-  uploadByFile(file:any, { onPreview }) {
+  uploadByFile(file: any, { onPreview }) {
     const reader = new FileReader();
     reader.readAsDataURL(file);
     reader.onload = (e) => {
@@ -130,20 +130,26 @@ export class Image extends ImageS {
     }
   }
 
-  set image(file: { url?: string; ossObject?: string }) {
+  set image(file: { source: string }) {
     // if file not change, don't update image.
     if (isEqual(file, (this as ImageS)._data.file)) return;
     (this as ImageS)._data.file = file || {};
-    if (file) {
+    if (file.source) {
+      const _source = file.source.split(':');
       if ((this as ImageS).ui.nodes.imageEl)
         (this as ImageS).ui.nodes.imageContainer.removeChild((this as ImageS).ui.nodes.imageEl);
-      if (file.url) {
-        (this as ImageS).ui.fillImage(file.url);
-      } else if (file.ossObject) {
-        getOssClient().then((ossClient) => {
-          const url = ossClient.signatureUrl(file.ossObject, { expires: 3600 });
-          (this as ImageS).ui.fillImage(url);
-        });
+      switch (_source[0]) {
+        case 'url':
+          (this as ImageS).ui.fillImage(_source[1]);
+          break;
+        case 'oss':
+          getOssClient().then((oss) => {
+            const url = oss.signatureUrl(_source[1], { expires: 3600 });
+            (this as ImageS).ui.fillImage(url);
+          });
+          break;
+        default:
+          break;
       }
     }
   }

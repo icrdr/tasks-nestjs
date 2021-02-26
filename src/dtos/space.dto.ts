@@ -13,13 +13,23 @@ import {
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
 import { Task, Content, TaskState } from '../server/task/entities/task.entity';
 import { ListDTO, ListRes } from './misc.dto';
-import { OutputData } from '@editorjs/editorjs';
-import { CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
-import { accessLevel, Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
+import { AccessLevel, Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
+export class AddAssignmentDTO {
+  @Type(() => Number)
+  @IsNumber({}, { each: true })
+  userId: number[];
 
-export class CreateSpaceDTO {
+  @IsString()
+  roleName: string;
+
+  @IsOptional()
+  @IsEnum(AccessLevel)
+  roleAccess?: AccessLevel;
+}
+
+export class AddSpaceDTO {
   @IsString()
   name: string;
 
@@ -74,6 +84,9 @@ export class MemberRes {
 
 @Exclude()
 export class AssignmentRes {
+  @Expose()
+  id: number;
+
   role: Role;
 
   @Expose()
@@ -107,11 +120,15 @@ export class SpaceDetailRes {
   createAt: Date;
 
   @Expose()
-  access: accessLevel;
+  access: AccessLevel;
 
   @Expose()
   @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
   members: Member[] | MemberRes[];
+
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Role) => i.name) : []))
+  roles: Role[] | string[];
 
   constructor(partial: Partial<SpaceDetailRes>) {
     Object.assign(this, partial);

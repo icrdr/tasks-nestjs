@@ -11,50 +11,50 @@ import ProForm, {
   ProFormSelect,
 } from '@ant-design/pro-form';
 import { ExpandOutlined, PlusOutlined } from '@ant-design/icons';
-import { createSpace } from '../layout.service';
+import { addSpace } from '../layout.service';
 import Cookies from 'js-cookie';
 
 const CreateSpaceForm: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
   const intl = useIntl();
   const { initialState, setInitialState } = useModel('@@initialState');
 
-  const createSpaceReq = useRequest(createSpace, {
+  const addSpaceReq = useRequest(addSpace, {
     manual: true,
   });
 
-  const createSpaceBtn = intl.formatMessage({
-    id: 'createSpaceFrom.createSpace.btn',
+  const addSpaceBtn = intl.formatMessage({
+    id: 'addSpaceFrom.addSpace.btn',
   });
 
   const nameTit = intl.formatMessage({
-    id: 'createSpaceFrom.name.tit',
+    id: 'addSpaceFrom.name.tit',
   });
 
   const namePhd = intl.formatMessage({
-    id: 'createSpaceFrom.name.phd',
+    id: 'addSpaceFrom.name.phd',
   });
 
   const nameRule = [
     {
       required: true,
       message: intl.formatMessage({
-        id: 'createSpaceFrom.name.required',
+        id: 'addSpaceFrom.name.required',
       }),
     },
   ];
 
   return (
     <ModalForm
-      title={createSpaceBtn}
+      title={addSpaceBtn}
       trigger={
-        <Button type="link" icon={<ExpandOutlined />} disabled={disabled || createSpaceReq.loading}>
+        <Button type="link" icon={<ExpandOutlined />} disabled={disabled || addSpaceReq.loading}>
           新空间
         </Button>
       }
       onFinish={async (value: any) => {
         console.log(value);
         try {
-          const currentSpace = await createSpaceReq.run(value);
+          const currentSpace = await addSpaceReq.run(value);
           console.log(currentSpace);
           setInitialState({ ...initialState, currentSpace });
           Cookies.set('space', currentSpace.id.toString());

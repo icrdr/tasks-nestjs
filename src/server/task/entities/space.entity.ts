@@ -25,7 +25,7 @@ export enum LogAction {
   DELETE = 'delete',
 }
 
-export enum accessLevel {
+export enum AccessLevel {
   FULL = 'full',
   EDIT = 'edit',
   VIEW = 'view',
@@ -65,10 +65,10 @@ export class Space extends BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: accessLevel,
+    enum: AccessLevel,
     nullable: true,
   })
-  access: accessLevel;
+  access: AccessLevel;
 }
 @Entity()
 export class Role extends BaseEntity {
@@ -83,9 +83,9 @@ export class Role extends BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: accessLevel,
+    enum: AccessLevel,
   })
-  access: accessLevel;
+  access: AccessLevel;
 }
 
 @Entity()
@@ -113,7 +113,7 @@ export class Member extends BaseEntity {
   user: User;
 
   @Column('simple-json', { nullable: true })
-  properties: property[];
+  properties: any;
 }
 
 // @Entity()

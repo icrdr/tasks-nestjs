@@ -5,7 +5,7 @@ import { history, SelectLang, useModel, useRequest } from 'umi';
 import { getSpaces } from '../layout.service';
 import { SpaceDetailRes } from '@dtos/space.dto';
 import Cookies from 'js-cookie';
-import CreateSpaceForm from './layout.CreateSpaceForm';
+import CreateSpaceForm from './layout.AddSpaceForm';
 import { SiderMenuProps } from '@ant-design/pro-layout/lib/SiderMenu/SiderMenu';
 
 const SpaceMenu: React.FC<{ props: SiderMenuProps }> = (props) => {

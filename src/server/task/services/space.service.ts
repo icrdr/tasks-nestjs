@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/commo
 import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
-import { accessLevel, Assignment, Member, Role, Space } from '../entities/space.entity';
+import { AccessLevel, Assignment, Member, Role, Space } from '../entities/space.entity';
 import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { Task } from '../entities/task.entity';
@@ -23,6 +23,7 @@ export class SpaceService {
       .createQueryBuilder(Space, 'space')
       .leftJoinAndSelect('space.members', 'member')
       .leftJoinAndSelect('member.user', 'user')
+      .leftJoinAndSelect('space.roles', 'sRole')
       .leftJoinAndSelect('space.assignments', 'assignment')
       .leftJoinAndSelect('assignment.role', 'role');
 
@@ -40,7 +41,7 @@ export class SpaceService {
       .leftJoinAndSelect('member.user', 'user');
   }
 
-  async createRole(space: Space | number, name: string, access: accessLevel) {
+  async addRole(space: Space | number, name: string, access: AccessLevel) {
     //check if space and user are exsited
     space = space instanceof Space ? space : await this.getSpace(space, false);
     let role = await this.getRole(space.id, name, false);
@@ -65,15 +66,20 @@ export class SpaceService {
     return role;
   }
 
-  async createAssignment(
+  async addAssignment(
     scope: Space | Task,
+    users: User[] | number[],
     roleName: string,
-    roleAccess: accessLevel,
-    members: Member[] = [],
+    roleAccess?: AccessLevel,
   ) {
-    members = unionArrays(members);
     const space = scope instanceof Space ? scope : scope.space;
-    const role = await this.createRole(space, roleName, roleAccess);
+    const role = await this.addRole(space, roleName, roleAccess || AccessLevel.EDIT);
+    const members = [];
+    users = unionArrays(users);
+    for await (const user of users) {
+      const member = await this.getMember(space, user);
+      members.push(member);
+    }
 
     let assignment = new Assignment();
     assignment.role = role;
@@ -88,13 +94,26 @@ export class SpaceService {
     return await this.manager.save(assignment);
   }
 
-  async createSpace(
+  async getAssignment(id: number, exception = true) {
+    const query = this.assignmentQuery.clone().where('assignment.id = :id', { id });
+    const assignment = await query.getOne();
+    if (!assignment && exception) throw new NotFoundException('Assignment was not found.');
+    return assignment;
+  }
+
+  async removeAssignment(assignment: Assignment | number) {
+    assignment =
+      assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
+    await this.manager.delete(Assignment, assignment.id);
+  }
+
+  async addSpace(
     name: string,
-    executor?: User | number | string,
+    executor?: User | number,
     options: {
-      admins?: User[] | number[] | string[];
-      members?: User[] | number[] | string[];
-      access?: accessLevel;
+      admins?: User[] | number[];
+      members?: User[] | number[];
+      access?: AccessLevel;
       isPersonal?: boolean;
     } = {},
   ) {
@@ -105,25 +124,25 @@ export class SpaceService {
     space = await this.manager.save(space);
     //TODO: add log
 
-    //create admin group
+    //add admin group
     if (options.admins) {
       const adminMembers = [];
       for (const admin of options.admins) {
-        adminMembers.push(await this.createMember(space, admin));
+        adminMembers.push(await this.addMember(space, admin));
       }
-      await this.createAssignment(space, 'admin', accessLevel.FULL, adminMembers);
+      await this.addAssignment(space, options.admins, 'admin', AccessLevel.FULL);
     }
 
     //add member
     if (options.members) {
       for (const member of options.members) {
-        await this.createMember(space, member);
+        await this.addMember(space, member);
       }
     }
     return await this.getSpace(space.id);
   }
 
-  async createMember(space: Space | number, user: User | number | string) {
+  async addMember(space: Space | number, user: User | number) {
     //check if space and user are exsited
     space = space instanceof Space ? space : await this.getSpace(space, false);
     user = user instanceof User ? user : await this.userService.getUser(user, false);
@@ -138,7 +157,7 @@ export class SpaceService {
     return await this.getMember(space.id, user.id, false);
   }
 
-  async getMember(space: Space | number, user: User | number | string, exception = true) {
+  async getMember(space: Space | number, user: User | number, exception = true) {
     const spaceId = await this.getSpaceId(space);
     const userId = await this.userService.getUserId(user);
 
@@ -173,7 +192,7 @@ export class SpaceService {
     return await query.getManyAndCount();
   }
 
-  // async createLog(space: Space | number, action: LogAction, executor?: User | number | string) {
+  // async addLog(space: Space | number, action: LogAction, executor?: User | number) {
   //   let log = new Log();
   //   space = space instanceof Space ? space : await this.getSpace(space);
   //   if(executor){
@@ -185,11 +204,11 @@ export class SpaceService {
   //   return await this.manager.save(log);
   // }
 
-  async isScopeAdmin(task: Task, user: User | number | string) {
+  async isScopeAdmin(task: Task, user: User | number) {
     const superTaskId = task.superTask ? task.superTask.id : undefined;
     const spaceId = task.space.id;
     const userId = await this.userService.getUserId(user);
-    if (task.space.access === accessLevel.FULL || task.superTask?.access === accessLevel.FULL)
+    if (task.space.access === AccessLevel.FULL || task.superTask?.access === AccessLevel.FULL)
       return true;
 
     let query = this.assignmentQuery
@@ -203,13 +222,13 @@ export class SpaceService {
         }),
       )
       .andWhere('role.access = :roleAccess', {
-        roleAccess: accessLevel.FULL,
+        roleAccess: AccessLevel.FULL,
       });
 
     return !!(await query.getOne());
   }
 
-  async getAssignments(scope: Space | Task, user: User | number | string) {
+  async getAssignments(scope: Space | Task, user: User | number) {
     const userId = await this.userService.getUserId(user);
     let query = this.assignmentQuery.clone().andWhere('user.id = :userId', { userId });
 
@@ -221,7 +240,7 @@ export class SpaceService {
     return await query.getMany();
   }
 
-  async getSpaceAccess(space: Space | number, user: User | number | string) {
+  async getSpaceAccess(space: Space | number, user: User | number) {
     space = space instanceof Space ? space : await this.getSpace(space);
     // 1. cheack if is space member
     if (!(await this.getMember(space, user))) return [];
@@ -261,7 +280,7 @@ export class SpaceService {
       const userId = await this.userService.getUserId(options.user);
       query = query.andWhere('user.id = :userId', { userId });
     }
-    
+
     if (options.isPersonal) {
       query = query.andWhere('space.isPersonal = :isPersonal', { isPersonal: true });
     }

@@ -3,7 +3,7 @@ import { CurrentUserRes } from '@dtos/user.dto';
 import OSS from 'ali-oss';
 import { StsTokenRes } from '@dtos/asset.dto';
 import moment from 'moment';
-import { CreateSpaceDTO, GetSpacesDTO, SpaceDetailRes, SpaceListRes } from '@dtos/space.dto';
+import { AddSpaceDTO, GetSpacesDTO, SpaceDetailRes, SpaceListRes } from '@dtos/space.dto';
 
 export interface initialState {
   currentUser: CurrentUserRes;
@@ -15,7 +15,7 @@ export async function getCurrentUser(): Promise<CurrentUserRes> {
 }
 
 export async function getStsToken(): Promise<StsTokenRes> {
-  return request('/api/assets/oss');
+  return request('/api/oss');
 }
 
 export async function logout(): Promise<void> {
@@ -30,7 +30,7 @@ export async function getSpace(id: number): Promise<SpaceDetailRes> {
   return request(`/api/spaces/${id}`);
 }
 
-export const createSpace = async (body: CreateSpaceDTO): Promise<SpaceDetailRes> => {
+export const addSpace = async (body: AddSpaceDTO): Promise<SpaceDetailRes> => {
   return request('/api/spaces/', {
     method: 'POST',
     data: body,
@@ -46,7 +46,7 @@ export async function getOssClient(): Promise<OSS> {
     }
   }
 
-  const res = await request('/api/assets/oss');
+  const res = await request('/api/oss');
   localStorage.setItem('stsToken', JSON.stringify(res));
   return new OSS(res);
 }

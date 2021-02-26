@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Access } from '@server/user/access.decorator';
 import { CurrentUser, TargetTask } from '@server/user/user.decorator';
 import { TaskService } from '../services/task.service';
 import {
-  CreateTaskDTO,
+  AddTaskDTO,
   GetTasksDTO,
   TaskRes,
   TaskListRes,
@@ -11,32 +11,38 @@ import {
   TaskMoreDetailRes,
   GetCommentsDTO,
   CommentListRes,
+  AssetListRes,
+  AddAssetDTO,
+  GetAssetsDTO,
+  ChangeTaskDTO,
 } from '@dtos/task.dto';
 import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
 import { User } from '@server/user/entities/user.entity';
 import { TaskAccessGuard } from '@server/user/taskAccess.guard';
-import { Task } from '../entities/task.entity';
+import { Task, TaskState } from '../entities/task.entity';
 import { unionArrays } from '@utils/utils';
+import { AssetService } from '../services/asset.service';
+import { SpaceService } from '../services/space.service';
+import { AddAssignmentDTO } from '@dtos/space.dto';
+import { AccessLevel } from '../entities/space.entity';
 
 @Controller('api/tasks')
 export class TaskController {
-  constructor(private taskService: TaskService) {}
+  constructor(
+    private taskService: TaskService,
+    private spaceService: SpaceService,
+    private assetService: AssetService,
+  ) {}
 
   @UseGuards(TaskAccessGuard)
-  @Access('common.task.create')
+  @Access('common.task.add')
   @Post('/:id')
-  async createSubTask(
-    @TargetTask() task: Task,
-    @Body() body: CreateTaskDTO,
-    @CurrentUser() user: User,
-  ) {
+  async addSubTask(@TargetTask() task: Task, @Body() body: AddTaskDTO, @CurrentUser() user: User) {
     const options = {
       members: body.memberId ? unionArrays([...[body.memberId]]) : undefined,
       state: body.state,
     };
-    return new TaskDetailRes(
-      await this.taskService.createSubTask(task, body.name, user.id, options),
-    );
+    return new TaskDetailRes(await this.taskService.addSubTask(task, body.name, user.id, options));
   }
 
   @UseGuards(TaskAccessGuard)
@@ -47,11 +53,76 @@ export class TaskController {
     @Query() query: GetCommentsDTO,
     @CurrentUser() user: User,
   ) {
-    const comments = await this.taskService.getTaskComments({
+    const comments = await this.taskService.getComments({
       task: task,
       ...query,
     });
     return ListResSerialize(comments, CommentListRes);
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.view')
+  @Post('/:id/assets')
+  async addTaskAssets(
+    @TargetTask() task: Task,
+    @Body() body: AddAssetDTO,
+    @CurrentUser() user: User,
+  ) {
+    return await this.assetService.addAsset(body.name, body.source, {
+      uploader: user,
+      task: task,
+      ...body,
+    });
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.view')
+  @Get('/:id/assets')
+  async getTaskAssets(
+    @TargetTask() task: Task,
+    @Query() query: GetAssetsDTO,
+    @CurrentUser() user: User,
+  ) {
+    const assets = await this.assetService.getAssets({
+      task: task,
+      ...query,
+    });
+    return ListResSerialize(assets, AssetListRes);
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.view')
+  @Delete('/:id/assets/:assetId')
+  async removeTaskAsset(
+    @TargetTask() task: Task,
+    @CurrentUser() user: User,
+    @Param('assetId') assetId: number,
+  ) {
+    await this.assetService.removeAsset(assetId);
+    return { msg: 'ok' };
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.view')
+  @Delete('/:id/assignments/:assignmentId')
+  async removeTaskAssignment(
+    @TargetTask() task: Task,
+    @CurrentUser() user: User,
+    @Param('assignmentId') assignmentId: number,
+  ) {
+    await this.spaceService.removeAssignment(assignmentId);
+    return { msg: 'ok' };
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.view')
+  @Post('/:id/assignments')
+  async addTaskAssignment(
+    @TargetTask() task: Task,
+    @Body() body: AddAssignmentDTO,
+    @CurrentUser() user: User,
+  ) {
+    return await this.spaceService.addAssignment(task, body.userId, body.roleName, body.roleAccess);
   }
 
   @UseGuards(TaskAccessGuard)
@@ -79,42 +150,50 @@ export class TaskController {
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.update')
+  @Put('/:id')
+  async updateTask(
+    @CurrentUser() user: User,
+    @Body() body: ChangeTaskDTO,
+    @TargetTask() task: Task,
+  ) {
+    return new TaskDetailRes(await this.taskService.changeTask(task, user, body));
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.update')
   @Put('/:id/start')
   async startTask(@CurrentUser() user: User, @TargetTask() task: Task) {
-    return new TaskDetailRes(await this.taskService.startTask(task, user));
+    return new TaskDetailRes(
+      await this.taskService.changeTaskState(task, TaskState.IN_PROGRESS, user),
+    );
   }
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.update')
   @Put('/:id/suspend')
   async suspendTask(@CurrentUser() user: User, @TargetTask() task: Task) {
-    return new TaskDetailRes(await this.taskService.suspendTask(task, user));
+    return new TaskDetailRes(
+      await this.taskService.changeTaskState(task, TaskState.SUSPENDED, user),
+    );
   }
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.update')
   @Put('/:id/complete')
   async completeTask(@CurrentUser() user: User, @TargetTask() task: Task) {
-    return new TaskDetailRes(await this.taskService.completeTask(task, user));
+    return new TaskDetailRes(
+      await this.taskService.changeTaskState(task, TaskState.COMPLETED, user),
+    );
   }
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.update')
   @Put('/:id/restart')
   async restartTask(@CurrentUser() user: User, @TargetTask() task: Task) {
-    return new TaskDetailRes(await this.taskService.restartTask(task, user));
+    return new TaskDetailRes(
+      await this.taskService.changeTaskState(task, TaskState.IN_PROGRESS, user),
+    );
   }
-
-  // @Perms('common.task.update')
-  // @Put('/:id/update')
-  // async updateTask(
-  //   @Param() params: IdDTO,
-  //   @Body() body: UpdateTaskDTO,
-  //   @CurrentUser() currentUser: currentUser,
-  // ) {
-  //   const task = await this.taskService.isUserThePerformer(params.id, currentUser.id, false);
-  //   return new TaskDetailRes(await this.taskService.updateTask(task, body.content, currentUser.id));
-  // }
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.edit')

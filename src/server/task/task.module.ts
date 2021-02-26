@@ -9,10 +9,28 @@ import { CommentGateway } from './controllers/comment.gateway';
 import { CommentService } from './services/comment.service';
 import { SpaceService } from './services/space.service';
 import { SpaceController } from './controllers/space.controller';
+import { AssetService } from './services/asset.service';
+import { BullModule } from '@nestjs/bull';
+import { AssetProcessor } from './services/asset.processor';
 @Module({
-  imports: [CommonModule, forwardRef(() => UserModule)],
-  providers: [TaskService, SpaceService, CommentGateway, CommentService, YjsGateway, YjsService],
+  imports: [
+    CommonModule,
+    forwardRef(() => UserModule),
+    BullModule.registerQueue({
+      name: 'asset',
+    }),
+  ],
+  providers: [
+    TaskService,
+    SpaceService,
+    CommentGateway,
+    CommentService,
+    YjsGateway,
+    YjsService,
+    AssetService,
+    AssetProcessor,
+  ],
   controllers: [TaskController, SpaceController],
-  exports: [TaskService, SpaceService],
+  exports: [TaskService, SpaceService, AssetService],
 })
 export class TaskModule {}

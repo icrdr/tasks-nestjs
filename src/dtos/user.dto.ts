@@ -15,7 +15,7 @@ export class LoginDTO {
   password: string;
 }
 
-export class CreateUserDTO {
+export class AddUserDTO {
   @IsString()
   username: string;
 

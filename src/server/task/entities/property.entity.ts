@@ -19,7 +19,7 @@ export enum PropertyForm {
 export enum ViewForm {
   TABLE = 'table',
   LIST = 'list',
-  CARD = 'card',
+  CARD = 'gallery',
 }
 
 export enum ViewType {

@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
-import { AssetService } from './asset.service';
+import { CommonService } from './common.service';
 
-@Controller('api/assets')
-export class AssetController {
-  constructor(private assetService: AssetService) {}
+@Controller('api/')
+export class CommonController {
+  constructor(private assetService: CommonService) {}
 
   @Get('oss')
   async getStsToken() {

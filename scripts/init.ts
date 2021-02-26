@@ -11,7 +11,7 @@ async function initDb() {
   await databaseService.clear();
 
   console.log('Creating default content...');
-  await databaseService.createDefault();
+  await databaseService.addDefault();
 
   console.log('Database initilization completed.');
 }

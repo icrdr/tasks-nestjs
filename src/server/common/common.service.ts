@@ -7,7 +7,7 @@ import { OptionService } from '../option/option.service';
 import { StsTokenRes } from '../../dtos/asset.dto';
 
 @Injectable()
-export class AssetService {
+export class CommonService {
   constructor(
     private configService: ConfigService,
     private manager: EntityManager,
@@ -57,5 +57,9 @@ export class AssetService {
     } catch (e) {
       throw new InternalServerErrorException('Fail to get sts token.');
     }
+  }
+
+  async getOssClient() {
+    return new OSS(await this.getStsToken());
   }
 }

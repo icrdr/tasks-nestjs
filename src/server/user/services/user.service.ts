@@ -12,7 +12,7 @@ import { hash } from '@utils/utils';
 import { GetUsersDTO } from '@dtos/user.dto';
 import { useResponsive } from 'ahooks';
 import { SpaceService } from '../../task/services/space.service';
-import { accessLevel } from '../../task/entities/space.entity';
+import { AccessLevel } from '../../task/entities/space.entity';
 
 @Injectable()
 export class UserService {
@@ -23,7 +23,7 @@ export class UserService {
     if (user) throw new ForbiddenException('Username existed');
   }
 
-  async getUserId(user: User | string | number) {
+  async getUserId(user: User | number) {
     user = user instanceof User ? user : await this.getUser(user);
     return user.id;
   }
@@ -59,7 +59,7 @@ export class UserService {
     return await query.getManyAndCount();
   }
 
-  async createUser(
+  async addUser(
     username: string,
     password: string,
     options: {
@@ -80,10 +80,10 @@ export class UserService {
     if (options.role) user.role = options.role;
     user = await this.manager.save(user);
 
-    //create personal space
-    await this.spaceService.createSpace(`${username}'s Space`, undefined, {
+    //add personal space
+    await this.spaceService.addSpace(`${username}'s Space`, undefined, {
       members: [user],
-      access: accessLevel.FULL,
+      access: AccessLevel.FULL,
       isPersonal: true,
     });
     return user;

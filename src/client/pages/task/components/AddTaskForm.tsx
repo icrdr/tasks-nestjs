@@ -11,9 +11,9 @@ import ProForm, {
   ProFormSelect,
 } from '@ant-design/pro-form';
 import { PlusOutlined } from '@ant-design/icons';
-import { createSubTask, createSpaceTask, getUsersByfullName } from '../task.service';
+import { addSubTask, addSpaceTask, getUsersByfullName } from '../task.service';
 
-const CreateTaskForm: React.FC<{
+const AddTaskForm: React.FC<{
   disabled?: boolean;
   superTaskId?: number;
   onSuccess?: Function;
@@ -22,11 +22,11 @@ const CreateTaskForm: React.FC<{
   const { currentSpace } = initialState;
   const intl = useIntl();
 
-  const createSpaceTaskReq = useRequest(createSpaceTask, {
+  const addSpaceTaskReq = useRequest(addSpaceTask, {
     manual: true,
   });
 
-  const createSubTaskReq = useRequest(createSubTask, {
+  const addSubTaskReq = useRequest(addSubTask, {
     manual: true,
   });
 
@@ -47,57 +47,56 @@ const CreateTaskForm: React.FC<{
   const [state, setstate] = useState([]);
   const [valueEnum, setValueEnum] = useState({});
 
-  const createTaskBtn = intl.formatMessage({
-    id: 'createTaskFrom.createTask.btn',
+  const addTaskBtn = intl.formatMessage({
+    id: 'addTaskFrom.addTask.btn',
   });
 
-  const createSubTaskBtn = intl.formatMessage({
-    id: 'createTaskFrom.createSubTask.btn',
+  const addSubTaskBtn = intl.formatMessage({
+    id: 'addTaskFrom.addSubTask.btn',
   });
 
   const nameTit = intl.formatMessage({
-    id: 'createTaskFrom.name.tit',
+    id: 'addTaskFrom.name.tit',
   });
 
   const namePhd = intl.formatMessage({
-    id: 'createTaskFrom.name.phd',
+    id: 'addTaskFrom.name.phd',
   });
 
   const membersTit = intl.formatMessage({
-    id: 'createTaskFrom.members.tit',
+    id: 'addTaskFrom.members.tit',
   });
 
   const membersPhd = intl.formatMessage({
-    id: 'createTaskFrom.members.phd',
+    id: 'addTaskFrom.members.phd',
   });
 
   const nameRule = [
     {
       required: true,
       message: intl.formatMessage({
-        id: 'createTaskFrom.name.required',
+        id: 'addTaskFrom.name.required',
       }),
     },
   ];
 
   return (
     <ModalForm
-      title={superTaskId ? createSubTaskBtn : createTaskBtn}
+      title={superTaskId ? addSubTaskBtn : addTaskBtn}
       trigger={
         <Button
-          type="primary"
           icon={<PlusOutlined />}
-          disabled={disabled || createSpaceTaskReq.loading}
+          disabled={disabled || addSpaceTaskReq.loading}
         >
-          {superTaskId ? createSubTaskBtn : createTaskBtn}
+          {superTaskId ? addSubTaskBtn : addTaskBtn}
         </Button>
       }
       onFinish={async (value: any) => {
         console.log(value);
         try {
           superTaskId
-            ? await createSubTaskReq.run(superTaskId, value)
-            : await createSpaceTaskReq.run(currentSpace.id, value);
+            ? await addSubTaskReq.run(superTaskId, value)
+            : await addSpaceTaskReq.run(currentSpace.id, value);
           onSuccess();
           return true;
         } catch (error) {
@@ -124,4 +123,4 @@ const CreateTaskForm: React.FC<{
   );
 };
 
-export default CreateTaskForm;
+export default AddTaskForm;

@@ -1,18 +1,20 @@
 import React, { useRef } from 'react';
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, Avatar, Table, Space } from 'antd';
+import { Button, Avatar, Table, Space, Card } from 'antd';
 import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro-table';
 import { useIntl, history, Link, useModel, useParams } from 'umi';
 import { getSpaceTasks, getSubTasks } from '../task.service';
 import { TaskDetailRes, TaskRes } from '@dtos/task.dto';
 import AddTaskForm from './AddTaskForm';
-import { AssignmentRes, MemberRes } from '@dtos/space.dto';
+import ProList from '@ant-design/pro-list';
+import FileCard from './FileCard';
+import { getOssClient } from '../../layout/layout.service';
+import TaskCard from './TaskCard';
 
-const TaskTable: React.FC<{}> = () => {
+const TaskGallery: React.FC<{}> = () => {
   const currentTaskId = (useParams() as any).id;
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
-  const params = useParams() as any;
   const actionRef = useRef<ActionType>();
   const intl = useIntl();
   const actionMenu = [
@@ -65,7 +67,9 @@ const TaskTable: React.FC<{}> = () => {
     {
       dataIndex: 'name',
       title: nameTit,
-      render: (_, record) => <Link to={`/task/${record.id}/content`}>{record.name}</Link>,
+      render: (_, record) => (
+        <a onClick={() => history.push(`/task/${record.id}/content`)}>{record.name}</a>
+      ),
     },
     {
       dataIndex: 'state',
@@ -92,55 +96,72 @@ const TaskTable: React.FC<{}> = () => {
       },
     },
     {
-      dataIndex: 'dueAt',
-      title: '截止日期',
+      dataIndex: 'createAt',
+      title: addDataTit,
       valueType: 'date',
+    },
+    {
+      title: actionTit,
+      valueType: 'option',
+      render: (text, record, _, action) => [
+        <TableDropdown key="actionGroup" onSelect={() => action.reload()} menus={actionMenu} />,
+      ],
     },
   ];
 
-  for (const role of currentSpace.roles) {
-    const _role = role as string;
-    columns.push({
-      title: _role,
-      dataIndex: _role,
-      editable: false,
-      render: (_, entity) => {
-        const assignments = entity['roles'][_role];
-        return (
-          <Avatar.Group>
-            {assignments.map((assignment: AssignmentRes, index: number) => (
-              <Avatar key={index}>{(assignment.members[0] as MemberRes).username}</Avatar>
-            ))}
-          </Avatar.Group>
-        );
-      },
-    });
-  }
-  columns.push({
-    title: actionTit,
-    valueType: 'option',
-    render: (text, record, _, action) => [
-      <TableDropdown key="actionGroup" onSelect={() => action.reload()} menus={actionMenu} />,
-    ],
-  });
-
   return (
-    <ProTable<TaskDetailRes>
-      search={false}
+    <ProList<TaskDetailRes>
+      renderItem={(task: TaskDetailRes, index: number) => (
+        <div style={{ padding: 10 }}>
+          <Link to={`/task/${task.id}/content`}>
+            <TaskCard content={task.content.content} name={task.name} cover={task['_preview']}></TaskCard>
+          </Link>
+        </div>
+      )}
       rowKey="id"
-      columns={columns}
-      actionRef={actionRef}
+      // columns={columns}
+      // actionRef={actionRef}
       pagination={{
         defaultPageSize: 20,
       }}
-      request={async (_params, sorter, filter) => {
+      grid={{ gutter: 4, column: 4 }}
+      request={async (params, sorter, filter) => {
         const res = currentTaskId
-          ? await getSubTasks(currentTaskId, { ..._params, ...filter })
-          : await getSpaceTasks(currentSpace.id, { ..._params, ...filter });
+          ? await getSubTasks(currentTaskId, { ...params, ...filter })
+          : await getSpaceTasks(currentSpace.id, { ...params, ...filter });
 
         console.log(res);
+        const oss = await getOssClient();
+        const tasks = res.list.map((task) => {
+          let cover;
+          for (const block of task.content?.content.blocks) {
+            if (block.type === 'image') cover = block.data.file.source;
+            break;
+          }
+          console.log(cover);
+          if (cover) {
+            const _cover = cover.split(':');
+            task['_source'] =
+              _cover[0] === 'oss' ? oss.signatureUrl(_cover[1], { expires: 3600 }) : _cover[1];
+            task['_preview'] =
+              _cover[0] === 'oss'
+                ? oss.signatureUrl(_cover[1], {
+                    expires: 3600,
+                    process: 'image/resize,w_500,h_150',
+                  })
+                : _cover[1];
+          } else {
+            task['_source'] = (
+              <div style={{ background: 'white', width: '200px', height: '200px' }}>
+                <h3 style={{ lineHeight: '200px', textAlign: 'center' }}>no preview</h3>
+              </div>
+            );
+          }
+          return task;
+        });
+
         return {
-          data: res.list,
+          data: tasks,
           success: true,
           total: res.total,
         };
@@ -172,11 +193,11 @@ const TaskTable: React.FC<{}> = () => {
       toolBarRender={() => [
         <AddTaskForm
           key="1"
-          superTaskId={params?.id}
+          superTaskId={currentTaskId}
           onSuccess={() => actionRef.current.reload()}
         />,
       ]}
     />
   );
 };
-export default TaskTable;
+export default TaskGallery;

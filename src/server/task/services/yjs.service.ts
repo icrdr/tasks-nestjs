@@ -96,7 +96,7 @@ export class YjsService {
       .map((i: Y.Map<any>) => i.toJSON());
 
     this.logger.info(`wsUpdate on ${taskId}`);
-    this.taskService.updateTaskContent(taskId, { blocks: blocks });
+    this.taskService.changeTaskContent(taskId, { blocks: blocks });
   }
 
   updateHandler(update: Uint8Array, origin: any, doc: WSSharedDoc) {
@@ -141,7 +141,7 @@ export class YjsService {
     doc.clients.set(client, new Set());
     // listen and reply to events
     client.on('message', (message: ArrayBuffer) => {
-      if(typeof message === 'object'){
+      if (typeof message === 'object') {
         this.messageListener(client, doc, new Uint8Array(message));
       }
     });

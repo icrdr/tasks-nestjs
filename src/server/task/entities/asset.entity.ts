@@ -1,8 +1,7 @@
-import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
+import { Column, Entity, ManyToOne } from 'typeorm';
 import { Task } from '@server/task/entities/task.entity';
 import { BaseEntity } from '@server/common/common.entity';
 import { User } from '@server/user/entities/user.entity';
-import { property } from './property.entity';
 import { Space } from './space.entity';
 
 @Entity()
@@ -20,11 +19,20 @@ export class Asset extends BaseEntity {
   uploader: User;
 
   @Column('simple-json', { nullable: true })
-  properties: property[];
+  properties: any;
 
   @Column()
-  location: string;
+  source: string;
 
-  @Column()
+  @Column({ nullable: true })
+  preview: string;
+
+  @Column({ nullable: true })
   format: string;
+
+  @Column({ nullable: true })
+  type: string;
+
+  @Column({ nullable: true })
+  size: number;
 }

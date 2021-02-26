@@ -3,27 +3,63 @@ import {
   IsOptional,
   IsNumber,
   IsEnum,
-  IsArray,
-  ValidateIf,
-  IsDefined,
-  IsNumberString,
   IsBoolean,
   IsNotEmpty,
-  ValidateNested,
   IsDate,
-  isDate,
 } from 'class-validator';
-import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { Task, Content, TaskState } from '../server/task/entities/task.entity';
-import { DateRange, ListDTO, ListRes } from './misc.dto';
+import { ListDTO, ListRes } from './misc.dto';
 import { OutputData } from '@editorjs/editorjs';
 import { Comment, CommentType } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
-import { User } from '../server/user/entities/user.entity';
-import { Assignment, Member, Role } from '../server/task/entities/space.entity';
+import { AccessLevel, Assignment, Space } from '../server/task/entities/space.entity';
 import { AssignmentRes } from './space.dto';
+import { Asset } from '../server/task/entities/asset.entity';
 
-export class CreateTaskDTO {
+export class AddAssetDTO {
+  @IsString()
+  name: string;
+
+  @IsString()
+  source: string;
+
+  @IsOptional()
+  @IsString()
+  format?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @IsOptional()
+  @IsNumber()
+  size?: number;
+}
+
+export class ChangeTaskDTO {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsEnum(TaskState)
+  state?: TaskState;
+
+  @IsOptional()
+  @IsEnum(AccessLevel)
+  access?: AccessLevel;
+
+  @IsOptional()
+  @IsDate()
+  beginAt?: Date;
+
+  @IsOptional()
+  @IsDate()
+  dueAt?: Date;
+}
+
+export class AddTaskDTO {
   @IsString()
   name: string;
 
@@ -55,16 +91,27 @@ export class GetCommentsDTO extends ListDTO {
   take?: number;
 }
 
+export class GetAssetsDTO extends ListDTO {
+  @IsOptional()
+  @IsNumber()
+  taskId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  spaceId?: number;
+
+  @Type(() => String)
+  @IsOptional()
+  @Transform((v) => v === 'true')
+  @IsBoolean()
+  isRoot?: boolean;
+}
+
 export class GetTasksDTO extends ListDTO {
   @IsOptional()
   @Transform((v) => Object.values(TaskState)) //check all state if is empty.
   @IsEnum(TaskState, { each: true })
   state?: TaskState[];
-}
-
-export class UpdateTaskDTO {
-  @IsNotEmpty()
-  content: OutputData;
 }
 
 export class ReviewTaskDTO {
@@ -93,10 +140,45 @@ export class CommentRes {
   content: string;
 
   @Expose()
-  type: CommentType;
+  type: string;
 
   @Expose()
   index: number;
+
+  constructor(partial: Partial<CommentRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class AssetRes {
+  @Expose()
+  id: number;
+
+  @Expose()
+  createAt: Date;
+
+  @Expose()
+  @Transform((i) => (i ? new UserRes(i) : null))
+  uploader: UserRes;
+
+  @Expose()
+  name: string;
+
+  @Expose()
+  type: string;
+
+  @Expose()
+  format: string;
+
+  @Expose()
+  size: number;
+
+  @Expose()
+  source: string;
+
+  @Expose()
+  preview: string;
 
   constructor(partial: Partial<CommentRes>) {
     Object.assign(this, partial);
@@ -165,12 +247,41 @@ export class TaskDetailRes {
   createAt: Date;
 
   @Expose()
+  beginAt: Date;
+
+  @Expose()
+  endAt: Date;
+
+  @Expose()
+  dueAt: Date;
+
+  contents: Content[];
+
+  @Expose()
+  get content(): ContentRes {
+    if (this.contents) {
+      return new ContentRes(this.contents[this.contents.length - 1]);
+    } else {
+      return null;
+    }
+  }
+
+  @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
   superTask: TaskRes;
 
+  assignments: Assignment[];
+  space: Space;
+
   @Expose()
-  @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : []))
-  subTasks: TaskRes[];
+  get roles(): any {
+    const _roles = {};
+    for (const role of this.space.roles) {
+      const a = this.assignments.filter((a) => a.role.name === role.name);
+      _roles[role.name] = a.map((i: Assignment) => new AssignmentRes(i));
+    }
+    return _roles;
+  }
 
   constructor(partial: Partial<TaskDetailRes>) {
     Object.assign(this, partial);
@@ -192,10 +303,13 @@ export class TaskMoreDetailRes {
   createAt: Date;
 
   @Expose()
-  startAt: Date;
+  beginAt: Date;
 
   @Expose()
   endAt: Date;
+
+  @Expose()
+  dueAt: Date;
 
   @Expose()
   access: string;
@@ -204,10 +318,19 @@ export class TaskMoreDetailRes {
   @Transform((a) => (a ? a.map((i: Content) => new ContentRes(i)) : []))
   contents: ContentRes[];
 
-  @Expose()
-  @Transform((a) => (a ? a.map((i: Assignment) => new AssignmentRes(i)) : []))
-  assignments: Assignment[] | AssignmentRes[];
+  assignments: Assignment[];
+  
+  space: Space;
 
+  @Expose()
+  get roles(): any {
+    const _roles = {};
+    for (const role of this.space.roles) {
+      const a = this.assignments.filter((a) => a.role.name === role.name);
+      _roles[role.name] = a.map((i: Assignment) => new AssignmentRes(i));
+    }
+    return _roles;
+  }
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
   superTask: TaskRes;
@@ -226,6 +349,16 @@ export class CommentListRes extends ListRes {
   list: CommentRes[];
 
   constructor(partial: Partial<CommentListRes>) {
+    super();
+    Object.assign(this, partial);
+  }
+}
+
+export class AssetListRes extends ListRes {
+  @Transform((a) => (a ? a.map((i: Asset) => new AssetRes(i)) : []))
+  list: AssetRes[];
+
+  constructor(partial: Partial<AssetListRes>) {
     super();
     Object.assign(this, partial);
   }

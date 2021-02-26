@@ -67,9 +67,10 @@ export async function getInitialState(): Promise<initialState> {
 export const layout = (): BasicLayoutProps => {
   return {
     rightContentRender: () => <RightContent />,
+    headerRender: false,
     footerRender: () => <Footer />,
     menuExtraRender: (props) => <SpaceMenu props={props} />,
-    menuHeaderRender: () => false,
+    menuHeaderRender: false,
   };
 };
 

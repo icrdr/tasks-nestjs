@@ -1,19 +1,11 @@
-import React, { useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useRequest } from 'umi';
-import { Card, Space, Image } from 'antd';
-import TaskTable from './components/TaskTable';
-import OssFileCard from './components/OssFileCard';
+import React, { useRef, useState } from 'react';
+import AssetGallery from './components/AssetGallery';
 
-const Task: React.FC<{}> = () => {
+const TaskAsset: React.FC<{}> = () => {
   return (
-    <Card>
-      <Space size={[16, 16]} wrap>
-        {new Array(20).fill(null).map((_, index) => (
-          <OssFileCard key={index} width={100} ossObject={'sdfsdf'} />
-        ))}
-      </Space>
-    </Card>
+    <div style={{ position: 'relative', width: '100%', margin: '0px auto', maxWidth: '1200px' }}>
+      <AssetGallery />
+    </div>
   );
 };
-export default Task;
+export default TaskAsset;
