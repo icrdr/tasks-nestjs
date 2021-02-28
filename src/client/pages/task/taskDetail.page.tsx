@@ -1,13 +1,13 @@
-import React, { useContext, useRef, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { Link, useIntl, history, useParams, useRequest, useModel } from 'umi';
+import React, { useContext, useRef, useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import { Link, useIntl, history, useParams, useRequest, useModel } from "umi";
 import {
   addTaskAssignment,
   changeTask,
   changeTaskState,
   removeTaskAssignment,
-} from './task.service';
-import { getTask } from './task.service';
+} from "./task.service";
+import { getTask } from "./task.service";
 import {
   Space,
   Button,
@@ -23,28 +23,41 @@ import {
   Drawer,
   List,
   Typography,
-} from 'antd';
-import TaskState from '../../components/TaskState';
-import { AntDesignOutlined, EllipsisOutlined, PlusOutlined, UserOutlined } from '@ant-design/icons';
-import ProDescriptions, { ProDescriptionsActionType } from '@ant-design/pro-descriptions';
-import ProProvider from '@ant-design/pro-provider';
-import type { ProColumns } from '@ant-design/pro-table';
-import { TaskMoreDetailRes, TaskRes } from '@dtos/task.dto';
-import { AssignmentRes, MemberRes } from '@dtos/space.dto';
-import moment from 'moment';
-import { getSpaceMembers } from '../member/member.service';
-const { Text } = Typography;
+  Form,
+} from "antd";
+import TaskState from "../../components/TaskState";
+import {
+  AntDesignOutlined,
+  EditOutlined,
+  EllipsisOutlined,
+  PlusOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+import ProDescriptions, {
+  ProDescriptionsActionType,
+} from "@ant-design/pro-descriptions";
+import ProProvider from "@ant-design/pro-provider";
+import type { ProColumns } from "@ant-design/pro-table";
+import { TaskMoreDetailRes, TaskRes } from "@dtos/task.dto";
+import { AssignmentRes, MemberRes } from "@dtos/space.dto";
+import moment from "moment";
+import { getSpaceMembers } from "../member/member.service";
+import ProForm, { ProFormText } from "@ant-design/pro-form";
+const { Text, Title } = Typography;
+
 const taskDetail: React.FC<{}> = (props) => {
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const { initialState, setInitialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
-  const params = useParams() as any;
+  const currentTaskId = (useParams() as any).id;
   const [isModalVisible, setModalVisible] = useState(false);
   const [memberList, setMemberList] = useState<MemberRes[]>([]);
   const intl = useIntl();
-  const path = history.location.pathname.split('/');
+  const [form] = Form.useForm();
+  const path = history.location.pathname.split("/");
   const tabActiveKey = path[path.length - 1];
   const [task, setTask] = useState(null);
-
+  const [isEditingName, setEditingName] = useState(false);
+  const [EditName, setEditName] = useState("");
   const getSpaceMembersReq = useRequest(getSpaceMembers, {
     manual: true,
     onSuccess: (res) => {
@@ -84,31 +97,69 @@ const taskDetail: React.FC<{}> = (props) => {
   });
 
   const handleTabChange = (tabActiveKey: string) => {
-    history.push(`/task/${params.id}/${tabActiveKey}`);
+    history.push(`/task/${currentTaskId}/${tabActiveKey}`);
   };
 
   const tabContents = intl.formatMessage({
-    id: 'page.taskContent.tab.contents',
+    id: "page.taskContent.tab.contents",
   });
 
   const tabAssets = intl.formatMessage({
-    id: 'page.taskContent.tab.assets',
+    id: "page.taskContent.tab.assets",
   });
 
   const tabSubTasks = intl.formatMessage({
-    id: 'page.taskContent.tab.subTasks',
+    id: "page.taskContent.tab.subTasks",
   });
 
   const title = () => {
     const superTask = task?.superTask;
     return (
       <Space>
-        {superTask && <Link to={`/task/${superTask.id}`}>{superTask.name}</Link>}
+        {superTask && (
+          <Link to={`/task/${superTask.id}`}>{superTask.name}</Link>
+        )}
         {superTask && <span>/</span>}
-        {task?.name}
+        {isEditingName ? (
+          <Form
+            form={form}
+            layout="inline"
+            onFinish={(v) => {
+              console.log(v);
+              changeTaskReq.run(currentTaskId, { name: v.name });
+              setEditingName(false);
+            }}
+            initialValues={{ name: task?.name }}
+          >
+            <Form.Item name="name">
+              <Input placeholder="请输入名称" />
+            </Form.Item>
+            <Form.Item shouldUpdate={true}>
+              {() => (
+                <Button
+                  type="link"
+                  htmlType="submit"
+                  disabled={!form.getFieldValue("name")}
+                >
+                  确认
+                </Button>
+              )}
+            </Form.Item>
+          </Form>
+        ) : (
+          <>
+            <span>{task?.name}</span>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
+              onClick={() => setEditingName(true)}
+            />
+          </>
+        )}
       </Space>
     );
   };
+
   const otherActionMenu = (
     <Menu>
       <Menu.Item key="1">删除</Menu.Item>
@@ -117,41 +168,41 @@ const taskDetail: React.FC<{}> = (props) => {
   const extraContent = (
     <Space>
       <Button.Group>
-        {task?.state === 'suspended' && (
+        {task?.state === "suspended" && (
           <Button
-            onClick={() => changeStateReq.run(params.id, 'start')}
+            onClick={() => changeStateReq.run(currentTaskId, "start")}
             disabled={changeStateReq.loading}
           >
             启动
           </Button>
         )}
-        {task?.state === 'inProgress' && (
+        {task?.state === "inProgress" && (
           <Button
-            onClick={() => changeStateReq.run(params.id, 'suspend')}
+            onClick={() => changeStateReq.run(currentTaskId, "suspend")}
             disabled={changeStateReq.loading}
           >
             暂停
           </Button>
         )}
-        {task?.state === 'completed' && (
+        {task?.state === "completed" && (
           <Button
-            onClick={() => changeStateReq.run(params.id, 'restart')}
+            onClick={() => changeStateReq.run(currentTaskId, "restart")}
             disabled={changeStateReq.loading}
           >
             重启
           </Button>
         )}
-        {task?.state === 'inProgress' && (
+        {task?.state === "inProgress" && (
           <Button
-            onClick={() => changeStateReq.run(params.id, 'commit')}
+            onClick={() => changeStateReq.run(currentTaskId, "commit")}
             disabled={changeStateReq.loading}
           >
             提交
           </Button>
         )}
-        {task?.state === 'unconfirmed' && (
+        {task?.state === "unconfirmed" && (
           <Button
-            onClick={() => changeStateReq.run(params.id, 'refuse')}
+            onClick={() => changeStateReq.run(currentTaskId, "refuse")}
             disabled={changeStateReq.loading}
           >
             打回
@@ -163,10 +214,10 @@ const taskDetail: React.FC<{}> = (props) => {
           </Button>
         </Dropdown>
       </Button.Group>
-      {task?.state !== 'completed' && (
+      {task?.state !== "completed" && (
         <Button
           type="primary"
-          onClick={() => changeStateReq.run(params.id, 'complete')}
+          onClick={() => changeStateReq.run(currentTaskId, "complete")}
           disabled={changeStateReq.loading}
         >
           完成
@@ -177,13 +228,13 @@ const taskDetail: React.FC<{}> = (props) => {
 
   const columns: ProColumns<TaskMoreDetailRes>[] = [
     {
-      title: '计划日期',
-      dataIndex: 'dueAt',
+      title: "计划日期",
+      dataIndex: "dueAt",
       render: (_, entity) => {
         return (
           <DatePicker.RangePicker
             ranges={{
-              'Next One Week': [moment(), moment().add(7, 'd')],
+              "Next One Week": [moment(), moment().add(7, "d")],
             }}
             defaultValue={[
               entity.beginAt ? moment(entity.beginAt) : undefined,
@@ -191,12 +242,12 @@ const taskDetail: React.FC<{}> = (props) => {
             ]}
             onChange={(dates) => {
               if (!dates) {
-                changeTaskReq.run(params.id, {
+                changeTaskReq.run(currentTaskId, {
                   beginAt: null,
                   dueAt: null,
                 });
               } else {
-                changeTaskReq.run(params.id, {
+                changeTaskReq.run(currentTaskId, {
                   beginAt: dates[0]?.toDate(),
                   dueAt: dates[1]?.toDate(),
                 });
@@ -207,14 +258,14 @@ const taskDetail: React.FC<{}> = (props) => {
       },
     },
     {
-      title: '默认权限',
-      dataIndex: 'access',
+      title: "默认权限",
+      dataIndex: "access",
       render: (_, entity) => {
         return (
           <Select
             defaultValue={entity.access}
             //@ts-ignore
-            onChange={(v) => changeTaskReq.run(params.id, { access: v })}
+            onChange={(v) => changeTaskReq.run(currentTaskId, { access: v })}
           >
             <Select.Option value="view">浏览</Select.Option>
             <Select.Option value="edit">编辑</Select.Option>
@@ -225,12 +276,16 @@ const taskDetail: React.FC<{}> = (props) => {
     },
   ];
 
-  const handleAddAssignment = (roleName: string) => {
-    addAssignmentReq.run(params.id, { userId: [1], roleName });
+  const handleAddAssignment = (userId: number[], roleName: string) => {
+    addAssignmentReq.run(currentTaskId, {
+      userId,
+      roleName,
+    });
+    setModalVisible(false);
   };
 
   const handleRemoveAssignment = (assignmentId: number) => {
-    removeAssignmentReq.run(params.id, assignmentId);
+    removeAssignmentReq.run(currentTaskId, assignmentId);
   };
 
   for (const role of currentSpace.roles) {
@@ -240,23 +295,28 @@ const taskDetail: React.FC<{}> = (props) => {
       dataIndex: _role,
       editable: false,
       render: (_, entity) => {
-        const assignments = entity['roles'][_role];
+        const assignments = entity["roles"][_role];
         return (
-          <Space size={'small'} align="start">
+          <Space size={"small"} align="start">
             <Avatar.Group>
               {assignments.map((assignment: AssignmentRes, index: number) => (
                 <Dropdown
                   overlay={
                     <Menu>
-                      <Menu.Item key="1" onClick={() => handleRemoveAssignment(assignment.id)}>
+                      <Menu.Item
+                        key="1"
+                        onClick={() => handleRemoveAssignment(assignment.id)}
+                      >
                         删除
                       </Menu.Item>
                     </Menu>
                   }
                   key={index}
-                  trigger={['contextMenu']}
+                  trigger={["contextMenu"]}
                 >
-                  <Avatar>{(assignment.members[0] as MemberRes).username}</Avatar>
+                  <Avatar>
+                    {(assignment.members[0] as MemberRes).username}
+                  </Avatar>
                 </Dropdown>
               ))}
             </Avatar.Group>
@@ -285,7 +345,9 @@ const taskDetail: React.FC<{}> = (props) => {
                 dataSource={getSpaceMembersReq.data?.list}
                 split={true}
                 renderItem={(member, index) => {
-                  const _assignments = assignments.filter((a) => a.members.length === 1);
+                  const _assignments = assignments.filter(
+                    (a) => a.members.length === 1
+                  );
                   const _members = _assignments.map((a) => a.members[0].userId);
                   const isExist = _members.indexOf(member.userId) >= 0;
                   return (
@@ -293,13 +355,9 @@ const taskDetail: React.FC<{}> = (props) => {
                       <Button
                         disabled={isExist}
                         type="link"
-                        onClick={() => {
-                          addAssignmentReq.run(params.id, {
-                            userId: [member.userId],
-                            roleName: _role,
-                          });
-                          setModalVisible(false);
-                        }}
+                        onClick={() =>
+                          handleAddAssignment([member.userId], _role)
+                        }
                       >
                         <Space>
                           <Avatar>{member.username}</Avatar>
@@ -319,13 +377,13 @@ const taskDetail: React.FC<{}> = (props) => {
   const actionRef = useRef<ProDescriptionsActionType>();
   const description = (
     <ProDescriptions<TaskMoreDetailRes>
-      labelStyle={{ lineHeight: '32px' }}
+      labelStyle={{ lineHeight: "32px" }}
       actionRef={actionRef}
       //@ts-ignore
       columns={columns}
       column={1}
       request={async () => {
-        const res = await getTask(params.id);
+        const res = await getTask(currentTaskId);
         setTask(res);
         return {
           data: res,
@@ -337,15 +395,15 @@ const taskDetail: React.FC<{}> = (props) => {
 
   const tabList = [
     {
-      key: 'content',
+      key: "content",
       tab: tabContents,
     },
     {
-      key: 'asset',
+      key: "asset",
       tab: tabAssets,
     },
     {
-      key: 'subTask',
+      key: "subTask",
       tab: tabSubTasks,
     },
   ];

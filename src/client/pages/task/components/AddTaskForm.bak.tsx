@@ -29,6 +29,23 @@ const AddTaskForm: React.FC<{
     manual: true,
   });
 
+  const getUsersReq = useRequest(getUsersByfullName, {
+    debounceInterval: 500,
+    manual: true,
+    onSuccess: (res) => {
+      console.log(res);
+      let valueEnum = {};
+      res.list.map((item) => {
+        valueEnum[item.id] = item.username;
+      });
+      console.log(valueEnum);
+      setValueEnum(valueEnum);
+    },
+  });
+
+  const [state, setstate] = useState([]);
+  const [valueEnum, setValueEnum] = useState({});
+
   const addTaskBtn = intl.formatMessage({
     id: "addTaskFrom.addTask.btn",
   });
@@ -43,6 +60,14 @@ const AddTaskForm: React.FC<{
 
   const namePhd = intl.formatMessage({
     id: "addTaskFrom.name.phd",
+  });
+
+  const membersTit = intl.formatMessage({
+    id: "addTaskFrom.members.tit",
+  });
+
+  const membersPhd = intl.formatMessage({
+    id: "addTaskFrom.members.phd",
   });
 
   const nameRule = [
@@ -78,13 +103,27 @@ const AddTaskForm: React.FC<{
         }
       }}
     >
-      <ProFormText
-        width="m"
-        name="name"
-        label={nameTit}
-        placeholder={namePhd}
-        rules={nameRule}
-      />
+      <ProForm.Group>
+        <ProFormText
+          width="m"
+          name="name"
+          label={nameTit}
+          placeholder={namePhd}
+          rules={nameRule}
+        />
+        <ProFormSelect
+          width="m"
+          name="memberId"
+          label={membersTit}
+          placeholder={membersPhd}
+          valueEnum={valueEnum}
+          fieldProps={{
+            mode: "multiple",
+            filterOption: false,
+            onSearch: (value) => getUsersReq.run(value),
+          }}
+        />
+      </ProForm.Group>
     </ModalForm>
   );
 };

@@ -1,16 +1,21 @@
-import React, { useRef, useState } from 'react';
-import { useIntl, useModel, useParams, useRequest } from 'umi';
-import { getTask } from './task.service';
-import Editor from '@components/Editor';
-import { Card, Affix, Button, Drawer, List, Typography, Tooltip } from 'antd';
-import { HistoryOutlined, HomeOutlined, LoadingOutlined, SaveOutlined } from '@ant-design/icons';
-import Split from 'react-split';
-import moment from 'moment';
-import TaskComment from './components/TaskComment';
+import React, { useRef, useState } from "react";
+import { useIntl, useModel, useParams, useRequest } from "umi";
+import { getTask } from "./task.service";
+import Editor from "@components/Editor";
+import { Card, Affix, Button, Drawer, List, Typography, Tooltip } from "antd";
+import {
+  HistoryOutlined,
+  HomeOutlined,
+  LoadingOutlined,
+  SaveOutlined,
+} from "@ant-design/icons";
+import Split from "react-split";
+import moment from "moment";
+import TaskComment from "./components/TaskComment";
 const { Text } = Typography;
 
 const TaskContent: React.FC<{}> = () => {
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { currentUser } = initialState;
   const params = useParams() as any;
   const [update, setUpdate] = useState(true);
@@ -37,7 +42,7 @@ const TaskContent: React.FC<{}> = () => {
   async function waitChange(): Promise<string[]> {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve(['']);
+        resolve([""]);
       }, 2000);
     });
   }
@@ -76,21 +81,34 @@ const TaskContent: React.FC<{}> = () => {
     setSync(false);
     waitChangeReq.run();
   };
-  const editable = data?.state === 'inProgress' && contentIndex === 0;
+  const editable = data?.state === "inProgress" && contentIndex === 0;
   return (
     <>
-      <div style={{ position: 'relative', width: '100%', margin: '0px auto', maxWidth: '1200px' }}>
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          margin: "0px auto",
+          maxWidth: "1200px",
+        }}
+      >
         <Split
-          style={{ display: 'flex' }}
-          sizes={[66, 33]}
+          style={{ display: "flex" }}
+          sizes={
+            localStorage
+              .getItem("taskContentSplit")
+              ?.split(",")
+              .map((i) => parseFloat(i)) || [66, 33]
+          }
           minSize={[300, 0]}
           gutterSize={12}
-          onDragEnd={() => {
+          onDragEnd={(sizes) => {
             taskCommentRef.current.recomputeRowHeights();
+            localStorage.setItem("taskContentSplit", sizes);
           }}
         >
-          <div style={{ overflowY: 'auto', overflowX: 'hidden' }}>
-            <Card bordered={false} style={{ minWidth: '300px' }}>
+          <div style={{ overflowY: "auto", overflowX: "hidden" }}>
+            <Card bordered={false} style={{ minWidth: "300px" }}>
               <div className="ce-state-icon">
                 {editable ? (
                   isSynced ? (
@@ -103,7 +121,7 @@ const TaskContent: React.FC<{}> = () => {
                     <Tooltip title="回到最新">
                       <a onClick={() => handleContentChange(0)}>
                         {moment(data?.contents[contentIndex]?.createAt).format(
-                          'YYYY/MM/DD h:mm:ss',
+                          "YYYY/MM/DD h:mm:ss"
                         )}
                         &nbsp;&nbsp;
                         <HomeOutlined />
@@ -116,9 +134,14 @@ const TaskContent: React.FC<{}> = () => {
                 <Editor
                   loading={getTaskReq.loading}
                   wsRoom={editable ? `task-${params.id}` : undefined}
-                  currentUser={{ id: currentUser.id, username: currentUser.username }}
+                  currentUser={{
+                    id: currentUser.id,
+                    username: currentUser.username,
+                  }}
                   data={
-                    !editable ? data.contents[contentIndex]?.content || { blocks: [] } : undefined
+                    !editable
+                      ? data.contents[contentIndex]?.content || { blocks: [] }
+                      : undefined
                   }
                   onChange={handleEditorChange}
                 />
@@ -128,16 +151,23 @@ const TaskContent: React.FC<{}> = () => {
           <Affix offsetTop={0}>
             <div
               style={{
-                overflowY: 'auto',
-                overflowX: 'hidden',
+                overflowY: "auto",
+                overflowX: "hidden",
               }}
             >
               <TaskComment taskId={data?.id} ref={taskCommentRef} />
             </div>
           </Affix>
         </Split>
-        <Affix offsetTop={0} style={{ position: 'absolute', top: '0', right: '-40px' }}>
-          <Button icon={<HistoryOutlined />} size={'large'} onClick={handleHistoryOpen} />
+        <Affix
+          offsetTop={0}
+          style={{ position: "absolute", top: "0", right: "-40px" }}
+        >
+          <Button
+            icon={<HistoryOutlined />}
+            size={"large"}
+            onClick={handleHistoryOpen}
+          />
         </Affix>
       </div>
       <Drawer
@@ -157,7 +187,7 @@ const TaskContent: React.FC<{}> = () => {
             index !== 0 && (
               <List.Item>
                 <Button type="link" onClick={() => handleContentChange(index)}>
-                  {moment(content.createAt).format('YYYY/MM/DD h:mm:ss')}
+                  {moment(content.createAt).format("YYYY/MM/DD h:mm:ss")}
                 </Button>
               </List.Item>
             )

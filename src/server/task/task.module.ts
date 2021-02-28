@@ -12,6 +12,8 @@ import { SpaceController } from './controllers/space.controller';
 import { AssetService } from './services/asset.service';
 import { BullModule } from '@nestjs/bull';
 import { AssetProcessor } from './services/asset.processor';
+import { PropertyService } from './services/property.service';
+
 @Module({
   imports: [
     CommonModule,
@@ -22,6 +24,7 @@ import { AssetProcessor } from './services/asset.processor';
   ],
   providers: [
     TaskService,
+    PropertyService,
     SpaceService,
     CommentGateway,
     CommentService,
