@@ -11,7 +11,7 @@ import ProForm, {
   ProFormSelect,
 } from '@ant-design/pro-form';
 import { PlusOutlined } from '@ant-design/icons';
-import { getUsersByfullName } from '../../task/task.service';
+import { getUsers } from '../../task/task.service';
 import { addSpaceMember } from '../member.service';
 
 const AddMemberForm: React.FC<{
@@ -29,7 +29,7 @@ const AddMemberForm: React.FC<{
     },
   });
 
-  const getUsersReq = useRequest(getUsersByfullName, {
+  const getUsersReq = useRequest(getUsers, {
     debounceInterval: 500,
     manual: true,
     onSuccess: (res) => {
@@ -95,7 +95,7 @@ const AddMemberForm: React.FC<{
           fieldProps={{
             mode: 'multiple',
             filterOption: false,
-            onSearch: (value) => getUsersReq.run(value),
+            onSearch: (value) => getUsersReq.run({ username: value }),
           }}
         />
       </ProForm.Group>

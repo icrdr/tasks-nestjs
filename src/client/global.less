@@ -113,7 +113,7 @@ ol {
   background-color: @layout-body-background;
   background-repeat: no-repeat;
   background-size: cover;
-  background-position:center;
+  background-position: center;
   width: 100%;
   padding-top: 75%;
   position: relative;
@@ -134,7 +134,7 @@ ol {
   background-color: @layout-body-background;
   background-repeat: no-repeat;
   background-size: cover;
-  background-position:center;
+  background-position: center;
   width: 100%;
   padding-top: 75%;
   position: relative;
@@ -142,6 +142,39 @@ ol {
 
   .task-card-content {
     top: 0;
+    position: absolute;
+  }
+}
+
+.virtual-table .ant-table-container:before,
+.virtual-table .ant-table-container:after {
+  display: none;
+}
+.virtual-table-cell {
+  box-sizing: border-box;
+  padding: 11px;
+  border-bottom: 1px solid #e8e8e8;
+  border-right: 1px solid #e8e8e8;
+  line-height: 32px;
+  background: #fff;
+}
+[data-theme='dark'] .virtual-table-cell {
+  box-sizing: border-box;
+  padding: 11px;
+  line-height: 32px;
+  border-bottom: 1px solid #303030;
+  background: #141414;
+}
+
+.center-container {
+  position: relative;
+  overflow: hidden;
+
+  .center-item {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
     position: absolute;
   }
 }

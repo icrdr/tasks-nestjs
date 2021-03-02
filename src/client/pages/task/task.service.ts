@@ -13,11 +13,15 @@ import {
   TaskMoreDetailRes,
   ChangeTaskDTO,
 } from '@dtos/task.dto';
-import { UserListRes } from '@dtos/user.dto';
-import { AddAssignmentDTO, AssignmentRes } from '../../../dtos/space.dto';
+import { GetUsersDTO, UserListRes, UserRes } from '@dtos/user.dto';
+import { AddAssignmentDTO, AssignmentRes } from '@dtos/space.dto';
 
-export async function getUsersByfullName(fullName: string): Promise<UserListRes> {
-  return request('/api/users', { params: { username: fullName } });
+export async function getUsers(params: GetUsersDTO): Promise<UserListRes> {
+  return request('/api/users', { params });
+}
+
+export async function getUser(id: number): Promise<UserRes> {
+  return request(`/api/users/${id}`);
 }
 
 export const addSpaceTask = async (id: number, body: AddTaskDTO): Promise<TaskDetailRes> => {

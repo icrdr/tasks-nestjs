@@ -9,6 +9,14 @@ export class ListDTO {
   @IsOptional()
   @IsNumber()
   pageSize?: number;
+
+  @IsOptional()
+  @IsNumber()
+  skip?: number;
+
+  @IsOptional()
+  @IsNumber()
+  take?: number;
 }
 export class DateRange {
   @IsOptional()

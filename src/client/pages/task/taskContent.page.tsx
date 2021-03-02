@@ -17,7 +17,7 @@ const { Text } = Typography;
 const TaskContent: React.FC<{}> = () => {
   const { initialState } = useModel("@@initialState");
   const { currentUser } = initialState;
-  const params = useParams() as any;
+  const currentTaskId = (useParams() as any).id;
   const [update, setUpdate] = useState(true);
   const [contentIndex, setContentIndex] = useState(0);
   const [historyVisible, setHistoryVisible] = useState(false);
@@ -25,8 +25,8 @@ const TaskContent: React.FC<{}> = () => {
   const taskCommentRef = useRef(null);
   const intl = useIntl();
 
-  const getTaskReq = useRequest(() => getTask(params.id), {
-    refreshDeps: [params.id, update],
+  const getTaskReq = useRequest(() => getTask(currentTaskId), {
+    refreshDeps: [currentTaskId, update],
     formatResult: (res) => {
       res.contents.reverse();
       return res;
@@ -133,7 +133,7 @@ const TaskContent: React.FC<{}> = () => {
               {data && (
                 <Editor
                   loading={getTaskReq.loading}
-                  wsRoom={editable ? `task-${params.id}` : undefined}
+                  wsRoom={editable ? `task-${currentTaskId}` : undefined}
                   currentUser={{
                     id: currentUser.id,
                     username: currentUser.username,

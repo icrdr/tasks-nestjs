@@ -17,7 +17,6 @@ const TaskTable: React.FC<{}> = () => {
   const currentTaskId = (useParams() as any).id;
   const { initialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
-  const params = useParams() as any;
   const actionRef = useRef<ActionType>();
   const intl = useIntl();
   const actionMenu = [
@@ -137,62 +136,96 @@ const TaskTable: React.FC<{}> = () => {
     ],
   });
 
-  const renderVirtualList = (
-    rawData: object[],
-    { scrollbarSize, ref, onScroll }: any
-  ) => {
-    ref.current = connectObject;
-    const totalHeight = rawData.length * 54;
-
-    return (
-      <Grid
-        ref={gridRef}
-        className="virtual-grid"
-        columnCount={mergedColumns.length}
-        columnWidth={(index: number) => {
-          const { width } = mergedColumns[index];
-          return totalHeight > scroll!.y! && index === mergedColumns.length - 1
-            ? (width as number) - scrollbarSize - 1
-            : (width as number);
-        }}
-        height={scroll!.y as number}
-        rowCount={rawData.length}
-        rowHeight={() => 54}
-        width={tableWidth}
-        onScroll={({ scrollLeft }: { scrollLeft: number }) => {
-          onScroll({ scrollLeft });
-        }}
-      >
-        {({
-          columnIndex,
-          rowIndex,
-          style,
-        }: {
-          columnIndex: number;
-          rowIndex: number;
-          style: React.CSSProperties;
-        }) => (
-          <div style={style}>
-            {
-              (rawData[rowIndex] as any)[
-                (mergedColumns as any)[columnIndex].dataIndex
-              ]
-            }
-          </div>
-        )}
-      </Grid>
-    );
-  };
-
   return (
-    <Table
+    <ProTable<TaskDetailRes>
+      rowKey="id"
       columns={columns}
-      pagination={false}
-      components={{
-        body: renderVirtualList,
+      actionRef={actionRef}
+      pagination={{
+        defaultPageSize: 20,
       }}
+
+      // params={JSON.parse(
+      //   localStorage.getItem(
+      //     currentTaskId
+      //       ? `task${currentTaskId}TasksParams`
+      //       : `space${currentSpace.id}TasksParams`
+      //   )
+      // )}
+      request={async (params, sorter, filter) => {
+        localStorage.setItem(
+          currentTaskId
+            ? `task${currentTaskId}TasksParams`
+            : `space${currentSpace.id}TasksParams`,
+          JSON.stringify(params)
+        );
+        console.log(params);
+        console.log(sorter);
+        console.log(filter);
+        const res = currentTaskId
+          ? await getSubTasks(currentTaskId, {
+              ...params,
+              ...sorter,
+              // ...filter,
+            })
+          : await getSpaceTasks(currentSpace.id, {
+              ...params,
+              ...sorter,
+              // ...filter,
+            });
+
+        console.log(res);
+        return {
+          data: res.list,
+          success: true,
+          total: res.total,
+        };
+      }}
+      options={{
+        fullScreen: true,
+      }}
+      rowSelection={{
+        selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
+      }}
+      tableAlertRender={({ selectedRowKeys, onCleanSelected }) => (
+        <Space size="middle">
+          <span>
+            已选 {selectedRowKeys.length} 项
+            <a style={{ marginLeft: 8 }} onClick={onCleanSelected}>
+              取消选择
+            </a>
+          </span>
+        </Space>
+      )}
+      tableAlertOptionRender={() => {
+        return (
+          <Space size="middle">
+            <a>批量删除</a>
+            <a>导出数据</a>
+          </Space>
+        );
+      }}
+      // search={false}
+      search={{
+        filterType: "light",
+      }}
+      // toolbar={{
+      //   search: {
+      //     onSearch: (value: string) => {
+      //       alert(value);
+      //     },
+      //   },
+      //   filter: (
+      //     <LightFilter>
+      //       <ProFormDatePicker name="startdate" label="响应日期" />
+      //     </LightFilter>
+      //   ),
+      //   actions: [<AddTaskForm key="1" superTaskId={currentTaskId} />],
+      // }}
+      // toolBarRender={() => [
+      //   <AddTaskForm key="1" superTaskId={currentTaskId} />,
+      // ]}
     />
   );
 };
-
 export default TaskTable;

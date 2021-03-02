@@ -1,16 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import {
-  Button,
-  Card,
-  Form,
-  Mentions,
-  Popover,
-  Space,
-  message,
-  Upload,
-  Image,
-  Typography,
-} from 'antd';
+import { Button, Card, Form, Mentions, Popover, Space, message, Upload, Image } from 'antd';
 import Cookies from 'js-cookie';
 import { CommentRes } from '@dtos/task.dto';
 import useWebSocket from '@hooks/useWebSocket';
@@ -33,55 +22,56 @@ import moment from 'moment';
 import { getOssClient } from '../../layout/layout.service';
 import { RcFile } from 'antd/lib/upload';
 import FsLightbox from '@components/fslightbox';
-import { VariableSizeList } from 'react-window';
+import { VariableSizeList, FixedSizeList, DynamicSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import InfiniteLoader from 'react-window-infinite-loader';
-const { Text, Paragraph } = Typography;
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 
 const TaskComment = ({ taskId }, ref) => {
   const { initialState } = useModel('@@initialState');
   const { currentUser, currentSpace } = initialState;
 
-  const vListRef = useRef<VariableSizeList>(null);
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
   const [form] = Form.useForm();
   const [lightBoxSlide, setLightBoxSlide] = useState(0);
   const [lightBoxToggle, setLightBoxToggle] = useState(false);
   const [lightBoxUpdate, setLightBoxUpdate] = useState(0);
-
   const [commentList, setCommentList] = useState<CommentRes[]>([]);
   const [isUploading, setUploading] = useState(false);
+  const [afterFirstFetch, setAfterFirstFetch] = useState(false);
   const [memberList, setMemberList] = useState<MemberRes[]>([]);
+  const [scrollInterval, setScrollInterval] = useState(null);
+  const [scrollTargetIndex, setScrollTargetIndex] = useState(0);
+  const scrollTargetIndexRef = useRef<number>();
+  const afterFirstFetchRef = useRef<boolean>();
   const commentListRef = useRef(null);
-
-  const [updateRowHeights, setUpdateRowHeights] = useState(false);
-  const rowHeights = useRef({});
   commentListRef.current = commentList;
+  scrollTargetIndexRef.current = scrollTargetIndex;
+  afterFirstFetchRef.current = afterFirstFetch;
 
   useRequest(() => getTaskComments(taskId), {
     ready: !!taskId,
     onSuccess: (res) => {
       setCommentList(Array(res.total).fill(undefined));
-      scrollToBottom();
+      // scrollToBottom();
     },
   });
 
   const recomputeRowHeights = () => {
-    setUpdateRowHeights(!updateRowHeights);
+    // cache.clearAll();
+    // ListRef.current.recomputeRowHeights();
   };
 
   const scrollToDate = (date: Date) => {
     getTaskComments(taskId, { dateAfter: date }).then((res) => {
-      console.log(res);
-      if (res.list.length > 0) {
-        vListRef.current.scrollToItem(res.list[0].index, 'start');
-      } else {
-        scrollToBottom();
-      }
+      console.log(res.list[0].index);
+      virtuosoRef.current.scrollToIndex(res.list[0].index);
     });
   };
 
   const scrollToBottom = () => {
-    vListRef.current.scrollToItem(commentListRef.current.length - 1, 'end');
+    console.log('to');
+    virtuosoRef.current.scrollToIndex(commentListRef.current.length - 1);
   };
 
   useImperativeHandle(ref, () => ({
@@ -93,29 +83,15 @@ const TaskComment = ({ taskId }, ref) => {
   const getCommentsReq = useRequest(getTaskComments, {
     debounceInterval: 500,
     manual: true,
-    onSuccess: async (res, params) => {
-      const oss = await getOssClient();
-
-      for (let index = params[1].skip; index < params[1].skip + params[1].take; index++) {
-        const comment = res.list[index - params[1].skip];
-        if (comment?.type === 'image' && !comment['_source']) {
-          comment['_source'] = 'url';
-
-          comment['_source'] = oss.signatureUrl(comment.content, {
-            expires: 3600,
-          });
-          comment['_preview'] = oss.signatureUrl(comment.content, {
-            expires: 3600,
-            process: 'image/resize,w_300,h_300',
-          });
-        }
-        commentList[comment.index] = comment;
+    onSuccess: (res) => {
+      for (const comment of res.list) {
+        if (!commentListRef.current[comment.index]) commentListRef.current[comment.index] = comment;
       }
       setCommentList(commentList);
       setLightBoxUpdate(lightBoxUpdate + 1);
-
+      recomputeRowHeights();
       if (res.list[res.list.length - 1].index === res.total - 1) {
-        scrollToBottom();
+        // scrollToBottom();
       }
     },
   });
@@ -141,12 +117,13 @@ const TaskComment = ({ taskId }, ref) => {
         if (!data.status) {
           setCommentList([...commentListRef.current, data]);
           setLightBoxUpdate(lightBoxUpdate + 1);
-
+          recomputeRowHeights();
           const isUserSending = data.sender.id === currentUser.id;
           const list = document.getElementsByClassName('v-list')[0];
           const isNearBottom = list.scrollTop + list.clientHeight + 300 < list.scrollHeight;
           if (isUserSending || isNearBottom) {
-            scrollToBottom();
+            console.log('f');
+            // scrollToBottom();
           }
         } else {
           message.error(data.message);
@@ -183,93 +160,6 @@ const TaskComment = ({ taskId }, ref) => {
     },
   ];
 
-  const isItemLoaded = (index: number) => {
-    return !!commentList[index];
-  };
-
-  const loadMoreItems = (startIndex: number, stopIndex: number) => {
-    return getCommentsReq.run(taskId, {
-      skip: startIndex,
-      take: stopIndex - startIndex + 1,
-    });
-  };
-
-  const getRowHeight = (index: number) => {
-    return rowHeights.current[index] || 86;
-  };
-
-  const setRowHeight = (index: number, size: number) => {
-    vListRef.current.resetAfterIndex(0);
-    rowHeights.current = { ...rowHeights.current, [index]: size };
-  };
-
-  const Row = ({ index, style }) => {
-    const comment = commentList[index];
-    const rowRef = useRef(null);
-
-    useEffect(() => {
-      if (rowRef.current) {
-        setRowHeight(index, rowRef.current.clientHeight);
-      }
-    }, [rowRef, updateRowHeights]);
-
-    return (
-      <div style={{ ...style }}>
-        <MessageCard
-          ref={rowRef}
-          onTapContent={() => {
-            if (comment?.type === 'image') {
-              const sourceList = commentList
-                .filter((comment) => comment?.type === 'image')
-                .map((comment) => comment['_source']);
-              const i = sourceList.indexOf(comment['_source']);
-              setLightBoxSlide(i);
-              setLightBoxToggle(!lightBoxToggle);
-            }
-          }}
-          type={comment?.type}
-          isMe={comment?.sender?.id === currentUser.id}
-          isLoading={!comment}
-          author={comment?.sender?.username}
-          datetime={comment?.createAt}
-          avatar={comment?.sender?.username}
-          content={comment?.type === 'image' ? comment['_preview'] : comment?.content}
-        />
-      </div>
-    );
-  };
-
-  const infiniteLoader = (
-    <AutoSizer>
-      {({ width, height }) => (
-        <InfiniteLoader
-          isItemLoaded={isItemLoaded}
-          itemCount={commentList.length}
-          loadMoreItems={loadMoreItems}
-        >
-          {({ onItemsRendered, ref }) => (
-            <VariableSizeList
-              className="v-list"
-              itemCount={commentList.length}
-              itemSize={getRowHeight}
-              onItemsRendered={onItemsRendered}
-              height={height}
-              width={width}
-              estimatedItemSize={86}
-              ref={(r) => {
-                vListRef.current = r;
-                //@ts-ignore
-                return ref(r);
-              }}
-            >
-              {Row}
-            </VariableSizeList>
-          )}
-        </InfiniteLoader>
-      )}
-    </AutoSizer>
-  );
-
   const beforeUpload = (file: RcFile) => {
     const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
     if (!isJpgOrPng) {
@@ -296,9 +186,66 @@ const TaskComment = ({ taskId }, ref) => {
       <Card
         bordered={false}
         style={{ height: 'calc(100vh - 300px)' }}
-        bodyStyle={{ height: '100%', padding: 0 }}
+        bodyStyle={{ height: '100%', padding: '20px 10px' }}
       >
-        {infiniteLoader}
+        <Virtuoso
+          // style={{ height: '100%', padding: '20px 10px' }}
+          ref={virtuosoRef}
+          data={commentList}
+          rangeChanged={(range) => {
+            if (commentList[range.startIndex] && commentList[range.endIndex]) return;
+            console.log(range);
+            getCommentsReq.run(taskId, {
+              skip: range.startIndex,
+              take: range.endIndex - range.startIndex + 1,
+            });
+          }}
+          // atBottomStateChange={bottom => {
+          //   console.log(bottom)
+          // }}
+          followOutput={(isAtBottom: boolean) => {
+            if (isAtBottom) {
+              return 'smooth'; // can be 'auto' or false to avoid scrolling
+            } else {
+              return false;
+            }
+          }}
+          itemContent={(index, comment) => {
+            if (comment?.type === 'image' && !comment['_source']) {
+              comment['_source'] = 'url';
+              getOssClient().then((oss) => {
+                comment['_source'] = oss.signatureUrl(comment.content, {
+                  expires: 3600,
+                });
+                comment['_preview'] = oss.signatureUrl(comment.content, {
+                  expires: 3600,
+                  process: 'image/resize,w_300,h_300',
+                });
+              });
+            }
+            return (
+              <MessageCard
+                onTapContent={() => {
+                  if (comment?.type === 'image') {
+                    const sourceList = commentList
+                      .filter((comment) => comment?.type === 'image')
+                      .map((comment) => comment['_source']);
+                    const i = sourceList.indexOf(comment['_source']);
+                    setLightBoxSlide(i);
+                    setLightBoxToggle(!lightBoxToggle);
+                  }
+                }}
+                type={comment?.type}
+                isMe={comment?.sender?.id === currentUser.id}
+                isLoading={!comment}
+                author={comment?.sender?.username}
+                datetime={comment?.createAt}
+                avatar={comment?.sender?.username}
+                content={comment?.type === 'image' ? comment['_preview'] : comment?.content}
+              />
+            );
+          }}
+        />
       </Card>
       <Form form={form} onFinish={(v) => handleSend(v.content, 'text')}>
         <div style={{ padding: '10px 0', width: '100%' }}>

@@ -6,20 +6,16 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsDate,
-} from "class-validator";
-import { Exclude, Expose, Transform, Type } from "class-transformer";
-import { Task, Content, TaskState } from "../server/task/entities/task.entity";
-import { ListDTO, ListRes } from "./misc.dto";
-import { OutputData } from "@editorjs/editorjs";
-import { Comment, CommentType } from "../server/task/entities/comment.entity";
-import { UserRes } from "./user.dto";
-import {
-  AccessLevel,
-  Assignment,
-  Space,
-} from "../server/task/entities/space.entity";
-import { AssignmentRes } from "./space.dto";
-import { Asset } from "../server/task/entities/asset.entity";
+} from 'class-validator';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
+import { Task, Content, TaskState } from '../server/task/entities/task.entity';
+import { ListDTO, ListRes } from './misc.dto';
+import { OutputData } from '@editorjs/editorjs';
+import { Comment, CommentType } from '../server/task/entities/comment.entity';
+import { UserRes } from './user.dto';
+import { AccessLevel, Assignment, Space } from '../server/task/entities/space.entity';
+import { AssignmentRes } from './space.dto';
+import { Asset } from '../server/task/entities/asset.entity';
 
 export class AddAssetDTO {
   @IsString()
@@ -85,14 +81,6 @@ export class GetCommentsDTO extends ListDTO {
   @IsOptional()
   @IsDate()
   dateBefore?: Date;
-
-  @IsOptional()
-  @IsNumber()
-  skip?: number;
-
-  @IsOptional()
-  @IsNumber()
-  take?: number;
 }
 
 export class GetAssetsDTO extends ListDTO {
@@ -106,7 +94,7 @@ export class GetAssetsDTO extends ListDTO {
 
   @Type(() => String)
   @IsOptional()
-  @Transform((v) => v === "true")
+  @Transform((v) => v === 'true')
   @IsBoolean()
   isRoot?: boolean;
 }
@@ -124,7 +112,7 @@ export class GetTasksDTO extends ListDTO {
 
 export class ReviewTaskDTO {
   @Type(() => String)
-  @Transform((v) => v === "true")
+  @Transform((v) => v === 'true')
   @IsBoolean()
   isConfirmed: boolean;
 }

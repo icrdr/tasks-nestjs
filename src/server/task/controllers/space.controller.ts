@@ -30,6 +30,7 @@ import {
 import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
 import { AccessLevel, Space } from '../entities/space.entity';
 import { AssetService } from '../services/asset.service';
+import { UserService } from '../../user/services/user.service';
 
 @Controller('api/spaces')
 export class SpaceController {
@@ -37,6 +38,7 @@ export class SpaceController {
     private taskService: TaskService,
     private spaceService: SpaceService,
     private assetService: AssetService,
+    private userService: UserService,
   ) {}
 
   @UseGuards(SpaceAccessGuard)
@@ -57,9 +59,7 @@ export class SpaceController {
           admins: [user],
           access: AccessLevel.VIEW,
         };
-    return new TaskMoreDetailRes(
-      await this.taskService.addTask(space, body.name, user, options),
-    );
+    return new TaskMoreDetailRes(await this.taskService.addTask(space, body.name, user, options));
   }
 
   @UseGuards(SpaceAccessGuard)
@@ -107,9 +107,24 @@ export class SpaceController {
     @Query() query: GetTasksDTO,
     @CurrentUser() user: User,
   ) {
+    const roles = [];
+    for (const key in query) {
+      const type = key.split(':')[0];
+      if (type === 'role') {
+        const role = await this.spaceService.getRoleByName(space, key.split(':')[1], true);
+        const user = await this.userService.getUser(parseInt(query[key]), true);
+        if (role && user) {
+          roles.push({
+            role,
+            user,
+          });
+        }
+      }
+    }
     const tasks = await this.taskService.getTasks({
-      space: space,
-      user: user,
+      space,
+      user,
+      roles,
       ...query,
     });
     return ListResSerialize(tasks, TaskListRes);

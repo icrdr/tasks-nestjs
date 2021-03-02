@@ -6,11 +6,15 @@ import { getSpaces } from '../layout.service';
 import { SpaceDetailRes } from '@dtos/space.dto';
 import Cookies from 'js-cookie';
 import CreateSpaceForm from './layout.AddSpaceForm';
-import { SiderMenuProps } from '@ant-design/pro-layout/lib/SiderMenu/SiderMenu';
+import { SiderMenuProps } from '@ant-design/pro-layout/lib/components/SiderMenu/SiderMenu';
 
 const SpaceMenu: React.FC<{ props: SiderMenuProps }> = (props) => {
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
+  if (!currentSpace) {
+    history.push('/login');
+  }
+  
   const getSpacesReq = useRequest(getSpaces, {
     manual: true,
     onSuccess: (res) => {

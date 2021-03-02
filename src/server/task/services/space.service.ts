@@ -12,6 +12,7 @@ export class SpaceService {
   assignmentQuery: SelectQueryBuilder<Assignment>;
   memberQuery: SelectQueryBuilder<Member>;
   spaceQuery: SelectQueryBuilder<Space>;
+  roleQuery: SelectQueryBuilder<Role>;
 
   constructor(
     @Inject(forwardRef(() => UserService))
@@ -39,12 +40,16 @@ export class SpaceService {
       .createQueryBuilder(Member, 'member')
       .leftJoinAndSelect('member.space', 'space')
       .leftJoinAndSelect('member.user', 'user');
+
+    this.roleQuery = this.manager
+      .createQueryBuilder(Role, 'role')
+      .leftJoinAndSelect('role.space', 'space');
   }
 
   async addRole(space: Space | number, name: string, access: AccessLevel) {
     //check if space and user are exsited
     space = space instanceof Space ? space : await this.getSpace(space, false);
-    let role = await this.getRole(space.id, name, false);
+    let role = await this.getRoleByName(space.id, name, false);
     if (role) return role;
 
     role = new Role();
@@ -54,15 +59,21 @@ export class SpaceService {
     return await this.manager.save(role);
   }
 
-  async getRole(space: Space | number, name: string, exception = true) {
+  async getRoleByName(space: Space | number, name: string, exception = true) {
     const spaceId = await this.getSpaceId(space);
-    let query = this.manager
-      .createQueryBuilder(Role, 'role')
-      .leftJoinAndSelect('role.space', 'space')
+    let query = this.roleQuery
+      .clone()
       .andWhere('space.id = :spaceId', { spaceId })
       .andWhere('role.name = :name', { name });
     const role = await query.getOne();
-    if (!role && exception) throw new NotFoundException('Member was not found.');
+    if (!role && exception) throw new NotFoundException('Role was not found.');
+    return role;
+  }
+
+  async getRole(identiy: number, exception = true) {
+    let query = this.roleQuery.clone().andWhere('role.id = :identiy', { identiy });
+    const role = await query.getOne();
+    if (!role && exception) throw new NotFoundException('Role was not found.');
     return role;
   }
 
@@ -257,6 +268,11 @@ export class SpaceService {
   async getSpaceId(space: Space | number) {
     space = space instanceof Space ? space : await this.getSpace(space);
     return space.id;
+  }
+
+  async getRoleId(role: Role | number) {
+    role = role instanceof Role ? role : await this.getRole(role);
+    return role.id;
   }
 
   async getSpace(id: number, exception = true) {

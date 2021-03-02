@@ -11,7 +11,7 @@ import ProForm, {
   ProFormSelect,
 } from "@ant-design/pro-form";
 import { PlusOutlined } from "@ant-design/icons";
-import { addSubTask, addSpaceTask, getUsersByfullName } from "../task.service";
+import { addSubTask, addSpaceTask } from "../task.service";
 
 const AddTaskForm: React.FC<{
   disabled?: boolean;
@@ -71,7 +71,7 @@ const AddTaskForm: React.FC<{
           const res = superTaskId
             ? await addSubTaskReq.run(superTaskId, value)
             : await addSpaceTaskReq.run(currentSpace.id, value);
-          history.push(`/task/${res.id}/content`);
+          
           return true;
         } catch (error) {
           return false;

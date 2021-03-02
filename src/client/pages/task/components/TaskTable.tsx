@@ -1,236 +1,297 @@
-import React, { useRef } from "react";
-import { PlusOutlined } from "@ant-design/icons";
-import { Button, Avatar, Table, Space } from "antd";
-import ProTable, {
-  ProColumns,
-  TableDropdown,
-  ActionType,
-} from "@ant-design/pro-table";
-import { useIntl, history, Link, useModel, useParams } from "umi";
-import { getSpaceTasks, getSubTasks } from "../task.service";
-import { TaskDetailRes, TaskRes } from "@dtos/task.dto";
-import AddTaskForm from "./AddTaskForm";
-import { AssignmentRes, MemberRes } from "@dtos/space.dto";
-import { LightFilter, ProFormDatePicker } from "@ant-design/pro-form";
+import React, { useState, useEffect, useRef } from 'react';
+import { VariableSizeGrid } from 'react-window';
+import ResizeObserver from 'rc-resize-observer';
+import { Avatar, Badge, Card, Dropdown, Empty, Menu, Table } from 'antd';
+import moment from 'moment';
+import { Link, useModel, useParams, useRequest } from 'umi';
+import { getSpaceTasks, getSubTasks } from '../task.service';
+import { GetTasksDTO, TaskDetailRes } from '@dtos/task.dto';
+import InfiniteLoader from 'react-window-infinite-loader';
+import { AssignmentRes, MemberRes } from '@dtos/space.dto';
+import { ViewOption } from '@server/task/entities/property.entity';
 
-const TaskTable: React.FC<{}> = () => {
+const HEIGHT = 700;
+const ROW_HEIGHT = 54;
+
+const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
+  option,
+  reload = false,
+}) => {
+  const columns = option.headers
+    .map((header) => {
+      const type = header.title.split(':')[0];
+      switch (type) {
+        case 'name':
+          return {
+            dataIndex: 'name',
+            title: '任务名',
+            width: header.width,
+            render: (_, task: TaskDetailRes) => (
+              <Link to={`/task/${task.id}/content`}>{task.name}</Link>
+            ),
+          };
+        case 'state':
+          return {
+            dataIndex: 'state',
+            title: '状态',
+            width: header.width,
+            render: (_, task: TaskDetailRes) => {
+              switch (task.state) {
+                case 'suspended':
+                  return <Badge status="default" text="暂停中" />;
+                case 'inProgress':
+                  return <Badge status="processing" text="进行中" />;
+                case 'unconfirmed':
+                  return <Badge status="warning" text="待确认" />;
+                case 'completed':
+                  return <Badge status="success" text="已完成" />;
+
+                default:
+                  return <Badge status="warning" text="未知" />;
+              }
+            },
+          };
+        case 'dueAt':
+          return {
+            dataIndex: 'dueAt',
+            title: '截止日期',
+            width: 100,
+            render: (_, task: TaskDetailRes) => (
+              <div>{task.dueAt ? moment(task.dueAt).format('YYYY/MM/DD') : '/'}</div>
+            ),
+          };
+        case 'role':
+          const roleName = header.title.split(':')[1];
+          return {
+            title: roleName,
+            dataIndex: header.title,
+            render: (_, task) => {
+              const assignments = task.roles[roleName];
+              return (
+                <Avatar.Group>
+                  {assignments?.map((assignment: AssignmentRes, index: number) => (
+                    <Avatar key={index}>{(assignment.members[0] as MemberRes).username}</Avatar>
+                  ))}
+                </Avatar.Group>
+              );
+            },
+          };
+        default:
+          break;
+      }
+    })
+    .filter((c) => c !== undefined);
+
   const currentTaskId = (useParams() as any).id;
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
-  const params = useParams() as any;
-  const actionRef = useRef<ActionType>();
-  const intl = useIntl();
-  const actionMenu = [
-    { key: "copy", name: "复制" },
-    { key: "delete", name: "删除" },
-  ];
+  const [tableWidth, setTableWidth] = useState(0);
+  const [tableHeight, setTableHeight] = useState(0);
+  const [taskList, setTaskList] = useState<TaskDetailRes[]>([]);
+  const taskListRef = useRef(null);
+  const vGridRef = useRef(null);
+  const [update, setUpdate] = useState(false);
+  const infiniteLoaderRef = useRef(null);
+  const fetchCountRef = useRef(0);
+  taskListRef.current = taskList;
 
-  const nameTit = intl.formatMessage({
-    id: "taskTable.name.tit",
-  });
+  const getTasks = async (body: GetTasksDTO) => {
+    const params = {};
+    for (const header of option.headers) {
+      if (header.filter) {
+        params[header.title] = header.filter;
+      }
+    }
 
-  const parentTit = intl.formatMessage({
-    id: "taskTable.parent.tit",
-  });
+    return currentTaskId
+      ? await getSubTasks(currentTaskId, { ...params, ...body })
+      : await getSpaceTasks(currentSpace.id, { ...params, ...body });
+  };
 
-  const stateTit = intl.formatMessage({
-    id: "taskTable.state.tit",
-  });
-
-  const tagTit = intl.formatMessage({
-    id: "taskTable.tag.tit",
-  });
-
-  const membersTit = intl.formatMessage({
-    id: "taskTable.members.tit",
-  });
-
-  const addDataTit = intl.formatMessage({
-    id: "taskTable.addData.tit",
-  });
-
-  const stateSuspended = intl.formatMessage({
-    id: "taskState.suspended",
-  });
-  const stateInProgress = intl.formatMessage({
-    id: "taskState.inProgress",
-  });
-  const stateUnconfirmed = intl.formatMessage({
-    id: "taskState.unconfirmed",
-  });
-  const stateCompleted = intl.formatMessage({
-    id: "taskState.completed",
-  });
-
-  const actionTit = intl.formatMessage({
-    id: "taskTable.action.tit",
-  });
-
-  const columns: ProColumns<TaskRes>[] = [
-    {
-      dataIndex: "name",
-      title: nameTit,
-      render: (_, record) => (
-        <Link to={`/task/${record.id}/content`}>{record.name}</Link>
-      ),
+  const initTasksReq = useRequest(getTasks, {
+    refreshDeps: [reload, update, option],
+    onSuccess: (res, params) => {
+      setTaskList(Array(res.total).fill(undefined));
+      if (infiniteLoaderRef.current && fetchCountRef.current !== 0) {
+        infiniteLoaderRef.current.resetloadMoreItemsCache(true);
+      }
+      fetchCountRef.current++;
     },
-    {
-      dataIndex: "state",
-      title: stateTit,
-      valueType: "select",
-      // filters: true,
-      valueEnum: {
-        suspended: {
-          text: stateSuspended,
-          status: "Default",
-        },
-        inProgress: {
-          text: stateInProgress,
-          status: "Processing",
-        },
-        unconfirmed: {
-          text: stateUnconfirmed,
-          status: "Warning",
-        },
-        completed: {
-          text: stateCompleted,
-          status: "Success",
-        },
-      },
-    },
-    {
-      dataIndex: "dueAt",
-      title: "截止日期",
-      valueType: "date",
-    },
-  ];
+  });
 
-  for (const role of currentSpace.roles) {
-    const _role = role as string;
-    columns.push({
-      title: _role,
-      dataIndex: _role,
-      editable: false,
-      render: (_, entity) => {
-        const assignments = entity["roles"][_role];
-        return (
-          <Avatar.Group>
-            {assignments.map((assignment: AssignmentRes, index: number) => (
-              <Avatar key={index}>
-                {(assignment.members[0] as MemberRes).username}
-              </Avatar>
-            ))}
-          </Avatar.Group>
-        );
+  const getTasksReq = useRequest(getTasks, {
+    manual: true,
+    onSuccess: (res, params) => {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
+        taskList[index] = res.list[index - params[0].skip];
+      }
+      setTaskList(taskList);
+    },
+  });
+
+  const noWidthCount = columns.filter((column) => !column.width).length;
+
+  let totalWidth = 0;
+  columns
+    .filter((column) => !!column.width)
+    .forEach((column) => {
+      totalWidth += column.width;
+    });
+
+  const widthFixedColumns = columns.map((column) => {
+    if (noWidthCount === 0) {
+      column.width = (column.width / totalWidth) * tableWidth;
+    } else {
+      column.width = column.width || Math.floor((tableWidth - totalWidth) / noWidthCount);
+    }
+
+    return column;
+  });
+
+  const [connectObject] = useState(() => {
+    const obj = {};
+    Object.defineProperty(obj, 'scrollLeft', {
+      get: () => null,
+      set: (scrollLeft) => {
+        if (vGridRef.current) {
+          vGridRef.current.scrollTo({
+            scrollLeft,
+          });
+        }
       },
     });
-  }
-  columns.push({
-    title: actionTit,
-    valueType: "option",
-    render: (text, record, _, action) => [
-      <TableDropdown
-        key="actionGroup"
-        onSelect={() => action.reload()}
-        menus={actionMenu}
-      />,
-    ],
+    return obj;
   });
 
-  return (
-    <ProTable<TaskDetailRes>
-      rowKey="id"
-      columns={columns}
-      actionRef={actionRef}
-      pagination={{
-        defaultPageSize: 20,
-      }}
+  const resetVirtualGrid = () => {
+    vGridRef.current.resetAfterIndices({
+      columnIndex: 0,
+      shouldForceUpdate: false,
+    });
+  };
 
-      // params={JSON.parse(
-      //   localStorage.getItem(
-      //     currentTaskId
-      //       ? `task${currentTaskId}TasksParams`
-      //       : `space${currentSpace.id}TasksParams`
-      //   )
-      // )}
-      request={async (params, sorter, filter) => {
-        localStorage.setItem(
-          currentTaskId
-            ? `task${currentTaskId}TasksParams`
-            : `space${currentSpace.id}TasksParams`,
-          JSON.stringify(params)
-        );
-        console.log(params);
-        console.log(sorter);
-        console.log(filter);
-        const res = currentTaskId
-          ? await getSubTasks(currentTaskId, {
-              ...params,
-              ...sorter,
-              // ...filter,
-            })
-          : await getSpaceTasks(currentSpace.id, {
-              ...params,
-              ...sorter,
-              // ...filter,
+  useEffect(() => resetVirtualGrid, [tableWidth]);
+
+  const isItemLoaded = (index: number) => {
+    return !!taskList[index];
+  };
+
+  const loadMoreItems = (startIndex: number, stopIndex: number) => {
+    console.log(startIndex);
+    console.log(stopIndex);
+    return getTasksReq.run({
+      skip: startIndex,
+      take: stopIndex - startIndex + 1,
+    });
+  };
+
+  const Cell = ({ columnIndex, rowIndex, style }) => {
+    const task = taskList[rowIndex];
+    const column = columns[columnIndex];
+    let content;
+    if (task && column.render) {
+      content = columns[columnIndex].render(<></>, task);
+    } else {
+      content = '';
+    }
+    return (
+      <div key={`${rowIndex}-${columnIndex}`} style={style} className="virtual-table-cell">
+        {content}
+      </div>
+    );
+  };
+
+  const renderVirtualList = (rawData, { scrollbarSize, ref, onScroll }) => {
+    ref.current = connectObject;
+    const totalHeight = taskList.length * ROW_HEIGHT;
+    return (
+      <InfiniteLoader
+        ref={infiniteLoaderRef}
+        isItemLoaded={isItemLoaded}
+        itemCount={taskList.length}
+        loadMoreItems={loadMoreItems}
+      >
+        {({ onItemsRendered, ref }) => {
+          const newItemsRendered = (gridData: any) => {
+            const {
+              visibleRowStartIndex,
+              visibleRowStopIndex,
+              overscanRowStartIndex,
+              overscanRowStopIndex,
+            } = gridData;
+            onItemsRendered({
+              overscanStartIndex: overscanRowStartIndex,
+              overscanStopIndex: overscanRowStopIndex,
+              visibleStartIndex: visibleRowStartIndex,
+              visibleStopIndex: visibleRowStopIndex,
             });
+          };
 
-        console.log(res);
-        return {
-          data: res.list,
-          success: true,
-          total: res.total,
-        };
-      }}
-      options={{
-        fullScreen: true,
-      }}
-      rowSelection={{
-        selections: [Table.SELECTION_ALL, Table.SELECTION_INVERT],
-      }}
-      tableAlertRender={({ selectedRowKeys, onCleanSelected }) => (
-        <Space size="middle">
-          <span>
-            已选 {selectedRowKeys.length} 项
-            <a style={{ marginLeft: 8 }} onClick={onCleanSelected}>
-              取消选择
-            </a>
-          </span>
-        </Space>
+          return (
+            <VariableSizeGrid
+              ref={(r) => {
+                vGridRef.current = r;
+                //@ts-ignore
+                return ref(r);
+              }}
+              className="virtual-grid"
+              onItemsRendered={newItemsRendered}
+              columnCount={widthFixedColumns.length}
+              columnWidth={(index) => {
+                const { width } = widthFixedColumns[index];
+                return totalHeight > HEIGHT && index === widthFixedColumns.length - 1
+                  ? width - scrollbarSize - 1
+                  : width;
+              }}
+              rowCount={taskList.length}
+              rowHeight={() => ROW_HEIGHT}
+              height={HEIGHT}
+              width={tableWidth}
+              onScroll={({ scrollLeft }) => {
+                onScroll({
+                  scrollLeft,
+                });
+              }}
+            >
+              {Cell}
+            </VariableSizeGrid>
+          );
+        }}
+      </InfiniteLoader>
+    );
+  };
+
+  return (
+    <Card bodyStyle={{ padding: 0 }}>
+      <ResizeObserver
+        onResize={({ width, height }) => {
+          setTableWidth(width);
+          // setTableHeight()
+        }}
+      >
+        <Table
+          bordered
+          loading={initTasksReq.loading}
+          dataSource={taskList}
+          scroll={{
+            y: HEIGHT,
+            x: '100vw',
+          }}
+          className="virtual-table"
+          columns={widthFixedColumns}
+          pagination={false}
+          components={{
+            body: renderVirtualList,
+          }}
+        />
+      </ResizeObserver>
+      {taskList.length === 0 && (
+        <div className="center-container" style={{ height: '100%' }}>
+          <Empty className="center-item" />
+        </div>
       )}
-      tableAlertOptionRender={() => {
-        return (
-          <Space size="middle">
-            <a>批量删除</a>
-            <a>导出数据</a>
-          </Space>
-        );
-      }}
-      // search={false}
-      search={{
-        filterType: "light",
-        optionRender:((searchConfig,formProps) => {
-          console.log(searchConfig)
-          return []
-        })
-      }}
-      // toolbar={{
-      //   search: {
-      //     onSearch: (value: string) => {
-      //       alert(value);
-      //     },
-      //   },
-      //   filter: (
-      //     <LightFilter>
-      //       <ProFormDatePicker name="startdate" label="响应日期" />
-      //     </LightFilter>
-      //   ),
-      //   actions: [<AddTaskForm key="1" superTaskId={currentTaskId} />],
-      // }}
-      // toolBarRender={() => [
-      //   <AddTaskForm key="1" superTaskId={currentTaskId} />,
-      // ]}
-    />
+    </Card>
   );
-};
+}; // Usage
+
 export default TaskTable;

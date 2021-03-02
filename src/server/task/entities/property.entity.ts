@@ -28,12 +28,9 @@ export enum ViewType {
   ASSET = 'asset',
 }
 
-export interface viewOption {
+export interface ViewOption {
   form: ViewForm;
-  sorts: any;
-  filters: any;
-  properties: number[];
-  options: any;
+  headers: any;
 }
 
 @Entity()
@@ -48,7 +45,7 @@ export class View extends BaseEntity {
   type: ViewType;
 
   @Column('simple-json', { nullable: true })
-  options: viewOption;
+  option: ViewOption;
 
   @ManyToOne(() => Space, (space) => space.views)
   space: Space;

@@ -1,5 +1,5 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Button, Card, Form, Mentions, Popover, Space, message, Upload, Image } from 'antd';
+import { Button, Card, Form, Mentions, Popover, Space, message, Upload } from 'antd';
 import Cookies from 'js-cookie';
 import { CommentRes } from '@dtos/task.dto';
 import useWebSocket from '@hooks/useWebSocket';
@@ -10,7 +10,6 @@ import {
   LoadingOutlined,
   MessageOutlined,
   PictureOutlined,
-  PlusOutlined,
   SmileOutlined,
 } from '@ant-design/icons';
 import { Picker } from 'emoji-mart';
@@ -19,7 +18,7 @@ import MessageCard from './MessageCard';
 import { AutoSizer, CellMeasurer, CellMeasurerCache, InfiniteLoader } from 'react-virtualized';
 import VList from 'react-virtualized/dist/commonjs/List';
 import { useInterval } from 'ahooks';
-import { getBase64, sleep } from '@utils/utils';
+import { sleep } from '@utils/utils';
 import moment from 'moment';
 import { getOssClient } from '../../layout/layout.service';
 import { RcFile } from 'antd/lib/upload';
@@ -263,7 +262,7 @@ const TaskComment = ({ taskId }, ref) => {
         <AutoSizer>
           {({ width, height }) => (
             <VList
-              style={{ outline: 'none', padding: '20px 10px' }}
+              style={{ outline: 'none' }}
               ref={(ref) => {
                 vListRef.current = ref;
                 registerChild(ref);
