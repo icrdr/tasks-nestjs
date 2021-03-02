@@ -1,4 +1,4 @@
-import React, { useContext, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { PageContainer } from "@ant-design/pro-layout";
 import { Link, useIntl, history, useParams, useRequest, useModel } from "umi";
 import {
@@ -11,15 +11,12 @@ import { getTask } from "./task.service";
 import {
   Space,
   Button,
-  Descriptions,
   Dropdown,
   Menu,
   Input,
-  Tag,
   Select,
   Avatar,
   DatePicker,
-  Modal,
   Drawer,
   List,
   Typography,
@@ -27,22 +24,18 @@ import {
 } from "antd";
 import TaskState from "../../components/TaskState";
 import {
-  AntDesignOutlined,
   EditOutlined,
   EllipsisOutlined,
   PlusOutlined,
-  UserOutlined,
 } from "@ant-design/icons";
 import ProDescriptions, {
   ProDescriptionsActionType,
 } from "@ant-design/pro-descriptions";
-import ProProvider from "@ant-design/pro-provider";
 import type { ProColumns } from "@ant-design/pro-table";
-import { TaskMoreDetailRes, TaskRes } from "@dtos/task.dto";
+import { TaskMoreDetailRes } from "@dtos/task.dto";
 import { AssignmentRes, MemberRes } from "@dtos/space.dto";
 import moment from "moment";
 import { getSpaceMembers } from "../member/member.service";
-import ProForm, { ProFormText } from "@ant-design/pro-form";
 const { Text, Title } = Typography;
 
 const taskDetail: React.FC<{}> = (props) => {
@@ -234,7 +227,7 @@ const taskDetail: React.FC<{}> = (props) => {
         return (
           <DatePicker.RangePicker
             ranges={{
-              "Next One Week": [moment(), moment().add(7, "d")],
+              "下周": [moment(), moment().add(7, "d")],
             }}
             defaultValue={[
               entity.beginAt ? moment(entity.beginAt) : undefined,

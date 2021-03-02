@@ -1,10 +1,24 @@
-import React, { useEffect, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useModel, useParams, useRequest } from 'umi';
-import { Badge, Button, Dropdown, Form, Input, List, Modal, Select, Space, Spin, Tag } from 'antd';
-import TaskTable from './components/TaskTable';
-import TaskGallery from './components/TaskGallery';
-import { ViewOption } from '@server/task/entities/property.entity';
+import React, { useEffect, useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import { useModel, useParams, useRequest } from "umi";
+import {
+  Badge,
+  Button,
+  Dropdown,
+  Form,
+  Input,
+  Switch,
+  Menu,
+  Modal,
+  Select,
+  Space,
+  Spin,
+  Tag,
+  DatePicker,
+} from "antd";
+import TaskTable from "./components/TaskTable";
+import TaskGallery from "./components/TaskGallery";
+import { ViewOption } from "@server/task/entities/property.entity";
 import {
   addSpaceTask,
   addSubTask,
@@ -12,50 +26,59 @@ import {
   getSubTasks,
   getUser,
   getUsers,
-} from './task.service';
-import { AddTaskDTO } from '@dtos/task.dto';
-import { SettingOutlined } from '@ant-design/icons';
+} from "./task.service";
+import { AddTaskDTO } from "@dtos/task.dto";
+import { SettingOutlined } from "@ant-design/icons";
+import moment from "moment";
 
 const Task: React.FC<{}> = () => {
   const currentTaskId = (useParams() as any).id;
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const viewOptionKey = currentTaskId
     ? `task${currentTaskId}`
-    : `space${currentSpace.id}` + 'ViewOption';
+    : `space${currentSpace.id}` + "ViewOption";
 
   const [update, setUpdate] = useState(false);
   const [viewOption, setViewOption] = useState<ViewOption>(
     JSON.parse(localStorage.getItem(viewOptionKey)) || {
-      form: 'table',
+      form: "table",
       headers: [
         {
-          title: 'name',
+          title: "name",
           width: 200,
+          filter: undefined,
+          hidden: false,
         },
         {
-          title: 'state',
+          title: "state",
           width: 200,
+          filter: undefined,
+          hidden: false,
         },
         {
-          title: 'dueAt',
+          title: "dueAt",
           width: 200,
+          filter: undefined,
+          hidden: false,
         },
       ],
-    },
+    }
   );
 
   const [isModalVisible, setModalVisible] = useState(false);
   const [userOptions, setUserOptions] = React.useState([]);
   const [form] = Form.useForm();
   const addTask = (body: AddTaskDTO) => {
-    return currentTaskId ? addSubTask(currentTaskId, body) : addSpaceTask(currentSpace.id, body);
+    return currentTaskId
+      ? addSubTask(currentTaskId, body)
+      : addSpaceTask(currentSpace.id, body);
   };
 
   useEffect(() => {
     viewOption.headers.forEach((header, index) => {
-      const type = header.title.split(':')[0];
-      if (type === 'role' && header.filter) {
+      const type = header.title.split(":")[0];
+      if (type === "role" && header.filter) {
         getUser(header.filter)
           .then((res) => {
             console.log(res);
@@ -63,7 +86,7 @@ const Task: React.FC<{}> = () => {
           })
           .catch((err) => {
             const headers = viewOption.headers;
-            headers[index]['filter'] = undefined;
+            headers[index].filter = undefined;
             console.log(headers);
             saveOption({ ...viewOption, headers });
           });
@@ -105,91 +128,136 @@ const Task: React.FC<{}> = () => {
 
   const handleFilter = (index, v) => {
     const headers = viewOption.headers;
-    headers[index]['filter'] = v;
+    headers[index].filter = v;
     saveOption({ ...viewOption, headers });
   };
-
+  const handleHeaderDisplay = (index, v) => {
+    const headers = viewOption.headers;
+    headers[index].hidden = !v;
+    saveOption({ ...viewOption, headers });
+  };
   // const handleSelect = (index, v) => {
   //   const headers = viewOption.headers;
   //   headers[index]['filter'] = v;
   //   saveOption({ ...viewOption, headers });
   // };
 
-  const Filters = viewOption.headers.map((header, index: number) => {
-    const type = header.title.split(':')[0];
-    switch (type) {
-      case 'name':
-        return (
-          <Input.Search
-            key={index}
-            style={{ width: 200 }}
-            placeholder="任务名"
-            onSearch={(v) => handleFilter(index, v)}
-            defaultValue={header.filter || ''}
-            allowClear
-          />
-        );
-      case 'state':
-        return (
-          <Select
-            key={index}
-            style={{ width: 100 }}
-            placeholder={'状态'}
-            defaultValue={header.filter || undefined}
-            onChange={(v) => handleFilter(index, v)}
-            allowClear
-          >
-            <Select.Option value="suspended">
-              <Badge status="default" text="暂停中" />
-            </Select.Option>
-            <Select.Option value="inProgress">
-              <Badge status="processing" text="进行中" />
-            </Select.Option>
-            <Select.Option value="unconfirmed">
-              <Badge status="warning" text="待确认" />
-            </Select.Option>
-            <Select.Option value="completed">
-              <Badge status="success" text="已完成" />
-            </Select.Option>
-          </Select>
-        );
-      case 'role':
-        const roleName = header.title.split(':')[1];
-        return (
-          <Select
-            key={index}
-            style={{ width: 100 }}
-            placeholder={roleName}
-            defaultValue={header.filter || undefined}
-            onChange={(v) => handleFilter(index, v)}
-            onSearch={(v) => getUsersReq.run({ username: v })}
-            options={userOptions}
-            showSearch
-            filterOption={false}
-            notFoundContent={getUsersReq.loading ? <Spin size="small" /> : null}
-            allowClear
-          />
-        );
+  const Filters = viewOption.headers
+    .filter((header) => !header.hidden)
+    .map((header, index: number) => {
+      const type = header.title.split(":")[0];
+      switch (type) {
+        case "name":
+          return (
+            <Input.Search
+              key={index}
+              style={{ width: 200 }}
+              placeholder="任务名"
+              onSearch={(v) => handleFilter(index, v)}
+              defaultValue={header.filter || ""}
+              allowClear
+            />
+          );
+        case "state":
+          return (
+            <Select
+              key={index}
+              style={{ width: 100 }}
+              placeholder={"状态"}
+              defaultValue={header.filter || undefined}
+              onChange={(v) => handleFilter(index, v)}
+              allowClear
+            >
+              <Select.Option value="suspended">
+                <Badge status="default" text="暂停中" />
+              </Select.Option>
+              <Select.Option value="inProgress">
+                <Badge status="processing" text="进行中" />
+              </Select.Option>
+              <Select.Option value="unconfirmed">
+                <Badge status="warning" text="待确认" />
+              </Select.Option>
+              <Select.Option value="completed">
+                <Badge status="success" text="已完成" />
+              </Select.Option>
+            </Select>
+          );
+        case "dueAt":
+          return (
+            <DatePicker
+              key={index}
+              placeholder={"截止日之前"}
+              defaultValue={moment(header.filter) || undefined}
+              onChange={(v) => handleFilter(index, v?.toDate() || undefined)}
+            />
+          );
+        case "role":
+          const roleName = header.title.split(":")[1];
+          return (
+            <Select
+              key={index}
+              style={{ width: 100 }}
+              placeholder={roleName}
+              defaultValue={header.filter || undefined}
+              onChange={(v) => handleFilter(index, v)}
+              onSearch={(v) => getUsersReq.run({ username: v })}
+              options={userOptions}
+              showSearch
+              filterOption={false}
+              notFoundContent={
+                getUsersReq.loading ? <Spin size="small" /> : null
+              }
+              allowClear
+            />
+          );
 
-      default:
-        <div></div>;
-    }
-  });
+        default:
+          <div></div>;
+      }
+    });
 
   const menu = (
-    <List bordered>
-      <List.Item>asdfasdf</List.Item>
-      <List.Item>asdfasdf</List.Item>
-      <List.Item>asdfasdf</List.Item>
-    </List>
+    <Menu>
+      {viewOption.headers.map((header, index) => {
+        const type = header.title.split(":")[0];
+        let title = type === "role" ? header.title.split(":")[1] : type;
+        let label = "";
+        switch (title) {
+          case "name":
+            label = "任务名";
+            break;
+          case "state":
+            label = "状态";
+            break;
+          case "dueAt":
+            label = "截止日";
+            break;
+          default:
+            break;
+        }
+        return (
+          <Menu.Item key={index}>
+            <Space>
+              <Switch
+                disabled={title === "name"}
+                size="small"
+                defaultChecked={!header.hidden}
+                onChange={(v) => handleHeaderDisplay(index, v)}
+              />
+              <span>{label}</span>
+            </Space>
+          </Menu.Item>
+        );
+      })}
+    </Menu>
   );
   return (
-    <PageContainer content="管理所有任务">
-      <Space size="middle" direction="vertical" style={{ width: '100%' }}>
+    <div style={{ padding: 20 }}>
+      <Space size="middle" direction="vertical" style={{ width: "100%" }}>
         <div>
           <Button
             type="primary"
-            style={{ marginRight: '20px' }}
+            style={{ marginRight: "20px" }}
             onClick={() => setModalVisible(true)}
           >
             新任务
@@ -203,10 +271,14 @@ const Task: React.FC<{}> = () => {
               <Button icon={<SettingOutlined />} />
             </Dropdown>
           </Space>
-          <Space style={{ float: 'right' }}>{Filters}</Space>
+          <Space style={{ float: "right" }}>{Filters}</Space>
         </div>
-        {viewOption.form === 'table' && <TaskTable option={viewOption} reload={update} />}
-        {viewOption.form === 'gallery' && <TaskGallery option={viewOption} reload={update} />}
+        {viewOption.form === "table" && (
+          <TaskTable option={viewOption} reload={update} />
+        )}
+        {viewOption.form === "gallery" && (
+          <TaskGallery option={viewOption} reload={update} />
+        )}
       </Space>
       <Modal
         closable={false}
@@ -228,13 +300,13 @@ const Task: React.FC<{}> = () => {
           <Form.Item
             label="任务名"
             name="name"
-            rules={[{ required: true, message: 'Please input your username!' }]}
+            rules={[{ required: true, message: "Please input your username!" }]}
           >
             <Input />
           </Form.Item>
         </Form>
       </Modal>
-    </PageContainer>
+    </div>
   );
 };
 export default Task;

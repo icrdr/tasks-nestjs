@@ -141,7 +141,7 @@ export class SpaceService {
       for (const admin of options.admins) {
         adminMembers.push(await this.addMember(space, admin));
       }
-      await this.addAssignment(space, options.admins, 'admin', AccessLevel.FULL);
+      await this.addAssignment(space, options.admins, '管理员', AccessLevel.FULL);
     }
 
     //add member

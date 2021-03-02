@@ -108,6 +108,14 @@ export class GetTasksDTO extends ListDTO {
   @Transform((v) => v || Object.values(TaskState)) //check all state if is empty.
   @IsEnum(TaskState, { each: true })
   state?: TaskState[];
+
+  @IsOptional()
+  @IsDate()
+  dueAfter?: Date;
+
+  @IsOptional()
+  @IsDate()
+  dueBefore?: Date;
 }
 
 export class ReviewTaskDTO {

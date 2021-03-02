@@ -1,60 +1,34 @@
-import React, { useRef } from 'react';
-import { PlusOutlined, EllipsisOutlined } from '@ant-design/icons';
-import { Button, Tag, Space, Menu, Dropdown, Avatar } from 'antd';
-import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro-table';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useIntl, useModel } from 'umi';
-import { getSpaceMembers } from './member.service';
-import { MemberRes } from '@dtos/space.dto';
-import addMemberForm from './components/AddMemberForm';
-import AddMemberForm from './components/AddMemberForm';
+import React, { useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import { Card, Alert, Typography, Tabs, Radio, Space } from "antd";
+import { history, useAccess, useRequest } from "umi";
+import AssetGallery from "../task/components/AssetGallery";
+import MemberTable from "./components/MemberTable";
+import GroupTable from "./components/GroupTable";
 
-const UserList: React.FC<{}> = () => {
-  const { initialState } = useModel('@@initialState');
-  const { currentSpace } = initialState;
-  const actionRef = useRef<ActionType>();
-  const intl = useIntl();
+const Member: React.FC<{}> = (props) => {
+  const [tab, setTab] = useState("member");
 
-  const addUserBtn = intl.formatMessage({
-    id: 'page.member.table.addUser.btn',
-  });
-
-  const usernameTit = intl.formatMessage({
-    id: 'page.member.table.username.tit',
-  });
-
-  const columns: ProColumns<MemberRes>[] = [
-    {
-      dataIndex: 'username',
-      title: usernameTit,
-    },
-  ];
+  const handleTabChange = (e) => {
+    setTab(e.target.value);
+  };
 
   return (
-    <ProTable<MemberRes>
-      rowKey="userId"
-      columns={columns}
-      actionRef={actionRef}
-      request={async (params, sorter, filter) => {
-        const res = await getSpaceMembers(currentSpace.id, params);
-        console.log(res);
-        return {
-          data: res.list,
-          success: true,
-          total: res.total,
-        };
-      }}
-      search={false}
-      toolBarRender={() => [<AddMemberForm key="1" onSuccess={() => actionRef.current.reload()} />]}
-    />
+    <div style={{ padding: 20 }}>
+      <Space size="middle" direction="vertical" style={{ width: "100%" }}>
+        <div>
+          <Radio.Group
+            value={tab}
+            buttonStyle="solid"
+            onChange={handleTabChange}
+          >
+            <Radio.Button value="member">成员</Radio.Button>
+            <Radio.Button value="group">小组</Radio.Button>
+          </Radio.Group>
+        </div>
+        {tab === "member" ? <MemberTable /> : <GroupTable />}
+      </Space>
+    </div>
   );
 };
-
-const User: React.FC<{}> = () => {
-  return (
-    <PageContainer content="管理所有成员">
-      <UserList />
-    </PageContainer>
-  );
-};
-export default User;
+export default Member;
