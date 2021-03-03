@@ -1,13 +1,21 @@
-import React, { useRef, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { Link, useIntl, useParams, useRequest, useModel, useLocation, useHistory } from 'umi';
+import React, { useEffect, useRef, useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import {
+  Link,
+  useIntl,
+  useParams,
+  useRequest,
+  useModel,
+  useLocation,
+  useHistory,
+} from "umi";
 import {
   addTaskAssignment,
   changeTask,
   changeTaskState,
   removeTaskAssignment,
-} from './task.service';
-import { getTask } from './task.service';
+} from "./task.service";
+import { getTask } from "./task.service";
 import {
   Space,
   Button,
@@ -21,39 +29,70 @@ import {
   List,
   Typography,
   Form,
-} from 'antd';
-import TaskState from '../../components/TaskState';
-import { EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
-import ProDescriptions, { ProDescriptionsActionType } from '@ant-design/pro-descriptions';
-import type { ProColumns } from '@ant-design/pro-table';
-import { TaskMoreDetailRes } from '@dtos/task.dto';
-import { AssignmentRes, MemberRes } from '@dtos/space.dto';
-import moment from 'moment';
-import { getSpaceMembers } from '../member/member.service';
-import { AccessLevel } from '../../../server/task/entities/space.entity';
+  Popover,
+  Spin,
+  Descriptions,
+} from "antd";
+import TaskState from "../../components/TaskState";
+import {
+  EditOutlined,
+  EllipsisOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import ProDescriptions, {
+  ProDescriptionsActionType,
+} from "@ant-design/pro-descriptions";
+import type { ProColumns } from "@ant-design/pro-table";
+import { TaskMoreDetailRes } from "@dtos/task.dto";
+import { AssignmentRes, MemberRes } from "@dtos/space.dto";
+import moment from "moment";
+import { getSpaceMembers } from "../member/member.service";
+import { AccessLevel } from "../../../server/task/entities/space.entity";
 const { Text, Title } = Typography;
 
 const taskDetail: React.FC<{}> = (props) => {
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const { initialState, setInitialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const currentTaskId = (useParams() as any).id;
-  const [modalRoleName, setModalRoleName] = useState(undefined);
-  const [memberList, setMemberList] = useState<MemberRes[]>([]);
+  const [modalRoleId, setModalRoleId] = useState(undefined);
+  const [vis, setVis] = useState(false);
+  const [memberOptions, setMemberOptions] = useState([]);
   const intl = useIntl();
   const [form] = Form.useForm();
   const location = useLocation();
   const history = useHistory();
-  const path = location.pathname.split('/');
+  const path = location.pathname.split("/");
   const tabActiveKey = path[path.length - 1];
   const [task, setTask] = useState<TaskMoreDetailRes>(null);
   const [isEditingName, setEditingName] = useState(false);
-  const [EditName, setEditName] = useState('');
+  const [EditName, setEditName] = useState("");
+  const [columns, setColumns] = useState([]);
+
+  const getTaskReq = useRequest(() => getTask(currentTaskId), {
+    onSuccess: (res) => {
+      setTask(res);
+    },
+  });
 
   const getSpaceMembersReq = useRequest(getSpaceMembers, {
+    debounceInterval: 500,
     manual: true,
     onSuccess: (res) => {
       console.log(res);
-      setMemberList(res.list);
+      // const singleAssignments = task["roles"][modalRoleId]?.filter(
+      //   (a) => a.members.length === 1
+      // );
+      // const memberUserIds = singleAssignments?.map(
+      //   (a) => a.members[0].userId
+      // );
+      // const isExist = memberUserIds?.indexOf(member.userId) >= 0;
+      const memberOptions = res.list.map((member) => {
+        return {
+          label: member.username,
+          value: member.userId,
+        };
+      });
+      setMemberOptions(memberOptions);
     },
   });
 
@@ -84,7 +123,6 @@ const taskDetail: React.FC<{}> = (props) => {
     manual: true,
     onSuccess: (res) => {
       history.go(0);
-
     },
   });
 
@@ -92,54 +130,27 @@ const taskDetail: React.FC<{}> = (props) => {
     history.push(`/task/${currentTaskId}/${tabActiveKey}`);
   };
 
-  const tabContents = intl.formatMessage({
-    id: 'page.taskContent.tab.contents',
-  });
-
-  const tabAssets = intl.formatMessage({
-    id: 'page.taskContent.tab.assets',
-  });
-
-  const tabSubTasks = intl.formatMessage({
-    id: 'page.taskContent.tab.subTasks',
-  });
-
   const title = () => {
     const superTask = task?.superTask;
     return (
       <Space>
-        {superTask && <Link to={`/task/${superTask.id}`}>{superTask.name}</Link>}
-        {superTask && <span>/</span>}
-        {isEditingName ? (
-          <Form
-            form={form}
-            layout="inline"
-            onFinish={(v) => {
-              console.log(v);
-              changeTaskReq.run(currentTaskId, { name: v.name });
-              setEditingName(false);
-            }}
-            initialValues={{ name: task?.name }}
-          >
-            <Form.Item name="name">
-              <Input placeholder="请输入名称" />
-            </Form.Item>
-            <Form.Item shouldUpdate={true}>
-              {() => (
-                <Button type="link" htmlType="submit" disabled={!form.getFieldValue('name')}>
-                  确认
-                </Button>
-              )}
-            </Form.Item>
-          </Form>
-        ) : (
-          <>
-            <span>{task?.name}</span>
-            {task?.userAccess === 'full' && (
-              <Button type="link" icon={<EditOutlined />} onClick={() => setEditingName(true)} />
-            )}
-          </>
+        {superTask && (
+          <Link to={`/task/${superTask.id}`}>{superTask.name}</Link>
         )}
+        {superTask && <span>/</span>}
+        <Text
+          style={{ width: "100%" }}
+          editable={
+            task?.userAccess === "full"
+              ? {
+                  onChange: (v) =>{
+                    if(v)changeTaskReq.run(currentTaskId, { name: v })},
+                }
+              : false
+          }
+        >
+          {task?.name}
+        </Text>
       </Space>
     );
   };
@@ -150,28 +161,28 @@ const taskDetail: React.FC<{}> = (props) => {
     </Menu>
   );
   const extraContent =
-    task?.userAccess === 'full' ? (
+    task?.userAccess === "full" ? (
       <Space>
         <Button.Group>
-          {task?.state === 'suspended' && (
+          {task?.state === "suspended" && (
             <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'start')}
+              onClick={() => changeStateReq.run(currentTaskId, "start")}
               disabled={changeStateReq.loading}
             >
               启动
             </Button>
           )}
-          {task?.state === 'inProgress' && (
+          {task?.state === "inProgress" && (
             <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'suspend')}
+              onClick={() => changeStateReq.run(currentTaskId, "suspend")}
               disabled={changeStateReq.loading}
             >
               暂停
             </Button>
           )}
-          {task?.state === 'completed' && (
+          {task?.state === "completed" && (
             <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'restart')}
+              onClick={() => changeStateReq.run(currentTaskId, "restart")}
               disabled={changeStateReq.loading}
             >
               重启
@@ -185,9 +196,9 @@ const taskDetail: React.FC<{}> = (props) => {
               提交
             </Button>
           )} */}
-          {task?.state === 'unconfirmed' && (
+          {task?.state === "unconfirmed" && (
             <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'refuse')}
+              onClick={() => changeStateReq.run(currentTaskId, "refuse")}
               disabled={changeStateReq.loading}
             >
               打回
@@ -199,10 +210,10 @@ const taskDetail: React.FC<{}> = (props) => {
             </Button>
           </Dropdown>
         </Button.Group>
-        {task?.state !== 'completed' && (
+        {task?.state !== "completed" && (
           <Button
             type="primary"
-            onClick={() => changeStateReq.run(currentTaskId, 'complete')}
+            onClick={() => changeStateReq.run(currentTaskId, "complete")}
             disabled={changeStateReq.loading}
           >
             完成
@@ -210,10 +221,11 @@ const taskDetail: React.FC<{}> = (props) => {
         )}
       </Space>
     ) : (
-      task?.state === 'inProgress' && task?.userAccess === 'edit' && (
+      task?.state === "inProgress" &&
+      task?.userAccess === "edit" && (
         <Button
           type="primary"
-          onClick={() => changeStateReq.run(currentTaskId, 'commit')}
+          onClick={() => changeStateReq.run(currentTaskId, "commit")}
           disabled={changeStateReq.loading}
         >
           提交
@@ -221,19 +233,29 @@ const taskDetail: React.FC<{}> = (props) => {
       )
     );
 
-  const columns: ProColumns<TaskMoreDetailRes>[] = [
-    {
-      title: '计划日期',
-      dataIndex: 'dueAt',
-      render: (_, entity) => {
-        return task?.userAccess === 'full' ? (
+  const handleAddAssignment = (userId: number[], roleName: string) => {
+    addAssignmentReq.run(currentTaskId, {
+      userId,
+      roleName,
+    });
+    setModalRoleId(undefined);
+  };
+
+  const handleRemoveAssignment = (assignmentId: number) => {
+    removeAssignmentReq.run(currentTaskId, assignmentId);
+  };
+
+  const description = (
+    <Descriptions labelStyle={{ lineHeight: "32px" }} column={1}>
+      <Descriptions.Item key="due" label="计划日期">
+        {task?.userAccess === "full" ? (
           <DatePicker.RangePicker
             ranges={{
-              下周: [moment(), moment().add(7, 'd')],
+              下周: [moment(), moment().add(7, "d")],
             }}
-            defaultValue={[
-              entity.beginAt ? moment(entity.beginAt) : undefined,
-              entity.dueAt ? moment(entity.dueAt) : undefined,
+            value={[
+              task?.beginAt ? moment(task?.beginAt) : undefined,
+              task?.dueAt ? moment(task?.dueAt) : undefined,
             ]}
             onChange={(dates) => {
               if (!dates) {
@@ -254,133 +276,96 @@ const taskDetail: React.FC<{}> = (props) => {
             allowClear={false}
             bordered={false}
             disabledDate={() => true}
-            defaultValue={[
-              entity.beginAt ? moment(entity.beginAt) : undefined,
-              entity.dueAt ? moment(entity.dueAt) : undefined,
+            value={[
+              task?.beginAt ? moment(task.beginAt) : undefined,
+              task?.dueAt ? moment(task.dueAt) : undefined,
             ]}
           />
-        );
-      },
-    },
-    {
-      title: '默认权限',
-      dataIndex: 'access',
-      render: (_, entity) => {
-        const lable = (value) => {
-          switch (value) {
-            case 'view':
-              return '浏览';
-            case 'edit':
-              return '编辑';
-            case 'full':
-              return '完全';
+        )}
+      </Descriptions.Item>
+      <Descriptions.Item key="access" label="默认权限">
+        <Select
+          disabled={task?.userAccess !== "full"}
+          value={task?.access}
+          onChange={(v) =>
+            changeTaskReq.run(currentTaskId, { access: v as AccessLevel })
           }
-        };
-        return task?.userAccess === 'full' ? (
-          <Select
-            defaultValue={entity.access}
-            onChange={(v) => changeTaskReq.run(currentTaskId, { access: v as AccessLevel })}
-          >
-            <Select.Option value="view">{lable('view')}</Select.Option>
-            <Select.Option value="edit">{lable('edit')}</Select.Option>
-            <Select.Option value="full">{lable('full')}</Select.Option>
-          </Select>
-        ) : (
-          <div style={{ lineHeight: '32px' }}>{lable(entity.access)}</div>
-        );
-      },
-    },
-  ];
-
-  for (const role of currentSpace.roles) {
-    columns.push({
-      title: role.name,
-      dataIndex: role.name,
-      editable: false,
-      render: (_, entity) => {
-        const assignments = entity['roles'][role.name];
-        return (
-          <Space size={'small'} align="start">
+        >
+          <Select.Option value="view">浏览</Select.Option>
+          <Select.Option value="edit">编辑</Select.Option>
+          <Select.Option value="full">完全</Select.Option>
+        </Select>
+      </Descriptions.Item>
+      {currentSpace.roles.map((role, index) => (
+        <Descriptions.Item key={index} label={role.name}>
+          <Space size={"small"} align="start">
             <Avatar.Group>
-              {assignments?.map((assignment: AssignmentRes, index: number) => (
-                <Dropdown
-                  disabled={task?.userAccess !== 'full'}
-                  overlay={
-                    <Menu>
-                      <Menu.Item key="1" onClick={() => handleRemoveAssignment(assignment?.id)}>
-                        删除
-                      </Menu.Item>
-                    </Menu>
-                  }
-                  key={index}
-                  trigger={['contextMenu']}
-                >
-                  <Avatar>{(assignment?.members[0] as MemberRes).username}</Avatar>
-                </Dropdown>
-              ))}
+              {task?.roles[role.id]?.map(
+                (assignment: AssignmentRes, index: number) => (
+                  <Dropdown
+                    disabled={task?.userAccess !== "full"}
+                    overlay={
+                      <Menu>
+                        <Menu.Item
+                          key="1"
+                          onClick={() => handleRemoveAssignment(assignment?.id)}
+                        >
+                          删除
+                        </Menu.Item>
+                      </Menu>
+                    }
+                    key={index}
+                    trigger={["contextMenu"]}
+                  >
+                    <Avatar>
+                      {(assignment?.members[0] as MemberRes).username}
+                    </Avatar>
+                  </Dropdown>
+                )
+              )}
             </Avatar.Group>
-            {task?.userAccess === 'full' && (
-              <Button
-                icon={<PlusOutlined />}
-                type="primary"
-                shape="circle"
-                style={{ padding: 0 }}
-                onClick={() => {
-                  setModalRoleName(role.name);
-                  getSpaceMembersReq.run(currentSpace.id);
-                }}
-              />
+            {task?.userAccess === "full" && (
+              <Popover
+                placement="right"
+                content={
+                  <Select
+                    style={{ width: 100 }}
+                    onChange={(v: number) =>
+                      handleAddAssignment([v], role.name)
+                    }
+                    onSearch={(v) => getSpaceMembersReq.run(currentSpace.id)}
+                    options={memberOptions}
+                    showSearch
+                    showArrow={false}
+                    filterOption={false}
+                    notFoundContent={
+                      getSpaceMembersReq.loading ? <Spin size="small" /> : null
+                    }
+                  />
+                }
+              >
+                <Button icon={<PlusOutlined />} type="primary" shape="circle" />
+              </Popover>
             )}
           </Space>
-        );
-      },
-    });
-  }
-
-  const handleAddAssignment = (userId: number[], roleName: string) => {
-    addAssignmentReq.run(currentTaskId, {
-      userId,
-      roleName,
-    });
-    setModalRoleName(undefined);
-  };
-
-  const handleRemoveAssignment = (assignmentId: number) => {
-    removeAssignmentReq.run(currentTaskId, assignmentId);
-  };
-
-  const actionRef = useRef<ProDescriptionsActionType>();
-  const description = (
-    <ProDescriptions<TaskMoreDetailRes>
-      labelStyle={{ lineHeight: '32px' }}
-      actionRef={actionRef}
-      //@ts-ignore
-      columns={columns}
-      column={1}
-      request={async () => {
-        const res = await getTask(currentTaskId);
-        setTask(res);
-        return {
-          data: res,
-          success: true,
-        };
-      }}
-    />
+        </Descriptions.Item>
+      ))}
+    </Descriptions>
   );
 
   const tabList = [
     {
-      key: 'content',
-      tab: tabContents,
+      key: "content",
+      tab: "内容",
     },
     {
-      key: 'asset',
-      tab: tabAssets,
+      key: "asset",
+      tab: "资源",
     },
-    {
-      key: 'subTask',
-      tab: tabSubTasks,
-    },
+    // {
+    //   key: "subTask",
+    //   tab: '子任务',
+    // },
   ];
 
   return (
@@ -391,47 +376,10 @@ const taskDetail: React.FC<{}> = (props) => {
       content={description}
       tabActiveKey={tabActiveKey}
       onTabChange={handleTabChange}
-      loading={!task}
+      loading={getTaskReq.loading}
       tabList={tabList}
     >
       {props.children}
-      <Drawer
-        visible={!!modalRoleName}
-        title="成员列表"
-        closable={false}
-        width={300}
-        placement="right"
-        getContainer={false}
-        bodyStyle={{ padding: 0 }}
-        onClose={() => setModalRoleName(undefined)}
-      >
-        <List
-          loading={getSpaceMembersReq.loading}
-          dataSource={getSpaceMembersReq.data?.list}
-          split={true}
-          renderItem={(member, index) => {
-            const singleAssignments = task['roles'][modalRoleName]?.filter(
-              (a) => a.members.length === 1,
-            );
-            const memberUserIds = singleAssignments?.map((a) => a.members[0].userId);
-            const isExist = memberUserIds?.indexOf(member.userId) >= 0;
-            return (
-              <List.Item>
-                <Button
-                  disabled={isExist}
-                  type="link"
-                  onClick={() => handleAddAssignment([member.userId], modalRoleName)}
-                >
-                  <Space>
-                    <Avatar>{member.username}</Avatar>
-                    <Text delete={isExist}>{member.username}</Text>
-                  </Space>
-                </Button>
-              </List.Item>
-            );
-          }}
-        />
-      </Drawer>
     </PageContainer>
   );
 };

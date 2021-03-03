@@ -27,6 +27,15 @@ export class ChangeRoleDTO{
   access?: AccessLevel;
 }
 
+export class AddRoleDTO {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @IsEnum(AccessLevel)
+  access?: AccessLevel;
+}
+
 export class AddAssignmentDTO {
   @Type(() => Number)
   @IsNumber({}, { each: true })
@@ -89,6 +98,7 @@ export class MemberRes {
     Object.assign(this, partial);
   }
 }
+
 
 @Exclude()
 export class RoleRes {

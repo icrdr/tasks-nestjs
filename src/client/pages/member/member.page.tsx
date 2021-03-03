@@ -1,34 +1,65 @@
 import React, { useState } from "react";
 import { PageContainer } from "@ant-design/pro-layout";
-import { Card, Alert, Typography, Tabs, Radio, Space } from "antd";
-import { history, useAccess, useRequest } from "umi";
-import AssetGallery from "../task/components/AssetGallery";
-import MemberTable from "./components/MemberTable";
-import GroupTable from "./components/GroupTable";
+import { history, useModel, useRequest } from "umi";
+import { Button, Form, Input, Modal, Space } from "antd";
+import RoleTable from "./components/MemberTable";
+import { add } from "./setting.service";
 
-const Member: React.FC<{}> = (props) => {
-  const [tab, setTab] = useState("member");
+const Resource: React.FC<{}> = (props) => {
+  const [isModalVisible, setModalVisible] = useState(false);
+  const { initialState } = useModel("@@initialState");
+  const { currentSpace } = initialState;
+  const [form] = Form.useForm();
+  const [update, setUpdate] = useState(false);
 
-  const handleTabChange = (e) => {
-    setTab(e.target.value);
-  };
+  const addRoleReq = useRequest(addRole, {
+    manual: true,
+    onSuccess: (res) => {
+      setUpdate(!update);
+    },
+  });
 
   return (
     <div style={{ padding: 20 }}>
       <Space size="middle" direction="vertical" style={{ width: "100%" }}>
         <div>
-          <Radio.Group
-            value={tab}
-            buttonStyle="solid"
-            onChange={handleTabChange}
+          <Button
+            type="primary"
+            style={{ marginRight: "20px" }}
+            onClick={() => setModalVisible(true)}
           >
-            <Radio.Button value="member">成员</Radio.Button>
-            <Radio.Button value="group">小组</Radio.Button>
-          </Radio.Group>
+            新角色
+          </Button>
         </div>
-        {tab === "member" ? <MemberTable /> : <GroupTable />}
+        <RoleTable reload={update} />
       </Space>
+      <Modal
+        closable={false}
+        visible={isModalVisible}
+        onOk={() => {
+          form.submit();
+          setModalVisible(false);
+        }}
+        onCancel={() => setModalVisible(false)}
+      >
+        <Form
+          name="name"
+          form={form}
+          onFinish={(v: any) => {
+            addRoleReq.run(currentSpace.id,{name:v.name});
+            form.resetFields();
+          }}
+        >
+          <Form.Item
+            label="角色名"
+            name="name"
+            rules={[{ required: true, message: "角色名是必须的" }]}
+          >
+            <Input />
+          </Form.Item>
+        </Form>
+      </Modal>
     </div>
   );
 };
-export default Member;
+export default Resource;

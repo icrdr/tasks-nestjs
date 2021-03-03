@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useModel, useParams, useRequest } from 'umi';
+import React, { useEffect, useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import { useModel, useParams, useRequest } from "umi";
 import {
   Badge,
   Button,
@@ -15,10 +15,10 @@ import {
   Spin,
   Tag,
   DatePicker,
-} from 'antd';
-import TaskTable from './components/TaskTable';
-import TaskGallery from './components/TaskGallery';
-import { ViewForm, ViewOption } from '@server/task/entities/property.entity';
+} from "antd";
+import TaskTable from "./components/TaskTable";
+import TaskGallery from "./components/TaskGallery";
+import { ViewForm, ViewOption } from "@server/task/entities/property.entity";
 import {
   addSpaceTask,
   addSubTask,
@@ -26,88 +26,97 @@ import {
   getSubTasks,
   getUser,
   getUsers,
-} from './task.service';
-import { AddTaskDTO } from '@dtos/task.dto';
-import { SettingOutlined } from '@ant-design/icons';
-import moment from 'moment';
-import { useUpdate, useUpdateEffect } from 'ahooks';
+} from "./task.service";
+import { AddTaskDTO } from "@dtos/task.dto";
+import { SettingOutlined } from "@ant-design/icons";
+import moment from "moment";
+import { useUpdate, useUpdateEffect } from "ahooks";
 
 const Task: React.FC<{}> = () => {
   const currentTaskId = (useParams() as any).id;
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const viewOptionKey = currentTaskId
     ? `task${currentTaskId}`
-    : `space${currentSpace.id}` + 'ViewOption';
+    : `space${currentSpace.id}` + "ViewOption";
 
-  const initViewOption = JSON.parse(localStorage.getItem(viewOptionKey)) || {
-    form: 'table',
-    headers: [
-      {
-        title: 'name',
-        width: 200,
-        filter: undefined,
-        hidden: false,
-      },
-      {
-        title: 'state',
-        width: 200,
-        filter: undefined,
-        hidden: false,
-      },
-      {
-        title: 'dueAt',
-        width: 200,
-        filter: undefined,
-        hidden: false,
-      },
-    ],
-  };
+  useEffect(() => {
+    const initViewOption = JSON.parse(localStorage.getItem(viewOptionKey)) || {
+      form: "table",
+      headers: [
+        {
+          title: "name",
+          width: 200,
+          filter: undefined,
+          hidden: false,
+        },
+        {
+          title: "state",
+          width: 200,
+          filter: undefined,
+          hidden: false,
+        },
+        {
+          title: "dueAt",
+          width: 200,
+          filter: undefined,
+          hidden: false,
+        },
+      ],
+    };
 
-  //refresh role column
-  const roleHeaders = initViewOption.headers.filter((h) => h.title.split(':')[0] === 'role');
-  const commonHeaders = initViewOption.headers.filter((h) => h.title.split(':')[0] !== 'role');
-  const headerTitles = initViewOption.headers.map((h) => h.title);
-  for (const role of currentSpace.roles) {
-    const index = headerTitles.indexOf(`role:${role.id}`);
-    if (index < 0) {
-      commonHeaders.push({
-        title: `role:${role.id}`,
-        width: 200,
-        filter: undefined,
-        hidden: false,
-      });
-    } else {
-      commonHeaders.push(roleHeaders[index]);
-    }
-  }
-
-  // get role default filter user
-  initViewOption.headers.forEach((header, index) => {
-    const type = header.title.split(':')[0];
-    if (type === 'role' && header.filter) {
-      getUser(header.filter)
-        .then((res) => {
-          console.log(res);
-          setUserOptions([{ label: res.username, value: res.id }]);
-        })
-        .catch((err) => {
-          const headers = initViewOption.headers;
-          headers[index].filter = undefined;
-          console.log(headers);
-          saveOption({ ...initViewOption, headers });
+    //refresh role column
+    const commonHeaders = initViewOption.headers.filter(
+      (h) => h.title.split(":")[0] !== "role"
+    );
+    const headerTitles = initViewOption.headers.map((h) => h.title);
+    const headers = [...commonHeaders];
+    for (const role of currentSpace.roles) {
+      const index = headerTitles.indexOf(`role:${role.id}`);
+      if (index < 0) {
+        headers.push({
+          title: `role:${role.id}`,
+          width: 200,
+          filter: undefined,
+          hidden: false,
         });
+      } else {
+        headers.push(initViewOption.headers[index]);
+      }
     }
-  });
+    console.log("render");
+    // get role default filter user
+    headers.forEach((header, index) => {
+      const type = header.title.split(":")[0];
+      if (type === "role" && header.filter) {
+        getUser(header.filter)
+          .then((res) => {
+            console.log(res);
+            setUserOptions([{ label: res.username, value: res.id }]);
+          })
+          .catch((err) => {
+            const headers = viewOption.headers;
+            headers[index].filter = undefined;
+            console.log(headers);
+            saveOption({ ...viewOption, headers });
+          });
+      }
+    });
+
+    initViewOption.headers = headers;
+    setViewOption(initViewOption);
+  }, []);
 
   const [update, setUpdate] = useState(false);
-  const [viewOption, setViewOption] = useState<ViewOption>(initViewOption);
+  const [viewOption, setViewOption] = useState<ViewOption>(null);
   const [isModalVisible, setModalVisible] = useState(false);
   const [userOptions, setUserOptions] = React.useState([]);
   const [form] = Form.useForm();
 
   const addTask = (body: AddTaskDTO) => {
-    return currentTaskId ? addSubTask(currentTaskId, body) : addSpaceTask(currentSpace.id, body);
+    return currentTaskId
+      ? addSubTask(currentTaskId, body)
+      : addSpaceTask(currentSpace.id, body);
   };
 
   const addTaskReq = useRequest(addTask, {
@@ -159,28 +168,28 @@ const Task: React.FC<{}> = () => {
   //   saveOption({ ...viewOption, headers });
   // };
 
-  const filter = viewOption.headers
+  const filter = viewOption?.headers
     .filter((header) => !header.hidden)
     .map((header, index: number) => {
-      const type = header.title.split(':')[0];
+      const type = header.title.split(":")[0];
       switch (type) {
-        case 'name':
+        case "name":
           return (
             <Input.Search
               key={index}
               style={{ width: 200 }}
               placeholder="任务名"
               onSearch={(v) => handleFilter(index, v)}
-              defaultValue={header.filter || ''}
+              defaultValue={header.filter || ""}
               allowClear
             />
           );
-        case 'state':
+        case "state":
           return (
             <Select
               key={index}
               style={{ width: 100 }}
-              placeholder={'状态'}
+              placeholder={"状态"}
               defaultValue={header.filter || undefined}
               onChange={(v) => handleFilter(index, v)}
               allowClear
@@ -199,21 +208,19 @@ const Task: React.FC<{}> = () => {
               </Select.Option>
             </Select>
           );
-        case 'dueAt':
+        case "dueAt":
           return (
             <DatePicker
               key={index}
-              placeholder={'截止日之前'}
+              placeholder={"截止日之前"}
               defaultValue={header.filter ? moment(header.filter) : undefined}
               onChange={(v) => handleFilter(index, v?.toDate() || undefined)}
             />
           );
-        case 'role':
-          const roleId = header.title.split(':')[1];
-          const role = currentSpace.roles.filter((r) => {
-            console.log(roleId)
-            return r.id === parseInt(roleId)})[0];
-          console.log(role);
+        case "role":
+          const role = currentSpace.roles.filter(
+            (r) => r.id === parseInt(header.title.split(":")[1])
+          )[0];
           return (
             <Select
               key={index}
@@ -224,8 +231,11 @@ const Task: React.FC<{}> = () => {
               onSearch={(v) => getUsersReq.run({ username: v })}
               options={userOptions}
               showSearch
+              showArrow={false}
               filterOption={false}
-              notFoundContent={getUsersReq.loading ? <Spin size="small" /> : null}
+              notFoundContent={
+                getUsersReq.loading ? <Spin size="small" /> : null
+              }
               allowClear
             />
           );
@@ -237,24 +247,25 @@ const Task: React.FC<{}> = () => {
 
   const menu = (
     <Menu>
-      {viewOption.headers.map((header, index) => {
-        const type = header.title.split(':')[0];
+      {viewOption?.headers.map((header, index) => {
+        const type = header.title.split(":")[0];
         let title =
-          type === 'role'
-            ? currentSpace.roles.filter((r) => r.id === parseInt(header.title.split(':')[1]))[0]
-                .name
+          type === "role"
+            ? currentSpace.roles.filter(
+                (r) => r.id === parseInt(header.title.split(":")[1])
+              )[0].name
             : type;
 
-        let label = '';
+        let label = "";
         switch (title) {
-          case 'name':
-            label = '任务名';
+          case "name":
+            label = "任务名";
             break;
-          case 'state':
-            label = '状态';
+          case "state":
+            label = "状态";
             break;
-          case 'dueAt':
-            label = '截止日';
+          case "dueAt":
+            label = "截止日";
             break;
           default:
             label = title;
@@ -264,7 +275,7 @@ const Task: React.FC<{}> = () => {
           <Menu.Item key={index}>
             <Space>
               <Switch
-                disabled={title === 'name'}
+                disabled={title === "name"}
                 size="small"
                 defaultChecked={!header.hidden}
                 onChange={(v) => handleHeaderDisplay(index, v)}
@@ -279,28 +290,32 @@ const Task: React.FC<{}> = () => {
 
   return (
     <div style={{ padding: 20 }}>
-      <Space size="middle" direction="vertical" style={{ width: '100%' }}>
+      <Space size="middle" direction="vertical" style={{ width: "100%" }}>
         <div>
           <Button
             type="primary"
-            style={{ marginRight: '20px' }}
+            style={{ marginRight: "20px" }}
             onClick={() => setModalVisible(true)}
           >
             新任务
           </Button>
           <Space>
-            <Select defaultValue={viewOption.form} onChange={handleSeletForm}>
+            <Select value={viewOption?.form} onChange={handleSeletForm}>
               <Select.Option value="table">表格</Select.Option>
               <Select.Option value="gallery">画廊</Select.Option>
             </Select>
-            <Dropdown overlay={menu}>
+            <Dropdown overlay={menu} >
               <Button icon={<SettingOutlined />} />
             </Dropdown>
           </Space>
-          <Space style={{ float: 'right' }}>{filter}</Space>
+          <Space style={{ float: "right" }}>{filter}</Space>
         </div>
-        {viewOption.form === 'table' && <TaskTable option={viewOption} reload={update} />}
-        {viewOption.form === 'gallery' && <TaskGallery option={viewOption} reload={update} />}
+        {viewOption?.form === "table" && (
+          <TaskTable option={viewOption} reload={update} />
+        )}
+        {viewOption?.form === "gallery" && (
+          <TaskGallery option={viewOption} reload={update} />
+        )}
       </Space>
       <Modal
         closable={false}
@@ -322,7 +337,7 @@ const Task: React.FC<{}> = () => {
           <Form.Item
             label="任务名"
             name="name"
-            rules={[{ required: true, message: '任务名是必须的' }]}
+            rules={[{ required: true, message: "任务名是必须的" }]}
           >
             <Input />
           </Form.Item>

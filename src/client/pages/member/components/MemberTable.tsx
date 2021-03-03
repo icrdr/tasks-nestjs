@@ -1,52 +1,100 @@
-import React, { useRef } from "react";
-import ProTable, { ProColumns, ActionType } from "@ant-design/pro-table";
+import React, { useState } from "react";
 import { PageContainer } from "@ant-design/pro-layout";
-import { useIntl, useModel } from "umi";
-import { getSpaceMembers } from "../member.service";
-import { MemberRes } from "@dtos/space.dto";
-import AddMemberForm from "./AddMemberForm";
+import { history, useModel, useRequest } from "umi";
+import {
+  Button,
+  Card,
+  Form,
+  Input,
+  Select,
+  Space,
+  Table,
+  Typography,
+} from "antd";
+import { RoleRes } from "@dtos/space.dto";
+import { changeRole, getSpaceRoles } from "../setting.service";
+import { AccessLevel } from "@server/task/entities/space.entity";
+import { useForm } from "antd/es/form/Form";
+import { EditOutlined, HighlightOutlined } from "@ant-design/icons";
+const { Text } = Typography;
 
-const MemberTable: React.FC<{}> = () => {
-  const { initialState } = useModel("@@initialState");
-  const { currentSpace } = initialState;
-  const actionRef = useRef<ActionType>();
-  const intl = useIntl();
+const RoleTable: React.FC<{ reload?: boolean }> = (reload) => {
+  const { initialState, setInitialState } = useModel("@@initialState");
+  const { currentUser, currentSpace } = initialState;
+  const [roleList, setRoleList] = useState<RoleRes[]>([]);
+  const [form] = useForm();
 
-  const addUserBtn = intl.formatMessage({
-    id: "page.member.table.addUser.btn",
+  const [editingNameId, setEditingNameId] = useState(undefined);
+  const getSpaceRolesReq = useRequest(() => getSpaceRoles(currentSpace.id), {
+    refreshDeps: [reload],
+    onSuccess: (res) => {
+      console.log(res);
+      setRoleList(res.list);
+    },
   });
 
-  const usernameTit = intl.formatMessage({
-    id: "page.member.table.username.tit",
+  const changeRoleReq = useRequest(changeRole, {
+    manual: true,
+    onSuccess: (res) => {
+      const _roleList = [...roleList];
+      _roleList.forEach((role, index) => {
+        if (role.id === res.id) _roleList[index] = res;
+      });
+      setRoleList(_roleList);
+      currentSpace.roles = _roleList;
+      setInitialState({ ...initialState, currentSpace });
+    },
   });
 
-  const columns: ProColumns<MemberRes>[] = [
+  const columns = [
     {
-      dataIndex: "username",
-      title: usernameTit,
+      title: "角色名",
+      dataIndex: "name",
+      key: "name",
+      render: (_, role) => {
+        return (
+          <Text
+            editable={{
+              onChange: (v) => {
+                if (v) changeRoleReq.run(currentSpace.id, role.id, { name: v });
+              },
+            }}
+          >
+            {role.name}
+          </Text>
+        );
+      },
+    },
+    {
+      title: "权限",
+      dataIndex: "access",
+      key: "access",
+      render: (_, role) => {
+        return (
+          <Select
+            disabled={roleList.map((r) => r.id).indexOf(role.id) === 0}
+            defaultValue={role.access}
+            onChange={(v) =>
+              changeRoleReq.run(currentSpace.id, role.id, { access: v })
+            }
+          >
+            <Select.Option value="full">完全</Select.Option>
+            <Select.Option value="edit">编辑</Select.Option>
+            <Select.Option value="view">浏览</Select.Option>
+          </Select>
+        );
+      },
     },
   ];
 
   return (
-    <ProTable<MemberRes>
-      rowKey="userId"
+    <Table
+      pagination={false}
+      rowKey={(e) => e.id}
       columns={columns}
-      actionRef={actionRef}
-      request={async (params, sorter, filter) => {
-        const res = await getSpaceMembers(currentSpace.id, params);
-        console.log(res);
-        return {
-          data: res.list,
-          success: true,
-          total: res.total,
-        };
-      }}
-      search={false}
-      toolBarRender={() => [
-        <AddMemberForm key="1" onSuccess={() => actionRef.current.reload()} />,
-      ]}
+      loading={getSpaceRolesReq.loading}
+      dataSource={roleList}
     />
   );
 };
-
-export default MemberTable;
+export default RoleTable;

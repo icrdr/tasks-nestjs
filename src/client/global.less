@@ -1,9 +1,9 @@
-@import '~antd/es/style/themes/default.less';
-@import 'components/editorTools/editor.less';
-@import 'components/editorTools/header.less';
-@import 'components/editorTools/image.less';
-@import '~emoji-mart/css/emoji-mart.css';
-@import '~react-virtualized/styles.css';
+@import "~antd/es/style/themes/default.less";
+@import "components/editorTools/editor.less";
+@import "components/editorTools/header.less";
+@import "components/editorTools/image.less";
+@import "~emoji-mart/css/emoji-mart.css";
+@import "~react-virtualized/styles.css";
 
 html,
 body,
@@ -152,18 +152,10 @@ ol {
 }
 .virtual-table-cell {
   box-sizing: border-box;
-  padding: 11px;
-  border-bottom: 1px solid #e8e8e8;
-  border-right: 1px solid #e8e8e8;
+  padding: 12px;
+  border-bottom: @table-border-color solid 1px;
   line-height: 32px;
-  background: #fff;
-}
-[data-theme='dark'] .virtual-table-cell {
-  box-sizing: border-box;
-  padding: 11px;
-  line-height: 32px;
-  border-bottom: 1px solid #303030;
-  background: #141414;
+  background: @table-bg;
 }
 
 .center-container {
@@ -178,6 +170,6 @@ ol {
     position: absolute;
   }
 }
-.ant-pro-sider-extra.ant-pro-sider-extra-no-logo{
+.ant-pro-sider-extra.ant-pro-sider-extra-no-logo {
   padding: 0;
 }

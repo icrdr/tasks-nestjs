@@ -281,8 +281,8 @@ export class TaskDetailRes {
   get roles(): any {
     const _roles = {};
     for (const role of this.space.roles) {
-      const a = this.assignments.filter((a) => a.role.name === role.name);
-      _roles[role.name] = a.map((i: Assignment) => new AssignmentRes(i));
+      const a = this.assignments.filter((a) => a.role.id === role.id);
+      _roles[role.id] = a.map((i: Assignment) => new AssignmentRes(i));
     }
     return _roles;
   }
@@ -333,11 +333,12 @@ export class TaskMoreDetailRes {
   get roles(): any {
     const _roles = {};
     for (const role of this.space.roles) {
-      const a = this.assignments.filter((a) => a.role.name === role.name);
-      _roles[role.name] = a.map((i: Assignment) => new AssignmentRes(i));
+      const a = this.assignments.filter((a) => a.role.id === role.id);
+      _roles[role.id] = a.map((i: Assignment) => new AssignmentRes(i));
     }
     return _roles;
   }
+  
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
   superTask: TaskRes;
