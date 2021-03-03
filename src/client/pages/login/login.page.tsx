@@ -1,30 +1,47 @@
 import React from 'react';
-import { useIntl, history, FormattedMessage, useRequest, useModel } from 'umi';
+import { useIntl, useHistory, FormattedMessage, useRequest, useModel } from 'umi';
 import { Space, message, Typography, Col, Divider, Button } from 'antd';
 import { LockTwoTone, SmileTwoTone, WechatOutlined } from '@ant-design/icons';
 import ProForm, { ProFormCheckbox, ProFormText } from '@ant-design/pro-form';
 import { login } from './login.service';
 import Cookies from 'js-cookie';
 import OSS from 'ali-oss';
+import { SpaceDetailRes } from '@dtos/space.dto';
+import { CurrentUserRes } from '../../../dtos/user.dto';
+import { getSpace } from '../layout/layout.service';
 const { Title } = Typography;
 
 const LoginForm: React.FC = () => {
   const intl = useIntl();
-
+  const history = useHistory();
   const { initialState, setInitialState } = useModel('@@initialState');
   const loginReq = useRequest(login, {
     manual: true,
-    onSuccess: (res) => {
-      try {
-        console.log(res);
-        const currentUser = res.currentUser;
-        const currentSpace = res.personalSpace
-        setInitialState({ ...initialState, currentUser, currentSpace });
-        Cookies.set('token', res.token);
-        Cookies.set('space', currentSpace.id.toString());
-        message.success(successMsg);
-        history.push('/');
-      } catch {}
+    onSuccess: async (res) => {
+      console.log(res);
+      Cookies.set('token', res.token);
+      let currentUser: CurrentUserRes;
+      let currentSpace: SpaceDetailRes;
+
+      currentUser = res.currentUser as CurrentUserRes;
+      const currentSpaceId = parseInt(localStorage.getItem('currentSpaceId'));
+
+      if (currentUser.spaces.length > 0) {
+        const spaceId =
+          currentUser.spaces.map((space) => space.id).indexOf(currentSpaceId) >= 0
+            ? currentSpaceId
+            : currentUser.spaces[0].id;
+
+        currentSpace = (await getSpace(spaceId)) as SpaceDetailRes;
+        localStorage.setItem('currentSpaceId', currentSpace.id.toString());
+      } else {
+        localStorage.removeItem('currentSpaceId');
+      }
+
+      setInitialState({ ...initialState, currentUser, currentSpace });
+
+      message.success(successMsg);
+      history.push('/me');
     },
   });
 

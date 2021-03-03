@@ -1,11 +1,12 @@
 import { IsString, IsNumberString, IsOptional, IsNumber } from 'class-validator';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { ListRes } from './misc.dto';
-import {  User } from '@server/user/entities/user.entity';
+import { User } from '@server/user/entities/user.entity';
 import { isStringArray } from '@utils/typeGuard';
 import { StsTokenRes } from './asset.dto';
 import { unionArrays } from '../utils/utils';
-import { SpaceDetailRes } from './space.dto';
+import { SpaceDetailRes, SpaceRes } from './space.dto';
+import { Space } from '../server/task/entities/space.entity';
 
 export class LoginDTO {
   @IsString()
@@ -90,6 +91,10 @@ export class CurrentUserRes {
   @Expose()
   username: string;
 
+  @Expose()
+  @Transform((a) => (a ? a.map((i: Space) => new SpaceRes(i)) : []))
+  spaces: Space[] | SpaceRes[];
+
   constructor(partial: Partial<CurrentUserRes>) {
     Object.assign(this, partial);
   }
@@ -99,10 +104,7 @@ export class CurrentUserTokenRes {
   @Transform((i) => (i ? new CurrentUserRes(i) : null))
   currentUser: User | CurrentUserRes;
 
-  personalSpace: SpaceDetailRes;
-
   token: string;
-
   constructor(partial: Partial<CurrentUserTokenRes>) {
     Object.assign(this, partial);
   }

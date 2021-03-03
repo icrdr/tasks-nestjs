@@ -28,11 +28,10 @@ export class AuthService {
     const token = sign({ id: user.id }, this.configService.get('jwtSecret'), {
       expiresIn: '24h',
     });
-    const space = (await this.spaceService.getSpaces({ user: user, isPersonal: true }))[0][0];
+    user['spaces'] = (await this.spaceService.getSpaces({ user: user }))[0];
 
     return {
       currentUser: user,
-      personalSpace: space,
       token,
     };
   }

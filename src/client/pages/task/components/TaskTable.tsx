@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
-import { VariableSizeGrid } from "react-window";
-import ResizeObserver from "rc-resize-observer";
-import { Avatar, Badge, Card, Dropdown, Empty, Menu, Table } from "antd";
-import moment from "moment";
-import { Link, useModel, useParams, useRequest } from "umi";
-import { getSpaceTasks, getSubTasks } from "../task.service";
-import { GetTasksDTO, TaskDetailRes } from "@dtos/task.dto";
-import InfiniteLoader from "react-window-infinite-loader";
-import { AssignmentRes, MemberRes } from "@dtos/space.dto";
-import { ViewOption } from "@server/task/entities/property.entity";
+import React, { useState, useEffect, useRef } from 'react';
+import { VariableSizeGrid } from 'react-window';
+import ResizeObserver from 'rc-resize-observer';
+import { Avatar, Badge, Card, Dropdown, Empty, Menu, Table } from 'antd';
+import moment from 'moment';
+import { Link, useModel, useParams, useRequest } from 'umi';
+import { getSpaceTasks, getSubTasks } from '../task.service';
+import { GetTasksDTO, TaskDetailRes } from '@dtos/task.dto';
+import InfiniteLoader from 'react-window-infinite-loader';
+import { AssignmentRes, MemberRes } from '@dtos/space.dto';
+import { ViewOption } from '@server/task/entities/property.entity';
 
 const HEIGHT = 700;
 const ROW_HEIGHT = 54;
@@ -20,31 +20,31 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
   const columns = option.headers
     .filter((header) => !header.hidden)
     .map((header) => {
-      const type = header.title.split(":")[0];
+      const type = header.title.split(':')[0];
       switch (type) {
-        case "name":
+        case 'name':
           return {
-            dataIndex: "name",
-            title: "任务名",
+            dataIndex: 'name',
+            title: '任务名',
             width: header.width,
             render: (_, task: TaskDetailRes) => (
               <Link to={`/task/${task.id}/content`}>{task.name}</Link>
             ),
           };
-        case "state":
+        case 'state':
           return {
-            dataIndex: "state",
-            title: "状态",
+            dataIndex: 'state',
+            title: '状态',
             width: header.width,
             render: (_, task: TaskDetailRes) => {
               switch (task.state) {
-                case "suspended":
+                case 'suspended':
                   return <Badge status="default" text="暂停中" />;
-                case "inProgress":
+                case 'inProgress':
                   return <Badge status="processing" text="进行中" />;
-                case "unconfirmed":
+                case 'unconfirmed':
                   return <Badge status="warning" text="待确认" />;
-                case "completed":
+                case 'completed':
                   return <Badge status="success" text="已完成" />;
 
                 default:
@@ -52,33 +52,28 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
               }
             },
           };
-        case "dueAt":
+        case 'dueAt':
           return {
-            dataIndex: "dueAt",
-            title: "截止日",
+            dataIndex: 'dueAt',
+            title: '截止日',
             width: 100,
             render: (_, task: TaskDetailRes) => (
-              <div>
-                {task.dueAt ? moment(task.dueAt).format("YYYY/MM/DD") : "/"}
-              </div>
+              <div>{task.dueAt ? moment(task.dueAt).format('YYYY/MM/DD') : '/'}</div>
             ),
           };
-        case "role":
-          const roleName = header.title.split(":")[1];
+        case 'role':
+          const roleId = header.title.split(':')[1];
+          const role = currentSpace.roles.filter((r) => r.id === roleId)[0];
           return {
-            title: roleName,
+            title: role.name,
             dataIndex: header.title,
             render: (_, task) => {
-              const assignments = task.roles[roleName];
+              const assignments = task.roles[role.name];
               return (
                 <Avatar.Group>
-                  {assignments?.map(
-                    (assignment: AssignmentRes, index: number) => (
-                      <Avatar key={index}>
-                        {(assignment.members[0] as MemberRes).username}
-                      </Avatar>
-                    )
-                  )}
+                  {assignments?.map((assignment: AssignmentRes, index: number) => (
+                    <Avatar key={index}>{(assignment.members[0] as MemberRes).username}</Avatar>
+                  ))}
                 </Avatar.Group>
               );
             },
@@ -90,7 +85,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
     .filter((c) => c !== undefined);
 
   const currentTaskId = (useParams() as any).id;
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [tableWidth, setTableWidth] = useState(0);
   const [tableHeight, setTableHeight] = useState(0);
@@ -107,8 +102,8 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
     for (const header of option.headers.filter((header) => !header.hidden)) {
       if (header.filter) {
         switch (header.title) {
-          case "dueAt":
-            params["dueBefore"] = header.filter;
+          case 'dueAt':
+            params['dueBefore'] = header.filter;
             break;
 
           default:
@@ -137,11 +132,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
   const getTasksReq = useRequest(getTasks, {
     manual: true,
     onSuccess: (res, params) => {
-      for (
-        let index = params[0].skip;
-        index < params[0].skip + params[0].take;
-        index++
-      ) {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         taskList[index] = res.list[index - params[0].skip];
       }
       setTaskList(taskList);
@@ -161,8 +152,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
     if (noWidthCount === 0) {
       column.width = (column.width / totalWidth) * tableWidth;
     } else {
-      column.width =
-        column.width || Math.floor((tableWidth - totalWidth) / noWidthCount);
+      column.width = column.width || Math.floor((tableWidth - totalWidth) / noWidthCount);
     }
 
     return column;
@@ -170,7 +160,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
 
   const [connectObject] = useState(() => {
     const obj = {};
-    Object.defineProperty(obj, "scrollLeft", {
+    Object.defineProperty(obj, 'scrollLeft', {
       get: () => null,
       set: (scrollLeft) => {
         if (vGridRef.current) {
@@ -212,14 +202,10 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
     if (task && column.render) {
       content = columns[columnIndex].render(<></>, task);
     } else {
-      content = "";
+      content = '';
     }
     return (
-      <div
-        key={`${rowIndex}-${columnIndex}`}
-        style={style}
-        className="virtual-table-cell"
-      >
+      <div key={`${rowIndex}-${columnIndex}`} style={style} className="virtual-table-cell">
         {content}
       </div>
     );
@@ -263,8 +249,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
               columnCount={widthFixedColumns.length}
               columnWidth={(index) => {
                 const { width } = widthFixedColumns[index];
-                return totalHeight > HEIGHT &&
-                  index === widthFixedColumns.length - 1
+                return totalHeight > HEIGHT && index === widthFixedColumns.length - 1
                   ? width - scrollbarSize - 1
                   : width;
               }}
@@ -300,7 +285,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
           dataSource={taskList}
           scroll={{
             y: HEIGHT,
-            x: "100vw",
+            x: '100vw',
           }}
           className="virtual-table"
           columns={widthFixedColumns}
@@ -311,7 +296,7 @@ const TaskTable: React.FC<{ option: ViewOption; reload?: boolean }> = ({
         />
       </ResizeObserver>
       {taskList.length === 0 && (
-        <div className="center-container" style={{ height: "100%" }}>
+        <div className="center-container" style={{ height: '100%' }}>
           <Empty className="center-item" />
         </div>
       )}

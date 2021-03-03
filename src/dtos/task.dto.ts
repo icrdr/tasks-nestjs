@@ -319,6 +319,9 @@ export class TaskMoreDetailRes {
   access: string;
 
   @Expose()
+  userAccess: string;
+
+  @Expose()
   @Transform((a) => (a ? a.map((i: Content) => new ContentRes(i)) : []))
   contents: ContentRes[];
 

@@ -6,6 +6,7 @@ import { AccessLevel, Assignment, Member, Role, Space } from '../entities/space.
 import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { Task } from '../entities/task.entity';
+import { TaskService } from './task.service';
 
 @Injectable()
 export class SpaceService {
@@ -17,6 +18,8 @@ export class SpaceService {
   constructor(
     @Inject(forwardRef(() => UserService))
     private userService: UserService,
+    @Inject(forwardRef(() => TaskService))
+    private taskService: TaskService,
     private configService: ConfigService,
     private manager: EntityManager,
   ) {
@@ -59,6 +62,13 @@ export class SpaceService {
     return await this.manager.save(role);
   }
 
+  async changeRole(role: Role | number, options: { name?: string; access?: AccessLevel } = {}) {
+    role = role instanceof Role ? role : await this.getRole(role, false);
+    if (options.name) role.name = options.name;
+    if (options.access) role.access = options.access;
+    return await this.manager.save(role);
+  }
+
   async getRoleByName(space: Space | number, name: string, exception = true) {
     const spaceId = await this.getSpaceId(space);
     let query = this.roleQuery
@@ -77,6 +87,35 @@ export class SpaceService {
     return role;
   }
 
+  async getRoles(
+    options: {
+      space?: Space | number;
+      access?: AccessLevel[] | AccessLevel;
+      current?: number;
+      pageSize?: number;
+    } = {},
+  ) {
+    let query = this.roleQuery.clone();
+
+    if (options.space) {
+      const spaceId = await this.getSpaceId(options.space);
+      query = query.andWhere('space.id = :spaceId', { spaceId });
+    }
+
+    if (options.access) {
+      query = query.andWhere('role.access IN (:...access)', {
+        access: unionArrays([options.access]),
+      });
+    }
+
+    // query = query
+    //   .orderBy('role.id', 'DESC')
+    //   .skip((options.current - 1) * options.pageSize || 0)
+    //   .take(options.pageSize || 5);
+
+    return await query.getManyAndCount();
+  }
+
   async addAssignment(
     scope: Space | Task,
     users: User[] | number[],
@@ -84,6 +123,7 @@ export class SpaceService {
     roleAccess?: AccessLevel,
   ) {
     const space = scope instanceof Space ? scope : scope.space;
+    console.log(roleName);
     const role = await this.addRole(space, roleName, roleAccess || AccessLevel.EDIT);
     const members = [];
     users = unionArrays(users);
@@ -125,12 +165,10 @@ export class SpaceService {
       admins?: User[] | number[];
       members?: User[] | number[];
       access?: AccessLevel;
-      isPersonal?: boolean;
     } = {},
   ) {
     let space = new Space();
     space.name = name;
-    space.isPersonal = options.isPersonal || false;
     if (options.access) space.access = options.access;
     space = await this.manager.save(space);
     //TODO: add log
@@ -239,16 +277,40 @@ export class SpaceService {
     return !!(await query.getOne());
   }
 
-  async getAssignments(scope: Space | Task, user: User | number) {
-    const userId = await this.userService.getUserId(user);
-    let query = this.assignmentQuery.clone().andWhere('user.id = :userId', { userId });
+  async getAssignments(
+    options: {
+      space?: Space | number;
+      task?: Task | number;
+      user?: User | number;
+      current?: number;
+      pageSize?: number;
+      all?: boolean;
+    } = {},
+  ) {
+    let query = this.assignmentQuery.clone();
 
-    query =
-      scope instanceof Space
-        ? query.andWhere('space.id = :spaceId', { spaceId: scope.id })
-        : query.andWhere('task.id = :taskId', { taskId: scope.id });
+    if (options.user) {
+      const userId = await this.userService.getUserId(options.user);
+      query = query.andWhere('user.id = :userId', { userId });
+    }
 
-    return await query.getMany();
+    if (options.task) {
+      const taskId = await this.taskService.getTaskId(options.task);
+      query = query.andWhere('task.id = :taskId', { taskId });
+    }
+
+    if (options.space) {
+      const spaceId = await this.getSpaceId(options.space);
+      query = query.andWhere('space.id = :spaceId', { spaceId });
+    }
+    if (!options.all) {
+      query = query
+        .orderBy('space.id', 'DESC')
+        .skip((options.current - 1) * options.pageSize || 0)
+        .take(options.pageSize || 5);
+    }
+
+    return await query.getManyAndCount();
   }
 
   async getSpaceAccess(space: Space | number, user: User | number) {
@@ -257,7 +319,7 @@ export class SpaceService {
     if (!(await this.getMember(space, user))) return [];
 
     // 2. cheack all assignments of space and space default access
-    const assignments = await this.getAssignments(space, user);
+    const assignments = (await this.getAssignments({ space, user, all: true }))[0];
     let access = this.configService.get('taskAccess')[space.access];
     assignments.forEach(
       (a) => (access = access.concat(this.configService.get('taskAccess')[a.role.access])),
@@ -285,7 +347,6 @@ export class SpaceService {
   async getSpaces(
     options: {
       user?: User | number;
-      isPersonal?: boolean;
       pageSize?: number;
       current?: number;
     } = {},
@@ -295,10 +356,6 @@ export class SpaceService {
     if (options.user) {
       const userId = await this.userService.getUserId(options.user);
       query = query.andWhere('user.id = :userId', { userId });
-    }
-
-    if (options.isPersonal) {
-      query = query.andWhere('space.isPersonal = :isPersonal', { isPersonal: true });
     }
 
     // add all other member back.

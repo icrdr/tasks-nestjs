@@ -3,6 +3,7 @@ export default {
   "addSpaceFrom.name.tit": "空间名",
   "addSpaceFrom.name.phd": "空间的简称",
   "addSpaceFrom.name.required": "空间名是必须的",
+  "menu.me": "个人",
   "menu.setting": "设置",
   "menu.member": "成员",
   "menu.task": "任务",

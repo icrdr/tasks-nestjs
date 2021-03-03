@@ -128,7 +128,14 @@ export class TaskController {
   @UseGuards(TaskAccessGuard)
   @Access('common.task.view')
   @Get('/:id')
-  async getTask(@TargetTask() task: Task) {
+  async getTask(@TargetTask() task: Task, @CurrentUser() user: User) {
+    const accessPriority = [AccessLevel.FULL, AccessLevel.EDIT, AccessLevel.VIEW];
+    const userAccess = [accessPriority.indexOf(task.access)];
+    const assignements = (await this.spaceService.getAssignments({ task, user }))[0];
+    for (const assignement of assignements) {
+      userAccess.push(accessPriority.indexOf(assignement.role.access));
+    }
+    task['userAccess'] = accessPriority[Math.min(...userAccess)];
     return new TaskMoreDetailRes(task);
   }
 

@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Card, Empty } from "antd";
-import { Link, useModel, useParams, useRequest } from "umi";
-import { getSpaceTasks, getSubTasks } from "../task.service";
-import { GetTasksDTO, TaskDetailRes } from "@dtos/task.dto";
-import InfiniteLoader from "react-window-infinite-loader";
-import { VariableSizeGrid } from "react-window";
-import AutoSizer from "react-virtualized-auto-sizer";
-import TaskCard from "./TaskCard";
-import { getOssClient } from "../../layout/layout.service";
-import { ViewOption } from "@server/task/entities/property.entity";
+import React, { useEffect, useRef, useState } from 'react';
+import { Card, Empty, Spin } from 'antd';
+import { Link, useModel, useParams, useRequest } from 'umi';
+import { getSpaceTasks, getSubTasks } from '../task.service';
+import { GetTasksDTO, TaskDetailRes } from '@dtos/task.dto';
+import InfiniteLoader from 'react-window-infinite-loader';
+import { VariableSizeGrid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import TaskCard from './TaskCard';
+import { getOssClient } from '../../layout/layout.service';
+import { ViewOption } from '@server/task/entities/property.entity';
 
 const COLUMN_COUNT = 3;
 const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
@@ -16,7 +16,7 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
   reload = false,
 }) => {
   const currentTaskId = (useParams() as any).id;
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [taskList, setTaskList] = useState<TaskDetailRes[]>([]);
   const taskListRef = useRef(null);
@@ -33,8 +33,8 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
     for (const header of option.headers) {
       if (header.filter) {
         switch (header.title) {
-          case "dueAt":
-            params["dueBefore"] = header.filter;
+          case 'dueAt':
+            params['dueBefore'] = header.filter;
             break;
 
           default:
@@ -64,40 +64,30 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
     manual: true,
     onSuccess: async (res, params) => {
       const oss = await getOssClient();
-      for (
-        let index = params[0].skip;
-        index < params[0].skip + params[0].take;
-        index++
-      ) {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         const task = res.list[index - params[0].skip];
         let cover;
         for (const block of task.content.content?.blocks || []) {
-          if (block.type === "image") {
+          if (block.type === 'image') {
             cover = block.data.file.source;
             break;
           }
         }
         if (cover) {
-          const _cover = cover.split(":");
-          task["_source"] =
-            _cover[0] === "oss"
-              ? oss.signatureUrl(_cover[1], { expires: 3600 })
-              : _cover[1];
-          task["_preview"] =
-            _cover[0] === "oss"
+          const _cover = cover.split(':');
+          task['_source'] =
+            _cover[0] === 'oss' ? oss.signatureUrl(_cover[1], { expires: 3600 }) : _cover[1];
+          task['_preview'] =
+            _cover[0] === 'oss'
               ? oss.signatureUrl(_cover[1], {
                   expires: 3600,
-                  process: "image/resize,w_500,h_150",
+                  process: 'image/resize,w_500,h_150',
                 })
               : _cover[1];
         } else {
-          task["_source"] = (
-            <div
-              style={{ background: "white", width: "200px", height: "200px" }}
-            >
-              <h3 style={{ lineHeight: "200px", textAlign: "center" }}>
-                no preview
-              </h3>
+          task['_source'] = (
+            <div style={{ background: 'white', width: '200px', height: '200px' }}>
+              <h3 style={{ lineHeight: '200px', textAlign: 'center' }}>no preview</h3>
             </div>
           );
         }
@@ -147,7 +137,7 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
               <TaskCard
                 content={task.content.content}
                 name={task.name}
-                cover={task["_preview"]}
+                cover={task['_preview']}
               ></TaskCard>
             </Link>
           </div>
@@ -159,7 +149,7 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
   };
 
   return (
-    <Card bodyStyle={{ height: "calc(100vh - 200px)", padding: 0 }}>
+    <Card bodyStyle={{ height: 'calc(100vh - 100px)', padding: 0 }}>
       <AutoSizer>
         {({ width, height }) => (
           <InfiniteLoader
@@ -191,7 +181,7 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
                     //@ts-ignore
                     return ref(r);
                   }}
-                  style={{ overflowX: "hidden" }}
+                  style={{ overflowX: 'hidden' }}
                   className="virtual-grid"
                   onItemsRendered={newItemsRendered}
                   columnCount={COLUMN_COUNT}
@@ -209,8 +199,13 @@ const TaskGallery: React.FC<{ option?: ViewOption; reload?: boolean }> = ({
           </InfiniteLoader>
         )}
       </AutoSizer>
+      {initTasksReq.loading && (
+        <div className="center-container" style={{ height: '100%' }}>
+          <Spin className="center-item" />
+        </div>
+      )}
       {taskList.length === 0 && (
-        <div className="center-container" style={{ height: "100%" }}>
+        <div className="center-container" style={{ height: '100%' }}>
           <Empty className="center-item" />
         </div>
       )}

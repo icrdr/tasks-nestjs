@@ -7,13 +7,12 @@ import { AddSpaceDTO, GetSpacesDTO, SpaceDetailRes, SpaceListRes } from '@dtos/s
 
 export interface initialState {
   currentUser: CurrentUserRes;
-  currentSpace: SpaceDetailRes;
+  currentSpace?: SpaceDetailRes;
 }
 
 export async function getCurrentUser(): Promise<CurrentUserRes> {
   return request('/api/auth/currentUser');
 }
-
 export async function getStsToken(): Promise<StsTokenRes> {
   return request('/api/oss');
 }

@@ -37,6 +37,6 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
       useClass: TypeOrmConfigService,
     }),
   ],
-  providers: [DatabaseService, OptionService, UserService, SpaceService],
+  providers: [DatabaseService, OptionService, UserService, SpaceService, TaskService],
 })
 export class DatabaseModule {}

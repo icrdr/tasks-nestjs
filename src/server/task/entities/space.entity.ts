@@ -36,9 +36,6 @@ export class Space extends BaseEntity {
   @Column()
   name: string;
 
-  @Column()
-  isPersonal: boolean;
-
   @OneToMany(() => Task, (task) => task.space)
   tasks: Task[];
 

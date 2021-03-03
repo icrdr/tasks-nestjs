@@ -6,10 +6,11 @@ import { tokenPayload } from '../user.interface';
 import { CurrentUserRes, CurrentUserTokenRes, LoginDTO } from '@dtos/user.dto';
 import { User } from '../entities/user.entity';
 import { CurrentUser } from '../user.decorator';
+import { SpaceService } from '../../task/services/space.service';
 
 @Controller('api/auth')
 export class AuthController {
-  constructor(private authService: AuthService, private userService: UserService) {}
+  constructor(private authService: AuthService, private userService: UserService,private spaceService: SpaceService) {}
 
   @Post('/login')
   async login(@Body() body: LoginDTO) {
@@ -21,6 +22,7 @@ export class AuthController {
   @Get('/currentUser')
   async getMe(@CurrentUser() currentUser: User) {
     const user = await this.userService.getUser(currentUser.id);
+    user['spaces'] = (await this.spaceService.getSpaces({ user: user }))[0];
     return new CurrentUserRes(user);
   }
 }

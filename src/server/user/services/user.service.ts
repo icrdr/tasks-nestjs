@@ -80,12 +80,6 @@ export class UserService {
     if (options.role) user.role = options.role;
     user = await this.manager.save(user);
 
-    //add personal space
-    await this.spaceService.addSpace(`${username}'s Space`, undefined, {
-      members: [user],
-      access: AccessLevel.FULL,
-      isPersonal: true,
-    });
     return user;
   }
 

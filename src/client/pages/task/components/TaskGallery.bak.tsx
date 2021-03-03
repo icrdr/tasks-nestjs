@@ -6,7 +6,7 @@ import ProTable, {
   TableDropdown,
   ActionType,
 } from "@ant-design/pro-table";
-import { useIntl, history, Link, useModel, useParams } from "umi";
+import { useIntl, Link, useModel, useParams } from "umi";
 import { getSpaceTasks, getSubTasks } from "../task.service";
 import { TaskDetailRes, TaskRes } from "@dtos/task.dto";
 import AddTaskForm from "./AddTaskForm";

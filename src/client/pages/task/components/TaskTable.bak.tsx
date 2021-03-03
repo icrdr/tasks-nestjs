@@ -1,17 +1,14 @@
 import React, { useRef } from "react";
-import { PlusOutlined } from "@ant-design/icons";
-import { Button, Avatar, Table, Space } from "antd";
+import { Avatar, Table, Space } from "antd";
 import ProTable, {
   ProColumns,
   TableDropdown,
   ActionType,
 } from "@ant-design/pro-table";
-import { useIntl, history, Link, useModel, useParams } from "umi";
+import { useIntl, Link, useModel, useParams } from "umi";
 import { getSpaceTasks, getSubTasks } from "../task.service";
 import { TaskDetailRes, TaskRes } from "@dtos/task.dto";
-import AddTaskForm from "./AddTaskForm";
 import { AssignmentRes, MemberRes } from "@dtos/space.dto";
-import { LightFilter, ProFormDatePicker } from "@ant-design/pro-form";
 
 const TaskTable: React.FC<{}> = () => {
   const currentTaskId = (useParams() as any).id;

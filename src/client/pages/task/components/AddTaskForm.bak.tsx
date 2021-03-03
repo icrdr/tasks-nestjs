@@ -1,25 +1,26 @@
-import React, { useState } from "react";
-import { Button, message, Spin } from "antd";
-import { BackgroundColor } from "chalk";
-import { useIntl, history, Link, useRequest, useModel } from "umi";
-import Mock from "mockjs";
+import React, { useState } from 'react';
+import { Button, message, Spin } from 'antd';
+import { BackgroundColor } from 'chalk';
+import { useIntl, Link, useRequest, useModel, useHistory } from 'umi';
+import Mock from 'mockjs';
 
 import ProForm, {
   ModalForm,
   ProFormText,
   ProFormDateRangePicker,
   ProFormSelect,
-} from "@ant-design/pro-form";
-import { PlusOutlined } from "@ant-design/icons";
-import { addSubTask, addSpaceTask, getUsersByfullName } from "../task.service";
+} from '@ant-design/pro-form';
+import { PlusOutlined } from '@ant-design/icons';
+import { addSubTask, addSpaceTask, getUsers } from '../task.service';
 
 const AddTaskForm: React.FC<{
   disabled?: boolean;
   superTaskId?: number;
 }> = ({ superTaskId, disabled = false }) => {
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const intl = useIntl();
+  const history = useHistory()
 
   const addSpaceTaskReq = useRequest(addSpaceTask, {
     manual: true,
@@ -29,7 +30,7 @@ const AddTaskForm: React.FC<{
     manual: true,
   });
 
-  const getUsersReq = useRequest(getUsersByfullName, {
+  const getUsersReq = useRequest(getUsers, {
     debounceInterval: 500,
     manual: true,
     onSuccess: (res) => {
@@ -47,34 +48,34 @@ const AddTaskForm: React.FC<{
   const [valueEnum, setValueEnum] = useState({});
 
   const addTaskBtn = intl.formatMessage({
-    id: "addTaskFrom.addTask.btn",
+    id: 'addTaskFrom.addTask.btn',
   });
 
   const addSubTaskBtn = intl.formatMessage({
-    id: "addTaskFrom.addSubTask.btn",
+    id: 'addTaskFrom.addSubTask.btn',
   });
 
   const nameTit = intl.formatMessage({
-    id: "addTaskFrom.name.tit",
+    id: 'addTaskFrom.name.tit',
   });
 
   const namePhd = intl.formatMessage({
-    id: "addTaskFrom.name.phd",
+    id: 'addTaskFrom.name.phd',
   });
 
   const membersTit = intl.formatMessage({
-    id: "addTaskFrom.members.tit",
+    id: 'addTaskFrom.members.tit',
   });
 
   const membersPhd = intl.formatMessage({
-    id: "addTaskFrom.members.phd",
+    id: 'addTaskFrom.members.phd',
   });
 
   const nameRule = [
     {
       required: true,
       message: intl.formatMessage({
-        id: "addTaskFrom.name.required",
+        id: 'addTaskFrom.name.required',
       }),
     },
   ];
@@ -83,10 +84,7 @@ const AddTaskForm: React.FC<{
     <ModalForm
       title={superTaskId ? addSubTaskBtn : addTaskBtn}
       trigger={
-        <Button
-          icon={<PlusOutlined />}
-          disabled={disabled || addSpaceTaskReq.loading}
-        >
+        <Button icon={<PlusOutlined />} disabled={disabled || addSpaceTaskReq.loading}>
           {superTaskId ? addSubTaskBtn : addTaskBtn}
         </Button>
       }
@@ -104,13 +102,7 @@ const AddTaskForm: React.FC<{
       }}
     >
       <ProForm.Group>
-        <ProFormText
-          width="m"
-          name="name"
-          label={nameTit}
-          placeholder={namePhd}
-          rules={nameRule}
-        />
+        <ProFormText width="m" name="name" label={nameTit} placeholder={namePhd} rules={nameRule} />
         <ProFormSelect
           width="m"
           name="memberId"
@@ -118,9 +110,9 @@ const AddTaskForm: React.FC<{
           placeholder={membersPhd}
           valueEnum={valueEnum}
           fieldProps={{
-            mode: "multiple",
+            mode: 'multiple',
             filterOption: false,
-            onSearch: (value) => getUsersReq.run(value),
+            onSearch: (value) => getUsersReq.run({ username: value }),
           }}
         />
       </ProForm.Group>

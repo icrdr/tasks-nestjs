@@ -13,7 +13,8 @@ import RightContent from './pages/layout/components/layout.RightContent';
 import SpaceMenu from './pages/layout/components/layout.SpaceMenu';
 import Cookies from 'js-cookie';
 import { history } from 'umi';
-import { SpaceDetailRes } from '../dtos/space.dto';
+import { SpaceDetailRes } from '@dtos/space.dto';
+import { CurrentUserRes } from '../dtos/user.dto';
 
 export const initialStateConfig = {
   loading: <PageLoading />,
@@ -21,43 +22,32 @@ export const initialStateConfig = {
 
 export async function getInitialState(): Promise<initialState> {
   //@ts-ignore
-  let currentUser: currentUser;
+  let currentUser: CurrentUserRes;
   let currentSpace: SpaceDetailRes;
 
   const token = Cookies.get('token');
-  const space = Cookies.get('space');
-
-  const goLogin = async () => {
-    Cookies.remove('token');
-    history.push('/login');
-  };
-
-  const setSpace = async () => {
-    const spaces = await getSpaces();
-    console.log(spaces);
-    currentSpace = spaces.list[0];
-    Cookies.set('space', currentSpace.id.toString());
-  };
 
   if (token) {
     try {
-      currentUser = await getCurrentUser();
+      currentUser = (await getCurrentUser()) as CurrentUserRes;
       console.log(currentUser);
-    } catch {
-      goLogin();
-    }
-  }
+      const currentSpaceId = parseInt(localStorage.getItem('currentSpaceId'));
+      if (currentUser.spaces.length > 0) {
+        // check currentSpaceId is right
 
-  if (currentUser) {
-    if (space) {
-      try {
-        currentSpace = await getSpace(parseInt(space));
-        console.log(currentSpace);
-      } catch {
-        setSpace();
+        const spaceId =
+          currentUser.spaces.map((space) => space.id).indexOf(currentSpaceId) >= 0
+            ? currentSpaceId
+            : currentUser.spaces[0].id;
+
+        currentSpace = (await getSpace(spaceId)) as SpaceDetailRes;
+        localStorage.setItem('currentSpaceId', currentSpace.id.toString());
+      } else {
+        localStorage.removeItem('currentSpaceId');
       }
-    } else {
-      setSpace();
+    } catch {
+      Cookies.remove('token');
+      if (location.pathname !== '/login') history.push('/login');
     }
   }
 

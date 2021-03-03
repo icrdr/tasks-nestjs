@@ -16,6 +16,17 @@ import { ListDTO, ListRes } from './misc.dto';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
 import { AccessLevel, Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
+
+export class ChangeRoleDTO{
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsEnum(AccessLevel)
+  access?: AccessLevel;
+}
+
 export class AddAssignmentDTO {
   @Type(() => Number)
   @IsNumber({}, { each: true })
@@ -44,13 +55,7 @@ export class AddSpaceDTO {
   memberId?: number[];
 }
 
-export class GetSpacesDTO extends ListDTO {
-  @Type(() => String)
-  @Transform((v) => v === 'true')
-  @IsBoolean()
-  @IsOptional()
-  isPersonal: boolean;
-}
+export class GetSpacesDTO extends ListDTO {}
 
 @Exclude()
 export class SpaceRes {
@@ -62,6 +67,9 @@ export class SpaceRes {
     Object.assign(this, partial);
   }
 }
+
+export class GetRolesDTO extends ListDTO {}
+
 
 @Exclude()
 export class MemberRes {
@@ -78,6 +86,22 @@ export class MemberRes {
   }
 
   constructor(partial: Partial<MemberRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+@Exclude()
+export class RoleRes {
+  @Expose()
+  id: number;
+
+  @Expose()
+  name: string;
+
+  @Expose()
+  access: AccessLevel;
+
+  constructor(partial: Partial<RoleRes>) {
     Object.assign(this, partial);
   }
 }
@@ -123,14 +147,27 @@ export class SpaceDetailRes {
   access: AccessLevel;
 
   @Expose()
+  userAccess: string;
+
+  @Expose()
   @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
   members: Member[] | MemberRes[];
 
   @Expose()
-  @Transform((a) => (a ? a.map((i: Role) => i.name) : []))
-  roles: Role[] | string[];
+  @Transform((a) => (a ? a.map((i: Role) => new RoleRes(i)) : []))
+  roles: Role[] | RoleRes[];
 
   constructor(partial: Partial<SpaceDetailRes>) {
+    Object.assign(this, partial);
+  }
+}
+
+export class RoleListRes extends ListRes {
+  @Transform((a) => (a ? a.map((i: Role) => new RoleRes(i)) : []))
+  list: RoleRes[];
+
+  constructor(partial: Partial<RoleListRes>) {
+    super();
     Object.assign(this, partial);
   }
 }
@@ -150,6 +187,16 @@ export class SpaceListRes extends ListRes {
   list: SpaceDetailRes[];
 
   constructor(partial: Partial<SpaceListRes>) {
+    super();
+    Object.assign(this, partial);
+  }
+}
+
+export class AssignmentListRes extends ListRes {
+  @Transform((a) => (a ? a.map((i: Assignment) => new AssignmentRes(i)) : []))
+  list: AssignmentRes[];
+
+  constructor(partial: Partial<AssignmentListRes>) {
     super();
     Object.assign(this, partial);
   }
