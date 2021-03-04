@@ -65,6 +65,12 @@ export class AssetService {
     unlinkSync(previewPath);
   }
 
+  async changeAsset(asset: Asset | number, options: { name?: string } = {}) {
+    asset = asset instanceof Asset ? asset : await this.getAsset(asset);
+    if (options.name) asset.name = options.name;
+    return await this.manager.save(asset);
+  }
+
   async addAsset(
     name: string,
     source: string,
@@ -169,6 +175,8 @@ export class AssetService {
       uploader?: User | number;
       pageSize?: number;
       current?: number;
+      skip?: number;
+      take?: number;
     } = {},
   ) {
     let query = this.assetQuery.clone();
@@ -189,10 +197,15 @@ export class AssetService {
       query = query.andWhere('uploader.id = :userId', { userId });
     }
 
-    query = query
-      .orderBy('asset.id', 'DESC')
-      .skip((options.current - 1) * options.pageSize || 0)
-      .take(options.pageSize || 5);
+    query = query.orderBy('asset.id', 'DESC');
+
+    if (!options.skip || !options.take) {
+      query = query.skip((options.current - 1) * options.pageSize || 0).take(options.pageSize || 5);
+    }
+
+    if (options.skip !== undefined && options.take) {
+      query = query.skip(options.skip).take(options.take);
+    }
 
     return await query.getManyAndCount();
   }

@@ -3,7 +3,7 @@ import { PageContainer } from "@ant-design/pro-layout";
 import { history, useModel, useRequest } from "umi";
 import { Button, Form, Input, Modal, Space } from "antd";
 import RoleTable from "./components/RoleTable";
-import { addRole } from "./setting.service";
+import { addSpaceRole } from "./setting.service";
 
 const Resource: React.FC<{}> = (props) => {
   const [isModalVisible, setModalVisible] = useState(false);
@@ -12,7 +12,7 @@ const Resource: React.FC<{}> = (props) => {
   const [form] = Form.useForm();
   const [update, setUpdate] = useState(false);
 
-  const addRoleReq = useRequest(addRole, {
+  const addSpaceRoleReq = useRequest(addSpaceRole, {
     manual: true,
     onSuccess: (res) => {
       setUpdate(!update);
@@ -46,7 +46,7 @@ const Resource: React.FC<{}> = (props) => {
           name="name"
           form={form}
           onFinish={(v: any) => {
-            addRoleReq.run(currentSpace.id,{name:v.name});
+            addSpaceRoleReq.run(currentSpace.id,{name:v.name});
             form.resetFields();
           }}
         >

@@ -123,7 +123,6 @@ export class SpaceService {
     roleAccess?: AccessLevel,
   ) {
     const space = scope instanceof Space ? scope : scope.space;
-    console.log(roleName);
     const role = await this.addRole(space, roleName, roleAccess || AccessLevel.EDIT);
     const members = [];
     users = unionArrays(users);
@@ -222,6 +221,8 @@ export class SpaceService {
   async getMembers(
     options: {
       space?: Space | number;
+      username?: string;
+      fullName?: string;
       pageSize?: number;
       current?: number;
     } = {},
@@ -230,7 +231,14 @@ export class SpaceService {
 
     if (options.space) {
       const spaceId = await this.getSpaceId(options.space);
-      query = query.where('space.id = :spaceId', { spaceId });
+      query = query.andWhere('space.id = :spaceId', { spaceId });
+    }
+    if (options.username) {
+      query = query.andWhere('user.username LIKE :username', { username: `%${options.username}%` });
+    }
+
+    if (options.fullName) {
+      query = query.andWhere('user.fullName LIKE :fullName', { fullName: `%${options.fullName}%` });
     }
 
     query = query

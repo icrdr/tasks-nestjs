@@ -27,7 +27,7 @@ export const changeRole = async (
   });
 };
 
-export const addRole = async (
+export const addSpaceRole = async (
   id: number,
   body: AddRoleDTO
 ): Promise<RoleRes> => {

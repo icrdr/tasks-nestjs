@@ -1,9 +1,9 @@
-@import "~antd/es/style/themes/default.less";
-@import "components/editorTools/editor.less";
-@import "components/editorTools/header.less";
-@import "components/editorTools/image.less";
-@import "~emoji-mart/css/emoji-mart.css";
-@import "~react-virtualized/styles.css";
+@import '~antd/es/style/themes/default.less';
+@import 'components/editorTools/editor.less';
+@import 'components/editorTools/header.less';
+@import 'components/editorTools/image.less';
+@import '~emoji-mart/css/emoji-mart.css';
+@import '~react-virtualized/styles.css';
 
 html,
 body,
@@ -110,7 +110,7 @@ ol {
 }
 
 .file-card {
-  background-color: @layout-body-background;
+  background-color: @background-color-light;
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -131,17 +131,21 @@ ol {
 }
 
 .task-card {
-  background-color: @layout-body-background;
+  background-color: @background-color-light;
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
   width: 100%;
   padding-top: 75%;
   position: relative;
-  overflow: hidden;
+  
 
   .task-card-content {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
     top: 0;
+    overflow: hidden;
     position: absolute;
   }
 }

@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { OptionService } from '../../option/option.service';
-import { EntityManager } from 'typeorm';
+import { EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User, RoleType } from '../entities/user.entity';
 import { hash } from '@utils/utils';
 import { GetUsersDTO } from '@dtos/user.dto';
@@ -16,7 +16,11 @@ import { AccessLevel } from '../../task/entities/space.entity';
 
 @Injectable()
 export class UserService {
-  constructor(private manager: EntityManager, private spaceService: SpaceService) {}
+  userQuery: SelectQueryBuilder<User>;
+  constructor(private manager: EntityManager, private spaceService: SpaceService) {
+    this.userQuery = this.manager
+    .createQueryBuilder(User, 'user')
+}
 
   async isUsernameAvailable(username: string) {
     const user = await this.manager.findOne(User, { username: username });
@@ -29,7 +33,7 @@ export class UserService {
   }
 
   async getUser(identify: string | number, exception = true) {
-    let query = this.manager.createQueryBuilder(User, 'user');
+    let query = this.userQuery.clone();
 
     query =
       typeof identify === 'number'
@@ -41,8 +45,16 @@ export class UserService {
     return user;
   }
 
-  async getUsers(options: GetUsersDTO = {}) {
-    let query = this.manager.createQueryBuilder(User, 'user');
+  async getUsers(
+    options: {
+      username?: string;
+      fullName?: string;
+      pageSize?: number;
+      current?: number;
+    } = {},
+  ) {
+    let query = this.userQuery.clone();
+
     if (options.username) {
       query = query.where('user.username LIKE :username', { username: `%${options.username}%` });
     }

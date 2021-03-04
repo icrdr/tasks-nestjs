@@ -1,14 +1,11 @@
-import React from "react";
-import { PageContainer } from "@ant-design/pro-layout";
-import { Card, Alert, Typography } from "antd";
-import { Access, useAccess, useRequest } from "umi";
-import AssetGallery from "../task/components/AssetGallery";
+import React from 'react';
+import AssetView from './components/AssetView';
 
-const Resource: React.FC<{}> = () => {
+const Asset: React.FC<{}> = () => {
   return (
     <div style={{ padding: 20 }}>
-      <AssetGallery />
+      <AssetView />
     </div>
   );
 };
-export default Resource;
+export default Asset;

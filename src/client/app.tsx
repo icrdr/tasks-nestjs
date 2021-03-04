@@ -58,7 +58,7 @@ export const layout = (): BasicLayoutProps => {
   return {
     rightContentRender: () => <RightContent />,
     headerRender: false,
-    footerRender: () => <Footer />,
+    footerRender: false,
     menuExtraRender: (props) => <SpaceMenu props={props} />,
     menuHeaderRender: false,
   };

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import AssetGallery from './components/AssetGallery';
+import AssetGallery from '../asset/components/AssetGallery';
 
 const TaskAsset: React.FC<{}> = () => {
   return (

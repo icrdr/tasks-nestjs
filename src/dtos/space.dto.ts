@@ -17,6 +17,17 @@ import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
 import { AccessLevel, Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
 
+export class GetMembersDTO extends ListDTO{
+
+  @IsOptional()
+  @IsString()
+  username?: string;
+
+  @IsOptional()
+  @IsString()
+  fullName?: string;
+}
+
 export class ChangeRoleDTO{
   @IsOptional()
   @IsString()
@@ -25,6 +36,12 @@ export class ChangeRoleDTO{
   @IsOptional()
   @IsEnum(AccessLevel)
   access?: AccessLevel;
+}
+
+export class ChangeAssetDTO{
+  @IsOptional()
+  @IsString()
+  name?: string;
 }
 
 export class AddRoleDTO {

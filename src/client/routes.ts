@@ -40,7 +40,7 @@
     parentKeys: ['/task'],
     routes: [
       { path: '/task/:id/content', component: 'task/taskContent.page' },
-      { path: '/task/:id/asset', component: 'task/taskAsset.page' },
+      { path: '/task/:id/asset', component: 'asset/components/AssetView' },
     ],
     access: 'hasSpace',
   },

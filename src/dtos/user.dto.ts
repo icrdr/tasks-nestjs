@@ -1,6 +1,6 @@
 import { IsString, IsNumberString, IsOptional, IsNumber } from 'class-validator';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
-import { ListRes } from './misc.dto';
+import { ListDTO, ListRes } from './misc.dto';
 import { User } from '@server/user/entities/user.entity';
 import { isStringArray } from '@utils/typeGuard';
 import { StsTokenRes } from './asset.dto';
@@ -40,14 +40,7 @@ export class AddUserDTO {
   roles?: string[];
 }
 
-export class GetUsersDTO {
-  @IsOptional()
-  @IsNumber()
-  pageSize?: number;
-
-  @IsOptional()
-  @IsNumber()
-  current?: number;
+export class GetUsersDTO extends ListDTO{
 
   @IsOptional()
   @IsString()
