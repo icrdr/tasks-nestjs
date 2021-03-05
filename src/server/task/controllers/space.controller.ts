@@ -24,8 +24,12 @@ import {
   AddRoleDTO,
   AddSpaceDTO,
   AssignmentListRes,
+  AssignmentRes,
   ChangeAssetDTO,
+  ChangeAssignmentDTO,
   ChangeRoleDTO,
+  ChangeSpaceDTO,
+  GetAssignmentDTO,
   GetRolesDTO,
   GetSpacesDTO,
   MemberListRes,
@@ -36,9 +40,10 @@ import {
   SpaceListRes,
 } from '@dtos/space.dto';
 import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
-import { AccessLevel, Space } from '../entities/space.entity';
+import { Space } from '../entities/space.entity';
 import { AssetService } from '../services/asset.service';
 import { UserService } from '../../user/services/user.service';
+import { AccessLevel } from '../../common/common.entity';
 
 @Controller('api/spaces')
 export class SpaceController {
@@ -138,10 +143,79 @@ export class SpaceController {
 
   @UseGuards(SpaceAccessGuard)
   @Access('common.task.view')
-  @Get('/:id/assignments')
-  async getSpaceAssignment(
+  @Get('/:id/groups')
+  async getSpaceGroups(
+    @TargetSpace() space: Space,
+    @Body() body: GetAssignmentDTO,
+    @CurrentUser() user: User,
+  ) {
+    const assignments = await this.spaceService.getAssignments({ root: space });
+    return ListResSerialize(assignments, AssignmentListRes);
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.view')
+  @Post('/:id/groups')
+  async addSpaceGroup(
     @TargetSpace() space: Space,
     @Body() body: AddAssignmentDTO,
+    @CurrentUser() user: User,
+  ) {
+    const assignment = await this.spaceService.addAssignment([], space.roles[0], {
+      name: body.name,
+      root: space,
+    });
+    return new AssignmentRes(assignment);
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.view')
+  @Put('/:id/groups/:groupId')
+  async changeSpaceGroup(
+    @TargetSpace() space: Space,
+    @Param('groupId') groupId: number,
+    @Body() body: ChangeAssignmentDTO,
+    @CurrentUser() user: User,
+  ) {
+    const assignment = await this.spaceService.changeAssignment(groupId, {
+      name: body.name,
+      role: body.roleId,
+    });
+    return new AssignmentRes(assignment);
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.view')
+  @Post('/:id/groups/:groupId/members/:userId')
+  async addSpaceGroupMember(
+    @TargetSpace() space: Space,
+    @Param('groupId') groupId: number,
+    @Param('userId') userId: number,
+    @CurrentUser() user: User,
+  ) {
+    const assignment = await this.spaceService.addAssignmentMember(groupId, userId);
+    return new AssignmentRes(assignment);
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.view')
+  @Delete('/:id/groups/:groupId/members/:userId')
+  async removeSpaceGroupMember(
+    @TargetSpace() space: Space,
+    @Param('groupId') groupId: number,
+    @Param('userId') userId: number,
+    @CurrentUser() user: User,
+  ) {
+    const assignment = await this.spaceService.removeAssignmentMember(groupId, userId);
+    return new AssignmentRes(assignment);
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.view')
+  @Get('/:id/assignments')
+  async getSpaceAssignments(
+    @TargetSpace() space: Space,
+    @Body() body: GetAssignmentDTO,
     @CurrentUser() user: User,
   ) {
     const assignments = await this.spaceService.getAssignments({ space });
@@ -156,12 +230,13 @@ export class SpaceController {
     @Body() body: AddAssignmentDTO,
     @CurrentUser() user: User,
   ) {
-    return await this.spaceService.addAssignment(
-      space,
-      body.userId,
-      body.roleName,
-      body.roleAccess,
-    );
+    if (body.groupId) {
+      const assignment = await this.spaceService.getAssignment(body.groupId);
+      return await this.spaceService.appendAssignment(space, assignment);
+    } else {
+      const role = await this.spaceService.getRoleByName(space, body.roleName);
+      return await this.spaceService.addAssignment(body.userId, role, { ...body, space });
+    }
   }
 
   @UseGuards(SpaceAccessGuard)
@@ -172,7 +247,7 @@ export class SpaceController {
     @CurrentUser() user: User,
     @Param('assignmentId') assignmentId: number,
   ) {
-    await this.spaceService.removeAssignment(assignmentId);
+    await this.spaceService.removeAssignment(space, assignmentId);
     return { msg: 'ok' };
   }
 
@@ -236,6 +311,28 @@ export class SpaceController {
     return new SpaceDetailRes(space);
   }
 
+  @UseGuards(SpaceAccessGuard)
+  @Access('common.task.view')
+  @Put('/:id')
+  async changeSpace(
+    @TargetSpace() space: Space,
+    @Body() body: ChangeSpaceDTO,
+    @CurrentUser() user: User,
+  ) {
+    space = await this.spaceService.changeSpace(space, {
+      name: body.name,
+      access: body.access,
+    });
+    const accessPriority = [AccessLevel.FULL, AccessLevel.EDIT, AccessLevel.VIEW];
+    const userAccess = [accessPriority.indexOf(space.access)];
+    const assignements = (await this.spaceService.getAssignments({ space, user }))[0];
+    for (const assignement of assignements) {
+      userAccess.push(accessPriority.indexOf(assignement.role.access));
+    }
+    space['userAccess'] = accessPriority[Math.min(...userAccess)];
+    return new SpaceDetailRes(space);
+  }
+
   @Access('common.space.view')
   @Get()
   async getSpaces(@Query() query: GetSpacesDTO, @CurrentUser() user: User) {
@@ -269,7 +366,7 @@ export class SpaceController {
     @CurrentUser() user: User,
     @Param('assetId') assetId: number,
   ) {
-    await this.assetService.removeAsset(assetId);
+    await this.assetService.deleteAsset(assetId);
     return { msg: 'ok' };
   }
 
@@ -281,6 +378,8 @@ export class SpaceController {
       admins: body.adminId ? unionArrays([...[body.adminId], user]) : [user],
       access: AccessLevel.VIEW,
     };
-    return new SpaceDetailRes(await this.spaceService.addSpace(body.name, user, options));
+    const space = await this.spaceService.addSpace(body.name, user, options);
+    space['userAccess'] = 'full';
+    return new SpaceDetailRes(space);
   }
 }

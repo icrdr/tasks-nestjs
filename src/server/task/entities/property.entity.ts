@@ -1,37 +1,10 @@
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { Task } from './task.entity';
-import { BaseEntity } from '@server/common/common.entity';
+import { BaseEntity, PropertyForm, PropertyType, ViewOption, ViewType } from '@server/common/common.entity';
 import { Asset } from '@server/task/entities/asset.entity';
 import { Member, Space } from './space.entity';
 
-export enum PropertyType {
-  MEMBER = 'member',
-  TASK = 'task',
-  ASSET = 'asset',
-}
-
-export enum PropertyForm {
-  NUMBER = 'number',
-  STRING = 'string',
-}
-
-export enum ViewForm {
-  TABLE = 'table',
-  LIST = 'list',
-  CARD = 'gallery',
-}
-
-export enum ViewType {
-  MEMBER = 'member',
-  TASK = 'task',
-  ASSET = 'asset',
-}
-
-export interface ViewOption {
-  form: ViewForm;
-  headers: any;
-}
 
 @Entity()
 export class View extends BaseEntity {

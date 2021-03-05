@@ -14,7 +14,8 @@ import {
   ChangeTaskDTO,
 } from '@dtos/task.dto';
 import { GetUsersDTO, UserListRes, UserRes } from '@dtos/user.dto';
-import { AddAssignmentDTO, AssignmentRes } from '@dtos/space.dto';
+import { AddAssignmentDTO, AssignmentListRes, AssignmentRes, GetAssignmentDTO } from '@dtos/space.dto';
+import { ListDTO } from '@dtos/misc.dto';
 
 export async function getUsers(params: GetUsersDTO): Promise<UserListRes> {
   return request('/api/users', { params });
@@ -95,6 +96,12 @@ export const getTaskAssets = async (id: number, params?: GetAssetsDTO): Promise<
 
 export const getSpaceAssets = async (id: number, params?: GetAssetsDTO): Promise<AssetListRes> => {
   return request(`/api/spaces/${id}/assets`, {
+    params,
+  });
+};
+
+export const getSpaceGroups = async (id: number, params?: GetAssignmentDTO): Promise<AssignmentListRes> => {
+  return request(`/api/spaces/${id}/groups`, {
     params,
   });
 };

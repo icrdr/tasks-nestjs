@@ -1,16 +1,16 @@
 import React, { forwardRef, useEffect, useRef, useState } from 'react';
 import { Card, Avatar, Space, Typography, Skeleton, Image } from 'antd';
 import moment from 'moment';
-import { CommentType } from '@server/task/entities/comment.entity';
 import { getOssClient } from '../../layout/layout.service';
 import { useMount } from 'ahooks';
+import { CommentType } from '../../../../server/common/common.entity';
 
 const { Text, Paragraph } = Typography;
 
 const MessageCard: React.FC<{
   onLoad?: Function;
   onTapContent?: Function;
-  type?: string;
+  type?: CommentType;
   author?: string;
   datetime?: Date;
   isMe?: boolean;

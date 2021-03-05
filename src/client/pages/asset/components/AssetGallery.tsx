@@ -1,42 +1,25 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useModel, useParams, useRequest } from 'umi';
-import {
-  Card,
-  Space,
-  Upload,
-  Button,
-  message,
-  Dropdown,
-  Menu,
-  Row,
-  Col,
-  Progress,
-  Table,
-} from 'antd';
+import { useModel, useParams, useRequest } from 'umi';
+import { Dropdown, Menu } from 'antd';
 import FileCard from './FileCard';
-import { PictureOutlined } from '@ant-design/icons';
-import { sleep } from '@utils/utils';
-import moment from 'moment';
 import { getOssClient } from '../../layout/layout.service';
 import {
-  addSpaceAsset,
-  addTaskAsset,
   removeSpaceAsset,
   removeTaskAsset,
   getSpaceAssets,
   getTaskAssets,
 } from '../../task/task.service';
-import { AssetListRes, AssetRes, GetAssetsDTO } from '@dtos/task.dto';
+import { AssetListRes, AssetRes, GetAssetsDTO, TaskMoreDetailRes } from '@dtos/task.dto';
 import FsLightbox from '@components/fslightbox';
-import { ViewOption } from '@server/task/entities/property.entity';
 import VGallery from '@components/VGallery';
 import { changeAsset } from '../asset.service';
+import { ViewOption } from '@server/common/common.entity';
 
-const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
-  option,
-  update = false,
-}) => {
-  const currentTaskId = (useParams() as any).id;
+const AssetGallery: React.FC<{
+  task?: TaskMoreDetailRes;
+  option?: ViewOption;
+  update?: boolean;
+}> = ({ task, option, update = false }) => {
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [assetList, setAssetList] = useState<AssetRes[]>([]);
@@ -48,9 +31,13 @@ const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
   const fetchCountRef = useRef(0);
   const [editingAssetId, setEditingAssetId] = useState(undefined);
 
+  const isAdmin = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
+  const isEditable = isAdmin || task?.userAccess !== 'view';
+  const isDownloadable = task ? task.userAccess !== 'view' : true;
+
   const removeAsset = async (assetId: number): Promise<AssetListRes> => {
-    if (currentTaskId) {
-      return removeTaskAsset(currentTaskId, assetId);
+    if (task) {
+      return removeTaskAsset(task.id, assetId);
     } else {
       return removeSpaceAsset(currentSpace.id, assetId);
     }
@@ -90,15 +77,19 @@ const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
   const menu = (asset: AssetRes) => {
     return (
       <Menu>
-        <Menu.Item key="1" onClick={() => handleDownload(asset)}>
-          下载
-        </Menu.Item>
-        <Menu.Item key="2" onClick={() => handleRename(asset)}>
-          重命名
-        </Menu.Item>
-        <Menu.Item key="3" onClick={() => handleDelete(asset)}>
-          删除
-        </Menu.Item>
+        {isDownloadable && (
+          <Menu.Item key="1" onClick={() => handleDownload(asset)}>
+            下载
+          </Menu.Item>
+        )}
+        {isEditable && [
+          <Menu.Item key="2" onClick={() => handleRename(asset)}>
+            重命名
+          </Menu.Item>,
+          <Menu.Item key="3" onClick={() => handleDelete(asset)}>
+            删除
+          </Menu.Item>,
+        ]}
       </Menu>
     );
   };
@@ -118,7 +109,7 @@ const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
         if (header.filter) {
           switch (header.title) {
             case 'createAt':
-              params['createBefore'] = header.filter;
+              params['uploadBefore'] = header.filter;
               break;
 
             default:
@@ -128,8 +119,8 @@ const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
         }
       }
     }
-    return currentTaskId
-      ? await getTaskAssets(currentTaskId, { ...params, ...body })
+    return task
+      ? await getTaskAssets(task.id, { ...params, ...body })
       : await getSpaceAssets(currentSpace.id, { ...params, ...body, isRoot: true });
   };
 
@@ -138,7 +129,7 @@ const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
   }, [update, dataUpdate]);
 
   const initAssetsReq = useRequest(getAssets, {
-    refreshDeps: [update, dataUpdate, option],
+    refreshDeps: [task, update, dataUpdate, option],
     onSuccess: (res, params) => {
       setAssetList(Array(res.total).fill(undefined));
       if (fetchCountRef.current !== 0) {
@@ -211,7 +202,11 @@ const AssetGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
         loadMoreItems={loadMoreItems}
         columnCount={6}
         itemRender={(item) => (
-          <Dropdown overlay={() => menu(item)} trigger={['contextMenu']}>
+          <Dropdown
+            overlay={() => menu(item)}
+            trigger={['contextMenu']}
+            disabled={!isEditable && !isDownloadable}
+          >
             <div>
               <FileCard
                 name={item.name}

@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
-import { Link, useIntl, useParams, useRequest, useModel, useLocation, useHistory } from 'umi';
+import { Link, useParams, useRequest, useModel, useLocation, useHistory } from 'umi';
 import {
   addTaskAssignment,
   changeTask,
   changeTaskState,
+  getSpaceGroups,
   removeTaskAssignment,
 } from './task.service';
 import { getTask } from './task.service';
@@ -13,49 +14,42 @@ import {
   Button,
   Dropdown,
   Menu,
-  Input,
   Select,
   Avatar,
   DatePicker,
-  Drawer,
-  List,
   Typography,
-  Form,
   Popover,
   Spin,
   Descriptions,
+  Tooltip,
 } from 'antd';
 import TaskState from '../../components/TaskState';
-import { EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
-import ProDescriptions, { ProDescriptionsActionType } from '@ant-design/pro-descriptions';
-import type { ProColumns } from '@ant-design/pro-table';
+import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
 import { TaskMoreDetailRes } from '@dtos/task.dto';
 import { AssignmentRes, MemberRes } from '@dtos/space.dto';
 import moment from 'moment';
 import { getSpaceMembers } from '../member/member.service';
-import { AccessLevel } from '../../../server/task/entities/space.entity';
+
 const { Text, Title } = Typography;
 
 const taskDetail: React.FC<{}> = (props) => {
   const { initialState, setInitialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const currentTaskId = (useParams() as any).id;
-  const [modalRoleId, setModalRoleId] = useState(undefined);
-  const [vis, setVis] = useState(false);
   const [memberOptions, setMemberOptions] = useState([]);
-  const intl = useIntl();
-  const [form] = Form.useForm();
   const location = useLocation();
   const history = useHistory();
   const path = location.pathname.split('/');
   const tabActiveKey = path[path.length - 1];
   const [task, setTask] = useState<TaskMoreDetailRes>(null);
-  const [isEditingName, setEditingName] = useState(false);
-  const [EditName, setEditName] = useState('');
-  const [columns, setColumns] = useState([]);
+  const [dataUpdate, setDataUpdate] = useState(false);
+  const isAdmin = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
+  const isEditable = isAdmin || task?.userAccess !== 'view';
 
   const getTaskReq = useRequest(() => getTask(currentTaskId), {
+    refreshDeps: [dataUpdate],
     onSuccess: (res) => {
+      res.contents.reverse();
       setTask(res);
     },
   });
@@ -75,7 +69,21 @@ const taskDetail: React.FC<{}> = (props) => {
       const memberOptions = res.list.map((member) => {
         return {
           label: member.username,
-          value: member.userId,
+          value: `user:${member.userId}`,
+        };
+      });
+      const groupOptions = memberOptions.filter((option) => option.value.split(':')[0] === 'group');
+      setMemberOptions([...groupOptions, ...memberOptions]);
+    },
+  });
+
+  const getSpaceGroupsReq = useRequest(() => getSpaceGroups(currentSpace.id), {
+    onSuccess: (res) => {
+      console.log(res);
+      const memberOptions = res.list.map((group) => {
+        return {
+          label: group.name,
+          value: `group:${group.id}`,
         };
       });
       setMemberOptions(memberOptions);
@@ -86,7 +94,9 @@ const taskDetail: React.FC<{}> = (props) => {
     manual: true,
     onSuccess: (res) => {
       console.log(res);
-      history.go(0);
+      const groupOptions = memberOptions.filter((option) => option.value.split(':')[0] === 'group');
+      setMemberOptions(groupOptions);
+      setDataUpdate(!dataUpdate);
     },
   });
 
@@ -94,21 +104,21 @@ const taskDetail: React.FC<{}> = (props) => {
     manual: true,
     onSuccess: (res) => {
       console.log(res);
-      history.go(0);
+      setDataUpdate(!dataUpdate);
     },
   });
 
   const changeStateReq = useRequest(changeTaskState, {
     manual: true,
     onSuccess: (res) => {
-      history.go(0);
+      setDataUpdate(!dataUpdate);
     },
   });
 
   const changeTaskReq = useRequest(changeTask, {
     manual: true,
     onSuccess: (res) => {
-      history.go(0);
+      setDataUpdate(!dataUpdate);
     },
   });
 
@@ -125,7 +135,7 @@ const taskDetail: React.FC<{}> = (props) => {
         <Text
           style={{ width: '100%' }}
           editable={
-            task?.userAccess === 'full'
+            isAdmin
               ? {
                   onChange: (v) => {
                     if (v) changeTaskReq.run(currentTaskId, { name: v });
@@ -145,85 +155,83 @@ const taskDetail: React.FC<{}> = (props) => {
       <Menu.Item key="1">删除</Menu.Item>
     </Menu>
   );
-  const extraContent =
-    task?.userAccess === 'full' ? (
-      <Space>
-        <Button.Group>
-          {task?.state === 'suspended' && (
-            <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'start')}
-              disabled={changeStateReq.loading}
-            >
-              启动
-            </Button>
-          )}
-          {task?.state === 'inProgress' && (
-            <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'suspend')}
-              disabled={changeStateReq.loading}
-            >
-              暂停
-            </Button>
-          )}
-          {task?.state === 'completed' && (
-            <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'restart')}
-              disabled={changeStateReq.loading}
-            >
-              重启
-            </Button>
-          )}
-          {/* {task?.state === 'inProgress' && (
-            <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'commit')}
-              disabled={changeStateReq.loading}
-            >
-              提交
-            </Button>
-          )} */}
-          {task?.state === 'unconfirmed' && (
-            <Button
-              onClick={() => changeStateReq.run(currentTaskId, 'refuse')}
-              disabled={changeStateReq.loading}
-            >
-              打回
-            </Button>
-          )}
-          <Dropdown overlay={otherActionMenu} placement="bottomRight">
-            <Button>
-              <EllipsisOutlined />
-            </Button>
-          </Dropdown>
-        </Button.Group>
-        {task?.state !== 'completed' && (
+  const extraContent = isAdmin ? (
+    <Space>
+      <Button.Group>
+        {task?.state === 'suspended' && (
           <Button
-            type="primary"
-            onClick={() => changeStateReq.run(currentTaskId, 'complete')}
+            onClick={() => changeStateReq.run(currentTaskId, 'start')}
             disabled={changeStateReq.loading}
           >
-            完成
+            启动
           </Button>
         )}
-      </Space>
-    ) : (
-      task?.state === 'inProgress' &&
-      task?.userAccess === 'edit' && (
+        {task?.state === 'inProgress' && (
+          <Button
+            onClick={() => changeStateReq.run(currentTaskId, 'suspend')}
+            disabled={changeStateReq.loading}
+          >
+            暂停
+          </Button>
+        )}
+        {task?.state === 'completed' && (
+          <Button
+            onClick={() => changeStateReq.run(currentTaskId, 'restart')}
+            disabled={changeStateReq.loading}
+          >
+            重启
+          </Button>
+        )}
+        {task?.state === 'unconfirmed' && (
+          <Button
+            onClick={() => changeStateReq.run(currentTaskId, 'refuse')}
+            disabled={changeStateReq.loading}
+          >
+            打回
+          </Button>
+        )}
+        <Dropdown overlay={otherActionMenu} placement="bottomRight">
+          <Button>
+            <EllipsisOutlined />
+          </Button>
+        </Dropdown>
+      </Button.Group>
+      {task?.state !== 'completed' && (
         <Button
           type="primary"
-          onClick={() => changeStateReq.run(currentTaskId, 'commit')}
+          onClick={() => changeStateReq.run(currentTaskId, 'complete')}
           disabled={changeStateReq.loading}
         >
-          提交
+          完成
         </Button>
-      )
-    );
+      )}
+    </Space>
+  ) : (
+    task?.state === 'inProgress' &&
+    task?.userAccess === 'edit' && (
+      <Button
+        type="primary"
+        onClick={() => changeStateReq.run(currentTaskId, 'commit')}
+        disabled={changeStateReq.loading}
+      >
+        提交
+      </Button>
+    )
+  );
 
-  const handleAddAssignment = (userId: number[], roleName: string) => {
-    addAssignmentReq.run(currentTaskId, {
-      userId,
-      roleName,
-    });
-    setModalRoleId(undefined);
+  const handleAddAssignment = (value: string, roleName: string) => {
+    const type = value.split(':')[0];
+    const id = parseInt(value.split(':')[1]);
+    if (type === 'user') {
+      addAssignmentReq.run(currentTaskId, {
+        userId: [id],
+        roleName,
+      });
+    } else {
+      addAssignmentReq.run(currentTaskId, {
+        groupId: id,
+      });
+    }
   };
 
   const handleRemoveAssignment = (assignmentId: number) => {
@@ -233,7 +241,7 @@ const taskDetail: React.FC<{}> = (props) => {
   const description = (
     <Descriptions labelStyle={{ lineHeight: '32px' }} column={1}>
       <Descriptions.Item key="due" label="计划日期">
-        {task?.userAccess === 'full' ? (
+        {isAdmin ? (
           <DatePicker.RangePicker
             ranges={{
               下周: [moment(), moment().add(7, 'd')],
@@ -270,9 +278,9 @@ const taskDetail: React.FC<{}> = (props) => {
       </Descriptions.Item>
       <Descriptions.Item key="access" label="默认权限">
         <Select
-          disabled={task?.userAccess !== 'full'}
+          disabled={!isAdmin}
           value={task?.access}
-          onChange={(v) => changeTaskReq.run(currentTaskId, { access: v as AccessLevel })}
+          onChange={(v) => changeTaskReq.run(currentTaskId, { access: v })}
         >
           <Select.Option value="view">浏览</Select.Option>
           <Select.Option value="edit">编辑</Select.Option>
@@ -285,7 +293,7 @@ const taskDetail: React.FC<{}> = (props) => {
             <Avatar.Group>
               {task?.roles[role.id]?.map((assignment: AssignmentRes, index: number) => (
                 <Dropdown
-                  disabled={task?.userAccess !== 'full'}
+                  disabled={!isAdmin}
                   overlay={
                     <Menu>
                       <Menu.Item key="1" onClick={() => handleRemoveAssignment(assignment?.id)}>
@@ -296,21 +304,26 @@ const taskDetail: React.FC<{}> = (props) => {
                   key={index}
                   trigger={['contextMenu']}
                 >
-                  <Avatar>{(assignment?.members[0] as MemberRes).username}</Avatar>
+                  <Tooltip
+                    title={assignment.name || (assignment?.members[0] as MemberRes).username}
+                  >
+                    <Avatar>
+                      {assignment.name || (assignment?.members[0] as MemberRes).username}
+                    </Avatar>
+                  </Tooltip>
                 </Dropdown>
               ))}
             </Avatar.Group>
-            {task?.userAccess === 'full' && (
+            {isAdmin && (
               <Popover
                 placement="right"
                 content={
                   <Select
                     style={{ width: 100 }}
-                    onChange={(v: number) => handleAddAssignment([v], role.name)}
+                    onChange={(v: string) => handleAddAssignment(v, role.name)}
                     onSearch={(v) => getSpaceMembersReq.run(currentSpace.id, { username: v })}
                     options={memberOptions}
                     showSearch
-                    showArrow={false}
                     filterOption={false}
                     notFoundContent={getSpaceMembersReq.loading ? <Spin size="small" /> : null}
                   />
@@ -330,7 +343,7 @@ const taskDetail: React.FC<{}> = (props) => {
       key: 'content',
       tab: '内容',
     },
-    {
+    isEditable && {
       key: 'asset',
       tab: '资源',
     },
@@ -339,6 +352,13 @@ const taskDetail: React.FC<{}> = (props) => {
     //   tab: '子任务',
     // },
   ];
+  const childrenWithProps = React.Children.map(props.children, (child) => {
+    // checking isValidElement is the safe way and avoids a typescript error too
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child, { task: task });
+    }
+    return child;
+  });
 
   return (
     <PageContainer
@@ -351,7 +371,7 @@ const taskDetail: React.FC<{}> = (props) => {
       loading={getTaskReq.loading}
       tabList={tabList}
     >
-      {props.children}
+      {childrenWithProps}
     </PageContainer>
   );
 };

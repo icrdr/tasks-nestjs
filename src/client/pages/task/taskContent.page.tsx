@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useIntl, useModel, useParams, useRequest } from 'umi';
+import { useIntl, useModel, useRequest } from 'umi';
 import { getTask } from './task.service';
 import Editor from '@components/Editor';
 import { Card, Affix, Button, Drawer, List, Typography, Tooltip } from 'antd';
@@ -7,29 +7,16 @@ import { HistoryOutlined, HomeOutlined, LoadingOutlined, SaveOutlined } from '@a
 import Split from 'react-split';
 import moment from 'moment';
 import TaskComment from './components/TaskComment';
-import { TaskMoreDetailRes } from '../../../dtos/task.dto';
+import { TaskMoreDetailRes } from '@dtos/task.dto';
 const { Text } = Typography;
 
-const TaskContent: React.FC<{}> = () => {
+const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
   const { initialState } = useModel('@@initialState');
   const { currentUser } = initialState;
-  const currentTaskId = (useParams() as any).id;
-  const [update, setUpdate] = useState(true);
   const [contentIndex, setContentIndex] = useState(0);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [isSynced, setSync] = useState(true);
   const taskCommentRef = useRef(null);
-  const intl = useIntl();
-  const [task, setTask] = useState<TaskMoreDetailRes>(null);
-
-  const getTaskReq = useRequest(() => getTask(currentTaskId), {
-    refreshDeps: [currentTaskId, update],
-    onSuccess: (res) => {
-      console.log(res);
-      res.contents.reverse();
-      setTask(res);
-    },
-  });
 
   // TODO: fake sync catch
   async function waitChange(): Promise<string[]> {
@@ -128,8 +115,8 @@ const TaskContent: React.FC<{}> = () => {
               </div>
               {task && (
                 <Editor
-                  loading={getTaskReq.loading}
-                  wsRoom={editable ? `task-${currentTaskId}` : undefined}
+                  loading={!task}
+                  wsRoom={editable ? `task-${task.id}` : undefined}
                   currentUser={{
                     id: currentUser.id,
                     username: currentUser.username,

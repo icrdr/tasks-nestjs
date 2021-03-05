@@ -7,20 +7,19 @@ import {
 } from '@nestjs/common';
 import { OptionService } from '../../option/option.service';
 import { EntityManager, SelectQueryBuilder } from 'typeorm';
-import { User, RoleType } from '../entities/user.entity';
+import { User } from '../entities/user.entity';
 import { hash } from '@utils/utils';
 import { GetUsersDTO } from '@dtos/user.dto';
 import { useResponsive } from 'ahooks';
 import { SpaceService } from '../../task/services/space.service';
-import { AccessLevel } from '../../task/entities/space.entity';
+import { RoleType } from '../../common/common.entity';
 
 @Injectable()
 export class UserService {
   userQuery: SelectQueryBuilder<User>;
   constructor(private manager: EntityManager, private spaceService: SpaceService) {
-    this.userQuery = this.manager
-    .createQueryBuilder(User, 'user')
-}
+    this.userQuery = this.manager.createQueryBuilder(User, 'user');
+  }
 
   async isUsernameAvailable(username: string) {
     const user = await this.manager.findOne(User, { username: username });

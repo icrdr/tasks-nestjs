@@ -8,14 +8,15 @@ import {
   IsDate,
 } from 'class-validator';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
-import { Task, Content, TaskState } from '../server/task/entities/task.entity';
+import { Task, Content } from '../server/task/entities/task.entity';
 import { ListDTO, ListRes } from './misc.dto';
 import { OutputData } from '@editorjs/editorjs';
-import { Comment, CommentType } from '../server/task/entities/comment.entity';
+import { Comment } from '../server/task/entities/comment.entity';
 import { UserRes } from './user.dto';
-import { AccessLevel, Assignment, Space } from '../server/task/entities/space.entity';
+import { Assignment, Space } from '../server/task/entities/space.entity';
 import { AssignmentRes } from './space.dto';
 import { Asset } from '../server/task/entities/asset.entity';
+import { AccessLevel, CommentType, TaskState } from '../server/common/common.entity';
 
 export class AddAssetDTO {
   @IsString()
@@ -84,6 +85,22 @@ export class GetCommentsDTO extends ListDTO {
 }
 
 export class GetAssetsDTO extends ListDTO {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  format?: string;
+
+  @IsOptional()
+  @IsDate()
+  uploadAfter?: Date;
+
+  @IsOptional()
+  @IsDate()
+  uploadBefore?: Date;
+
   @IsOptional()
   @IsNumber()
   taskId?: number;
@@ -245,7 +262,7 @@ export class TaskDetailRes {
   name: string;
 
   @Expose()
-  access: string;
+  access: AccessLevel;
 
   @Expose()
   createAt: Date;
@@ -316,7 +333,7 @@ export class TaskMoreDetailRes {
   dueAt: Date;
 
   @Expose()
-  access: string;
+  access: AccessLevel;
 
   @Expose()
   userAccess: string;
@@ -338,7 +355,7 @@ export class TaskMoreDetailRes {
     }
     return _roles;
   }
-  
+
   @Expose()
   @Transform((i) => (i ? new TaskRes(i) : null))
   superTask: TaskRes;

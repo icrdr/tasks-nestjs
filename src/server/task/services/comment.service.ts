@@ -1,16 +1,14 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
-import { EntityManager, In, IsNull, Not } from 'typeorm';
-import { GetTasksDTO, CommentDTO, CommentRes } from '@dtos/task.dto';
-import { isUserArray } from '@utils/typeGuard';
+import { Injectable } from '@nestjs/common';
+import { EntityManager } from 'typeorm';
+import { CommentRes } from '@dtos/task.dto';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
-import { Task, TaskState } from '../entities/task.entity';
-import { OutputData } from '@editorjs/editorjs';
+import { Task } from '../entities/task.entity';
 import { TaskService } from './task.service';
 import { serialize } from 'class-transformer';
-import { Socket, Server } from 'ws';
-import { WebSocketServer } from '@nestjs/websockets';
-import { CommentType, Comment } from '../entities/comment.entity';
+import { Socket } from 'ws';
+import { Comment } from '../entities/comment.entity';
+import { CommentType } from '../../common/common.entity';
 
 const taskRooms = new Map<string, Set<Socket>>();
 

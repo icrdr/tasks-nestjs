@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useModel, useParams, useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import {
   Badge,
   Button,
@@ -13,28 +12,18 @@ import {
   Select,
   Space,
   Spin,
-  Tag,
   DatePicker,
 } from 'antd';
 import TaskTable from './TaskTable';
 import TaskGallery from './TaskGallery';
-import { ViewForm, ViewOption } from '@server/task/entities/property.entity';
-import {
-  addSpaceTask,
-  addSubTask,
-  getSpaceTasks,
-  getSubTasks,
-  getUser,
-  getUsers,
-} from '../task.service';
-import { AddTaskDTO } from '@dtos/task.dto';
+import { ViewOption } from '@server/common/common.entity';
+import { addSpaceTask, addSubTask, getUser } from '../task.service';
+import { AddTaskDTO, TaskMoreDetailRes } from '@dtos/task.dto';
 import { SettingOutlined } from '@ant-design/icons';
 import moment from 'moment';
-import { useUpdate, useUpdateEffect } from 'ahooks';
 import { getSpaceMembers } from '../../member/member.service';
 
-const TaskView: React.FC<{}> = () => {
-  const currentTaskId = (useParams() as any).id;
+const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [viewUpdate, setViewUpdate] = useState(false);
@@ -43,9 +32,11 @@ const TaskView: React.FC<{}> = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
 
-  const viewOptionKey = currentTaskId
-    ? `task${currentTaskId}SubTask`
-    : `space${currentSpace.id}Task` + 'ViewOption';
+  const viewOptionKey = task
+    ? `task${task.id}SubTaskViewOption`
+    : `space${currentSpace.id}TaskViewOption`;
+
+  const isEditable = currentSpace?.userAccess !== 'view' && task?.userAccess !== 'view';
 
   useEffect(() => {
     const initViewOption = JSON.parse(localStorage.getItem(viewOptionKey)) || {
@@ -112,7 +103,7 @@ const TaskView: React.FC<{}> = () => {
   }, []);
 
   const addTask = (body: AddTaskDTO) => {
-    return currentTaskId ? addSubTask(currentTaskId, body) : addSpaceTask(currentSpace.id, body);
+    return task ? addSubTask(task.id, body) : addSpaceTask(currentSpace.id, body);
   };
 
   const addTaskReq = useRequest(addTask, {
@@ -173,7 +164,7 @@ const TaskView: React.FC<{}> = () => {
           return (
             <Input.Search
               key={index}
-              style={{ width: 200 }}
+              style={{ width: 150 }}
               placeholder="任务名"
               onSearch={(v) => handleFilter(index, v)}
               defaultValue={header.filter || ''}
@@ -184,7 +175,7 @@ const TaskView: React.FC<{}> = () => {
           return (
             <Select
               key={index}
-              style={{ width: 100 }}
+              style={{ width: 150 }}
               placeholder={'状态'}
               defaultValue={header.filter || undefined}
               onChange={(v) => handleFilter(index, v)}
@@ -286,9 +277,11 @@ const TaskView: React.FC<{}> = () => {
       <Space size="middle" direction="vertical" style={{ width: '100%' }}>
         <div>
           <Space>
-            <Button type="primary" onClick={() => setModalVisible(true)}>
-              新任务
-            </Button>
+            {isEditable && (
+              <Button type="primary" onClick={() => setModalVisible(true)}>
+                新任务
+              </Button>
+            )}
             <Select value={viewOption?.form} onChange={handleSeletForm}>
               <Select.Option value="table">表格</Select.Option>
               <Select.Option value="gallery">画廊</Select.Option>
@@ -301,7 +294,9 @@ const TaskView: React.FC<{}> = () => {
         </div>
         <div style={{ height: 'calc(100vh - 100px)' }}>
           {viewOption?.form === 'table' && <TaskTable option={viewOption} update={viewUpdate} />}
-          {viewOption?.form === 'gallery' && <TaskGallery option={viewOption} update={viewUpdate} />}
+          {viewOption?.form === 'gallery' && (
+            <TaskGallery option={viewOption} update={viewUpdate} task={task} />
+          )}
         </div>
       </Space>
       <Modal

@@ -1,11 +1,4 @@
-import {
-  ForbiddenException,
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 import { UserService } from '../../user/services/user.service';
@@ -14,12 +7,7 @@ import { Space } from '../entities/space.entity';
 import { Task } from '../entities/task.entity';
 import { SpaceService } from './space.service';
 import { TaskService } from './task.service';
-import { open } from 'psd';
-
-import { join } from 'path';
 import { CommonService } from '../../common/common.service';
-import * as moment from 'moment';
-import { unlinkSync } from 'fs';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
 
@@ -116,7 +104,7 @@ export class PropertyService {
     return asset instanceof Asset ? asset.id : asset;
   }
 
-  async removeAsset(asset: Asset | number) {
+  async deleteAsset(asset: Asset | number) {
     const oss = await this.commonService.getOssClient();
     asset = asset instanceof Asset ? asset : await this.getAsset(asset);
     await this.manager.delete(Asset, asset.id);

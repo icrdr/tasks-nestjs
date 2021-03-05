@@ -1,4 +1,4 @@
-import { BaseEntity } from '@server/common/common.entity';
+import { AccessLevel, BaseEntity } from '@server/common/common.entity';
 import {
   Entity,
   Column,
@@ -13,23 +13,7 @@ import { Property, property, View } from './property.entity';
 import { Task } from './task.entity';
 import { Asset } from './asset.entity';
 
-export enum LogAction {
-  START = 'start',
-  RESTART = 'restart',
-  SUSPEND = 'suspend',
-  COMPLETE = 'complete',
-  COMMIT = 'commit',
-  REFUSE = 'refuse',
-  CREATE = 'create',
-  UPDATA = 'update',
-  DELETE = 'delete',
-}
 
-export enum AccessLevel {
-  FULL = 'full',
-  EDIT = 'edit',
-  VIEW = 'view',
-}
 
 @Entity()
 export class Space extends BaseEntity {
@@ -41,6 +25,9 @@ export class Space extends BaseEntity {
 
   @OneToMany(() => Assignment, (assignment) => assignment.space)
   assignments: Assignment[];
+
+  @OneToMany(() => Assignment, (assignment) => assignment.root)
+  groups: Assignment[];
 
   @OneToMany(() => Role, (role) => role.space)
   roles: Role[];
@@ -90,8 +77,14 @@ export class Assignment extends BaseEntity {
   @ManyToMany(() => Task, (task) => task.assignments)
   tasks: Task[];
 
+  @ManyToOne(() => Space, (space) => space.groups)
+  root: Space;
+
   @ManyToOne(() => Space, (space) => space.assignments)
   space: Space;
+
+  @Column({ nullable: true })
+  name: string;
 
   @ManyToMany(() => Member)
   @JoinTable()

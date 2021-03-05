@@ -22,6 +22,7 @@ import FsLightbox from '@components/fslightbox';
 import { VariableSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import InfiniteLoader from 'react-window-infinite-loader';
+import { CommentType } from '../../../../server/common/common.entity';
 const { Text, Paragraph } = Typography;
 
 const TaskComment = ({ taskId, editable }, ref) => {
@@ -227,7 +228,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
               setLightBoxToggle(!lightBoxToggle);
             }
           }}
-          type={comment?.type}
+          type={comment?.type as CommentType}
           isMe={comment?.sender?.id === currentUser.id}
           isLoading={!comment}
           author={comment?.sender?.username}
@@ -295,7 +296,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
     <div style={{ height: '100%', minWidth: '250px', position: 'relative' }}>
       <Card
         bordered={false}
-        style={{ height: editable?'calc(100vh - 250px)':'calc(100vh - 100px)' }}
+        style={{ height: editable ? 'calc(100vh - 250px)' : 'calc(100vh - 100px)' }}
         bodyStyle={{ height: '100%', padding: 0 }}
       >
         {infiniteLoader}

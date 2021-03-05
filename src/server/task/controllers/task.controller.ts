@@ -19,12 +19,12 @@ import {
 import { IdDTO, ListResSerialize } from '@dtos/misc.dto';
 import { User } from '@server/user/entities/user.entity';
 import { TaskAccessGuard } from '@server/user/taskAccess.guard';
-import { Task, TaskState } from '../entities/task.entity';
+import { Task } from '../entities/task.entity';
 import { unionArrays } from '@utils/utils';
 import { AssetService } from '../services/asset.service';
 import { SpaceService } from '../services/space.service';
 import { AddAssignmentDTO } from '@dtos/space.dto';
-import { AccessLevel } from '../entities/space.entity';
+import { AccessLevel, TaskState } from '../../common/common.entity';
 
 @Controller('api/tasks')
 export class TaskController {
@@ -98,7 +98,7 @@ export class TaskController {
     @CurrentUser() user: User,
     @Param('assetId') assetId: number,
   ) {
-    await this.assetService.removeAsset(assetId);
+    await this.assetService.deleteAsset(assetId);
     return { msg: 'ok' };
   }
 
@@ -110,7 +110,7 @@ export class TaskController {
     @CurrentUser() user: User,
     @Param('assignmentId') assignmentId: number,
   ) {
-    await this.spaceService.removeAssignment(assignmentId);
+    await this.spaceService.removeAssignment(task, assignmentId);
     return { msg: 'ok' };
   }
 
@@ -122,7 +122,13 @@ export class TaskController {
     @Body() body: AddAssignmentDTO,
     @CurrentUser() user: User,
   ) {
-    return await this.spaceService.addAssignment(task, body.userId, body.roleName, body.roleAccess);
+    if (body.groupId) {
+      const assignment = await this.spaceService.getAssignment(body.groupId);
+      return await this.spaceService.appendAssignment(task, assignment);
+    } else {
+      const role = await this.spaceService.getRoleByName(task.space, body.roleName);
+      return await this.spaceService.addAssignment(body.userId, role, { task });
+    }
   }
 
   @UseGuards(TaskAccessGuard)

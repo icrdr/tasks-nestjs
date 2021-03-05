@@ -1,17 +1,17 @@
 import React, { useRef, useState } from 'react';
-import { Link, useModel, useParams, useRequest } from 'umi';
+import { Link, useModel, useRequest } from 'umi';
 import { getSpaceTasks, getSubTasks } from '../task.service';
-import { GetTasksDTO, TaskDetailRes } from '@dtos/task.dto';
+import { GetTasksDTO, TaskDetailRes, TaskMoreDetailRes } from '@dtos/task.dto';
 import { getOssClient } from '../../layout/layout.service';
-import { ViewOption } from '@server/task/entities/property.entity';
 import VGallery from '@components/VGallery';
 import TaskCard from './TaskCard';
+import { ViewOption } from '@server/common/common.entity';
 
-const TaskGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
+const TaskGallery: React.FC<{ task?:TaskMoreDetailRes, option?: ViewOption; update?: boolean }> = ({
+  task,
   option,
   update = false,
 }) => {
-  const currentTaskId = (useParams() as any).id;
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [taskList, setTaskList] = useState<TaskDetailRes[]>([]);
@@ -34,13 +34,13 @@ const TaskGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
         }
       }
     }
-    return currentTaskId
-      ? await getSubTasks(currentTaskId, { ...params, ...body })
+    return task
+      ? await getSubTasks(task.id, { ...params, ...body })
       : await getSpaceTasks(currentSpace.id, { ...params, ...body });
   };
 
   const initTasksReq = useRequest(getTasks, {
-    refreshDeps: [update, dataUpdate, option],
+    refreshDeps: [task, update, dataUpdate, option],
     onSuccess: (res, params) => {
       setTaskList(Array(res.total).fill(undefined));
       if (fetchCountRef.current !== 0) {
@@ -54,7 +54,7 @@ const TaskGallery: React.FC<{ option?: ViewOption; update?: boolean }> = ({
     manual: true,
     onSuccess: async (res, params) => {
       const oss = await getOssClient();
-      for (let index = params[0].skip; index < params[0].skip + params[0].take - 1; index++) {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         const task = res.list[index - params[0].skip];
         let cover;
         for (const block of task.content.content?.blocks || []) {

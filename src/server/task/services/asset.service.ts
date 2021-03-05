@@ -146,7 +146,7 @@ export class AssetService {
     return asset instanceof Asset ? asset.id : asset;
   }
 
-  async removeAsset(asset: Asset | number) {
+  async deleteAsset(asset: Asset | number) {
     const oss = await this.commonService.getOssClient();
     asset = asset instanceof Asset ? asset : await this.getAsset(asset);
     await this.manager.delete(Asset, asset.id);
@@ -172,6 +172,10 @@ export class AssetService {
       space?: Space | number;
       task?: Task | number;
       isRoot?: boolean;
+      name?: string;
+      format?: string;
+      uploadAfter?: Date;
+      uploadBefore?: Date;
       uploader?: User | number;
       pageSize?: number;
       current?: number;
@@ -195,6 +199,28 @@ export class AssetService {
     if (options.uploader) {
       const userId = await this.userService.getUserId(options.uploader);
       query = query.andWhere('uploader.id = :userId', { userId });
+    }
+
+    if (options.name) {
+      query = query.andWhere('asset.name LIKE :name', {
+        name: `%${options.name}%`,
+      });
+    }
+
+    if (options.format) {
+      query = query.andWhere('asset.format LIKE :format', {
+        format: `%${options.format}%`,
+      });
+    }
+
+    if (options.uploadAfter) {
+      const after = options.uploadAfter;
+      query = query.andWhere('asset.createAt >= :after', { after });
+    }
+
+    if (options.uploadBefore) {
+      const before = options.uploadBefore;
+      query = query.andWhere('asset.createAt < :before', { before });
     }
 
     query = query.orderBy('asset.id', 'DESC');

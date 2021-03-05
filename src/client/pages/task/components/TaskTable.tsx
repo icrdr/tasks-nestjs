@@ -1,21 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { VariableSizeGrid } from 'react-window';
-import ResizeObserver from 'rc-resize-observer';
-import { Avatar, Badge, Card, Dropdown, Empty, Menu, Table } from 'antd';
+import React, { useState, useRef } from 'react';
+import { Avatar, Badge } from 'antd';
 import moment from 'moment';
-import { Link, useModel, useParams, useRequest } from 'umi';
+import { Link, useModel, useRequest } from 'umi';
 import { getSpaceTasks, getSubTasks } from '../task.service';
-import { GetTasksDTO, TaskDetailRes } from '@dtos/task.dto';
-import InfiniteLoader from 'react-window-infinite-loader';
+import { GetTasksDTO, TaskDetailRes, TaskMoreDetailRes } from '@dtos/task.dto';
 import { AssignmentRes, MemberRes } from '@dtos/space.dto';
-import { ViewOption } from '@server/task/entities/property.entity';
-import VTable from '../../../components/VTable';
+import { ViewOption } from '@server/common/common.entity';
+import VTable from '@components/VTable';
 
-const TaskTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
+const TaskTable: React.FC<{ task?: TaskMoreDetailRes; option: ViewOption; update?: boolean }> = ({
+  task,
   option,
   update = false,
 }) => {
-  const currentTaskId = (useParams() as any).id;
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [dataUpdate, setDataUpdate] = useState(false);
@@ -81,7 +78,9 @@ const TaskTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
               return (
                 <Avatar.Group>
                   {assignments?.map((assignment: AssignmentRes, index: number) => (
-                    <Avatar key={index}>{(assignment.members[0] as MemberRes).username}</Avatar>
+                    <Avatar key={index}>
+                      {assignment.name || (assignment.members[0] as MemberRes).username}
+                    </Avatar>
                   ))}
                 </Avatar.Group>
               );
@@ -109,13 +108,13 @@ const TaskTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
       }
     }
 
-    return currentTaskId
-      ? await getSubTasks(currentTaskId, { ...params, ...body })
+    return task
+      ? await getSubTasks(task.id, { ...params, ...body })
       : await getSpaceTasks(currentSpace.id, { ...params, ...body });
   };
 
   const initTasksReq = useRequest(getTasks, {
-    refreshDeps: [update, dataUpdate, option],
+    refreshDeps: [task, update, dataUpdate, option],
     onSuccess: (res, params) => {
       setTaskList(Array(res.total).fill(undefined));
       if (fetchCountRef.current !== 0) {

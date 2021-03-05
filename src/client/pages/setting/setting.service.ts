@@ -1,16 +1,15 @@
-import { request } from "umi";
+import { request } from 'umi';
 import {
   AddRoleDTO,
   ChangeRoleDTO,
+  ChangeSpaceDTO,
   GetRolesDTO,
   RoleListRes,
   RoleRes,
-} from "@dtos/space.dto";
+  SpaceDetailRes,
+} from '@dtos/space.dto';
 
-export const getSpaceRoles = async (
-  id: number,
-  params?: GetRolesDTO
-): Promise<RoleListRes> => {
+export const getSpaceRoles = async (id: number, params?: GetRolesDTO): Promise<RoleListRes> => {
   return request(`/api/spaces/${id}/roles`, {
     params,
   });
@@ -19,20 +18,24 @@ export const getSpaceRoles = async (
 export const changeRole = async (
   id: number,
   roleId: number,
-  body: ChangeRoleDTO
+  body: ChangeRoleDTO,
 ): Promise<RoleRes> => {
   return request(`/api/spaces/${id}/roles/${roleId}`, {
-    method: "PUT",
+    method: 'PUT',
     data: body,
   });
 };
 
-export const addSpaceRole = async (
-  id: number,
-  body: AddRoleDTO
-): Promise<RoleRes> => {
+export const changeSpace = async (id: number, body: ChangeSpaceDTO): Promise<SpaceDetailRes> => {
+  return request(`/api/spaces/${id}`, {
+    method: 'PUT',
+    data: body,
+  });
+};
+
+export const addSpaceRole = async (id: number, body: AddRoleDTO): Promise<RoleRes> => {
   return request(`/api/spaces/${id}/roles`, {
-    method: "POST",
+    method: 'POST',
     data: body,
   });
 };

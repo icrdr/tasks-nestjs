@@ -4,7 +4,7 @@ import { Connection } from 'typeorm';
 import { OptionService } from '../option/option.service';
 import { UserService } from '../user/services/user.service';
 import { internet } from 'faker';
-import { RoleType } from '../user/entities/user.entity';
+import { RoleType } from '../common/common.entity';
 
 @Injectable()
 export class DatabaseService {

@@ -1,4 +1,4 @@
-import { BaseEntity } from '@server/common/common.entity';
+import { AccessLevel, BaseEntity, TaskState } from '@server/common/common.entity';
 import {
   Entity,
   Column,
@@ -18,14 +18,7 @@ import { OutputData } from '@editorjs/editorjs';
 import { Comment } from './comment.entity';
 import { property } from './property.entity';
 import { Asset } from '@server/task/entities/asset.entity';
-import { AccessLevel, Assignment, Space } from './space.entity';
-
-export enum TaskState {
-  IN_PROGRESS = 'inProgress',
-  COMPLETED = 'completed',
-  SUSPENDED = 'suspended',
-  UNCONFIRMED = 'unconfirmed',
-}
+import { Assignment, Space } from './space.entity';
 
 @Entity()
 @Tree('nested-set')

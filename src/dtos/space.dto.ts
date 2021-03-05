@@ -11,14 +11,13 @@ import {
   IsNotEmpty,
 } from 'class-validator';
 import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
-import { Task, Content, TaskState } from '../server/task/entities/task.entity';
 import { ListDTO, ListRes } from './misc.dto';
 import { UserRes } from './user.dto';
 import { User } from '../server/user/entities/user.entity';
-import { AccessLevel, Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
+import { Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
+import { AccessLevel } from '../server/common/common.entity';
 
-export class GetMembersDTO extends ListDTO{
-
+export class GetMembersDTO extends ListDTO {
   @IsOptional()
   @IsString()
   username?: string;
@@ -28,7 +27,9 @@ export class GetMembersDTO extends ListDTO{
   fullName?: string;
 }
 
-export class ChangeRoleDTO{
+export class GetAssignmentDTO extends ListDTO {}
+
+export class ChangeRoleDTO {
   @IsOptional()
   @IsString()
   name?: string;
@@ -38,7 +39,7 @@ export class ChangeRoleDTO{
   access?: AccessLevel;
 }
 
-export class ChangeAssetDTO{
+export class ChangeAssetDTO {
   @IsOptional()
   @IsString()
   name?: string;
@@ -53,13 +54,43 @@ export class AddRoleDTO {
   access?: AccessLevel;
 }
 
+export class ChangeSpaceDTO {
+  @IsOptional()
+  @IsEnum(AccessLevel)
+  access?: AccessLevel;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+}
+
+export class ChangeAssignmentDTO {
+  @IsOptional()
+  @IsNumber()
+  roleId?: number;
+
+  @IsOptional()
+  @IsString()
+  name?: string;
+}
+
 export class AddAssignmentDTO {
+  @IsOptional()
   @Type(() => Number)
   @IsNumber({}, { each: true })
-  userId: number[];
+  userId?: number[];
 
+  @IsOptional()
   @IsString()
-  roleName: string;
+  name?: string;
+
+  @IsOptional()
+  @IsString()
+  roleName?: string;
+
+  @IsOptional()
+  @IsNumber()
+  groupId?: number;
 
   @IsOptional()
   @IsEnum(AccessLevel)
@@ -96,7 +127,6 @@ export class SpaceRes {
 
 export class GetRolesDTO extends ListDTO {}
 
-
 @Exclude()
 export class MemberRes {
   user: User;
@@ -115,7 +145,6 @@ export class MemberRes {
     Object.assign(this, partial);
   }
 }
-
 
 @Exclude()
 export class RoleRes {
@@ -138,17 +167,12 @@ export class AssignmentRes {
   @Expose()
   id: number;
 
+  @Expose()
+  name: string;
+
+  @Expose()
+  @Transform((i) => (i ? new RoleRes(i) : null))
   role: Role;
-
-  @Expose()
-  get roleName(): string {
-    return this.role.name;
-  }
-
-  @Expose()
-  get roleAccess(): string {
-    return this.role.access;
-  }
 
   @Expose()
   @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))

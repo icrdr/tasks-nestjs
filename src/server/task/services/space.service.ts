@@ -2,11 +2,12 @@ import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/commo
 import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
-import { AccessLevel, Assignment, Member, Role, Space } from '../entities/space.entity';
+import { Assignment, Member, Role, Space } from '../entities/space.entity';
 import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { Task } from '../entities/task.entity';
 import { TaskService } from './task.service';
+import { AccessLevel } from '../../common/common.entity';
 
 @Injectable()
 export class SpaceService {
@@ -34,6 +35,7 @@ export class SpaceService {
     this.assignmentQuery = this.manager
       .createQueryBuilder(Assignment, 'assignment')
       .leftJoinAndSelect('assignment.space', 'space')
+      .leftJoinAndSelect('assignment.root', 'root')
       .leftJoinAndSelect('assignment.tasks', 'task')
       .leftJoinAndSelect('assignment.members', 'member')
       .leftJoinAndSelect('assignment.role', 'role')
@@ -115,31 +117,98 @@ export class SpaceService {
 
     return await query.getManyAndCount();
   }
+  async appendAssignment(scope: Task | Space, assignment: Assignment | number) {
+    assignment =
+      assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
+    if (scope instanceof Task) {
+      assignment.tasks.push(scope);
+    } else {
+      assignment.space = scope;
+    }
+    return await this.manager.save(assignment);
+  }
 
   async addAssignment(
-    scope: Space | Task,
     users: User[] | number[],
-    roleName: string,
-    roleAccess?: AccessLevel,
+    role: Role | number,
+    options: {
+      name?: string;
+      root?: Space | number;
+      space?: Space | number;
+      task?: Task | number;
+    } = {},
   ) {
-    const space = scope instanceof Space ? scope : scope.space;
-    const role = await this.addRole(space, roleName, roleAccess || AccessLevel.EDIT);
+    role = role instanceof Role ? role : await this.getRole(role);
+    if (!options.space && !options.root && !options.task)
+      throw new NotFoundException('space or root should not be empty');
+
+    let space: Space, task: Task, root: Space;
+
+    if (options.task) {
+      task =
+        options.task instanceof Task ? options.task : await this.taskService.getTask(options.task);
+      space = task.space;
+    }
+
+    if (options.space) {
+      space = options.space instanceof Space ? options.space : await this.getSpace(options.space);
+    }
+
+    if (options.root) {
+      root = options.root instanceof Space ? options.root : await this.getSpace(options.root);
+    }
+
     const members = [];
     users = unionArrays(users);
     for await (const user of users) {
-      const member = await this.getMember(space, user);
+      const member = await this.getMember(space || root, user);
       members.push(member);
     }
 
     let assignment = new Assignment();
     assignment.role = role;
     assignment.members = members;
+    if (options.name) assignment.name = options.name;
+    if (options.task) assignment.tasks = [task];
+    if (options.space) assignment.space = space;
+    if (options.root) assignment.root = root;
 
-    if (scope instanceof Space) {
-      assignment.space = scope;
-    } else {
-      assignment.tasks = [scope];
+    return await this.manager.save(assignment);
+  }
+
+  async changeAssignment(
+    assignment: Assignment | number,
+    options: { name: string; role: Role | number },
+  ) {
+    assignment =
+      assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
+    if (options.name) assignment.name = options.name;
+    if (options.role) {
+      const role = options.role instanceof Role ? options.role : await this.getRole(options.role);
+      assignment.role = role;
     }
+
+    return await this.manager.save(assignment);
+  }
+
+  async addAssignmentMember(assignment: Assignment | number, user: User | number) {
+    assignment =
+      assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
+    const space = assignment.root || assignment.space;
+    const member = await this.getMember(space, user);
+    assignment.members.push(member);
+
+    return await this.manager.save(assignment);
+  }
+
+  async removeAssignmentMember(assignment: Assignment | number, user: User | number) {
+    assignment =
+      assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
+    user = user instanceof User ? user : await this.userService.getUser(user);
+
+    assignment.members = assignment.members.filter(
+      (member) => member.user.id !== (user as User).id,
+    );
 
     return await this.manager.save(assignment);
   }
@@ -151,10 +220,68 @@ export class SpaceService {
     return assignment;
   }
 
-  async removeAssignment(assignment: Assignment | number) {
+  async deleteAssignment(assignment: Assignment | number) {
     assignment =
       assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
     await this.manager.delete(Assignment, assignment.id);
+  }
+
+  async removeAssignment(scope: Task | Space, assignment: Assignment | number) {
+    assignment =
+      assignment instanceof Assignment ? assignment : await this.getAssignment(assignment);
+
+    if (assignment.root) {
+      if (scope instanceof Task) {
+        assignment.tasks = assignment.tasks.filter((task) => task.id !== scope.id);
+      } else {
+        assignment.space = null;
+      }
+      await this.manager.save(assignment);
+    } else {
+      await this.deleteAssignment(assignment);
+    }
+  }
+
+  async getAssignments(
+    options: {
+      root?: Space | number;
+      space?: Space | number;
+      task?: Task | number;
+      user?: User | number;
+      current?: number;
+      pageSize?: number;
+      all?: boolean;
+    } = {},
+  ) {
+    let query = this.assignmentQuery.clone();
+
+    if (options.user) {
+      const userId = await this.userService.getUserId(options.user);
+      query = query.andWhere('user.id = :userId', { userId });
+    }
+
+    if (options.task) {
+      const taskId = await this.taskService.getTaskId(options.task);
+      query = query.andWhere('task.id = :taskId', { taskId });
+    }
+
+    if (options.space) {
+      const spaceId = await this.getSpaceId(options.space);
+      query = query.andWhere('space.id = :spaceId', { spaceId });
+    }
+    if (options.root) {
+      const rootId = await this.getSpaceId(options.root);
+      query = query.andWhere('root.id = :rootId', { rootId });
+    }
+
+    if (!options.all) {
+      query = query
+        .orderBy('space.id', 'DESC')
+        .skip((options.current - 1) * options.pageSize || 0)
+        .take(options.pageSize || 5);
+    }
+
+    return await query.getManyAndCount();
   }
 
   async addSpace(
@@ -178,7 +305,8 @@ export class SpaceService {
       for (const admin of options.admins) {
         adminMembers.push(await this.addMember(space, admin));
       }
-      await this.addAssignment(space, options.admins, '管理员', AccessLevel.FULL);
+      const adminRole = await this.addRole(space, '管理员', AccessLevel.FULL);
+      await this.addAssignment(options.admins, adminRole, { name: '管理员组', root: space, space });
     }
 
     //add member
@@ -225,6 +353,8 @@ export class SpaceService {
       fullName?: string;
       pageSize?: number;
       current?: number;
+      skip?: number;
+      take?: number;
     } = {},
   ) {
     let query = this.memberQuery.clone();
@@ -241,10 +371,15 @@ export class SpaceService {
       query = query.andWhere('user.fullName LIKE :fullName', { fullName: `%${options.fullName}%` });
     }
 
-    query = query
-      .orderBy('space.id', 'DESC')
-      .skip((options.current - 1) * options.pageSize || 0)
-      .take(options.pageSize || 5);
+    query = query.orderBy('space.id', 'DESC');
+
+    if (!options.skip || !options.take) {
+      query = query.skip((options.current - 1) * options.pageSize || 0).take(options.pageSize || 5);
+    }
+
+    if (options.skip !== undefined && options.take) {
+      query = query.skip(options.skip).take(options.take);
+    }
 
     return await query.getManyAndCount();
   }
@@ -285,42 +420,6 @@ export class SpaceService {
     return !!(await query.getOne());
   }
 
-  async getAssignments(
-    options: {
-      space?: Space | number;
-      task?: Task | number;
-      user?: User | number;
-      current?: number;
-      pageSize?: number;
-      all?: boolean;
-    } = {},
-  ) {
-    let query = this.assignmentQuery.clone();
-
-    if (options.user) {
-      const userId = await this.userService.getUserId(options.user);
-      query = query.andWhere('user.id = :userId', { userId });
-    }
-
-    if (options.task) {
-      const taskId = await this.taskService.getTaskId(options.task);
-      query = query.andWhere('task.id = :taskId', { taskId });
-    }
-
-    if (options.space) {
-      const spaceId = await this.getSpaceId(options.space);
-      query = query.andWhere('space.id = :spaceId', { spaceId });
-    }
-    if (!options.all) {
-      query = query
-        .orderBy('space.id', 'DESC')
-        .skip((options.current - 1) * options.pageSize || 0)
-        .take(options.pageSize || 5);
-    }
-
-    return await query.getManyAndCount();
-  }
-
   async getSpaceAccess(space: Space | number, user: User | number) {
     space = space instanceof Space ? space : await this.getSpace(space);
     // 1. cheack if is space member
@@ -350,6 +449,14 @@ export class SpaceService {
     const space = await query.getOne();
     if (!space && exception) throw new NotFoundException('Space was not found.');
     return space;
+  }
+
+  async changeSpace(space: Space | number, options: { name: string; access: AccessLevel }) {
+    space = space instanceof Space ? space : await this.getSpace(space);
+    if (options.name) space.name = options.name;
+    if (options.access) space.access = options.access;
+
+    return await this.manager.save(space);
   }
 
   async getSpaces(

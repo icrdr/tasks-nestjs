@@ -1,13 +1,7 @@
 import { Column, Entity, ManyToOne } from "typeorm";
 import { User } from "@server/user/entities/user.entity";
 import { Task } from "./task.entity";
-import { BaseEntity } from "@server/common/common.entity";
-
-export enum CommentType {
-  TEXT = 'text',
-  IMAGE = 'image',
-  ASSET = 'asset',
-}
+import { BaseEntity, CommentType } from "@server/common/common.entity";
 
 @Entity()
 export class Comment extends BaseEntity {

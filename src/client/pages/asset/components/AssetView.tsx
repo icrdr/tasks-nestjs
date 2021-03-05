@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useModel, useParams } from 'umi';
+import { useModel } from 'umi';
 import {
   Button,
   Dropdown,
@@ -13,16 +13,16 @@ import {
   message,
   Progress,
 } from 'antd';
-import { ViewOption } from '@server/task/entities/property.entity';
 import { PictureOutlined, SettingOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import AssetGallery from './AssetGallery';
 import { getOssClient } from '../../layout/layout.service';
 import { addSpaceAsset, addTaskAsset } from '../../task/task.service';
 import { sleep } from '@utils/utils';
+import { ViewOption } from '@server/common/common.entity';
+import { TaskMoreDetailRes } from '@dtos/task.dto';
 
-const AssetView: React.FC<{}> = () => {
-  const currentTaskId = (useParams() as any).id;
+const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [update, setUpdate] = useState(false);
@@ -30,9 +30,12 @@ const AssetView: React.FC<{}> = () => {
   const [isUploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
-  const viewOptionKey = currentTaskId
-    ? `task${currentTaskId}Asset`
-    : `space${currentSpace.id}Asset` + 'ViewOption';
+  const viewOptionKey = task
+    ? `task${task.id}AssetViewOption`
+    : `space${currentSpace.id}AssetViewOption`;
+
+  const isAdmin = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
+  const isEditable = isAdmin || task?.userAccess !== 'view';
 
   useEffect(() => {
     const initViewOption = JSON.parse(localStorage.getItem(viewOptionKey)) || {
@@ -40,7 +43,13 @@ const AssetView: React.FC<{}> = () => {
       headers: [
         {
           title: 'name',
-          width: 200,
+          width: 150,
+          filter: undefined,
+          hidden: false,
+        },
+        {
+          title: 'format',
+          width: 150,
           filter: undefined,
           hidden: false,
         },
@@ -91,8 +100,19 @@ const AssetView: React.FC<{}> = () => {
           return (
             <Input.Search
               key={index}
-              style={{ width: 200 }}
+              style={{ width: 150 }}
               placeholder="任务名"
+              onSearch={(v) => handleFilter(index, v)}
+              defaultValue={header.filter || ''}
+              allowClear
+            />
+          );
+        case 'format':
+          return (
+            <Input.Search
+              key={index}
+              style={{ width: 150 }}
+              placeholder="格式名"
               onSearch={(v) => handleFilter(index, v)}
               defaultValue={header.filter || ''}
               allowClear
@@ -123,6 +143,9 @@ const AssetView: React.FC<{}> = () => {
         switch (title) {
           case 'name':
             label = '文件名';
+            break;
+          case 'format':
+            label = '格式名';
             break;
           case 'createAt':
             label = '上传日期';
@@ -198,8 +221,8 @@ const AssetView: React.FC<{}> = () => {
     }
 
     try {
-      if (currentTaskId) {
-        await addTaskAsset(currentTaskId, {
+      if (task) {
+        await addTaskAsset(task.id, {
           name,
           format,
           type,
@@ -231,24 +254,26 @@ const AssetView: React.FC<{}> = () => {
     <Space size="middle" direction="vertical" style={{ width: '100%' }}>
       <div>
         <Space>
-          {isUploading ? (
-            <Progress
-              percent={uploadProgress}
-              style={{ width: '110px' }}
-              format={(percent) => percent.toFixed(1) + '%'}
-            />
-          ) : (
-            <Upload
-              disabled={isUploading}
-              showUploadList={false}
-              // beforeUpload={beforeUpload}
-              customRequest={handleUpload}
-            >
-              <Button type={'primary'} disabled={isUploading} icon={<PictureOutlined />}>
-                上传文件
-              </Button>
-            </Upload>
-          )}
+          {isEditable &&
+            (isUploading ? (
+              <Progress
+                percent={uploadProgress}
+                style={{ width: '110px' }}
+                format={(percent) => percent.toFixed(1) + '%'}
+              />
+            ) : (
+              <Upload
+                disabled={isUploading}
+                showUploadList={false}
+                // beforeUpload={beforeUpload}
+                customRequest={handleUpload}
+              >
+                <Button type={'primary'} disabled={isUploading} icon={<PictureOutlined />}>
+                  上传文件
+                </Button>
+              </Upload>
+            ))}
+
           <Select value={viewOption?.form} onChange={handleSeletForm}>
             <Select.Option value="table">表格</Select.Option>
             <Select.Option value="gallery">画廊</Select.Option>
@@ -260,7 +285,7 @@ const AssetView: React.FC<{}> = () => {
         <Space style={{ float: 'right' }}>{filter}</Space>
       </div>
       <div style={{ height: 'calc(100vh - 100px)' }}>
-        <AssetGallery option={viewOption} update={update} />
+        <AssetGallery option={viewOption} update={update} task={task} />
       </div>
     </Space>
   );

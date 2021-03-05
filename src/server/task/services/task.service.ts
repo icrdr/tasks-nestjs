@@ -2,15 +2,16 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { UserService } from '@server/user/services/user.service';
-import { Task, Content, TaskState } from '../entities/task.entity';
+import { Task, Content } from '../entities/task.entity';
 import { OutputData } from '@editorjs/editorjs';
-import { AccessLevel, Role, Space } from '../entities/space.entity';
+import { Role, Space } from '../entities/space.entity';
 import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { SpaceService } from './space.service';
 import { Comment } from '../entities/comment.entity';
 import { DateRange } from '@dtos/misc.dto';
 import moment from 'moment';
+import { AccessLevel, TaskState } from '../../common/common.entity';
 
 @Injectable()
 export class TaskService {
@@ -74,13 +75,11 @@ export class TaskService {
         adminMembers.push(await this.spaceService.addMember(space, admin));
       }
       const roles = (await this.spaceService.getRoles({ space, access: AccessLevel.FULL }))[0];
-      await this.spaceService.addAssignment(
+      await this.spaceService.addAssignment(options.admins, roles[0], {
         task,
-        options.admins,
-        roles[0]?.name || '管理员',
-        AccessLevel.FULL,
-      );
+      });
     }
+
     return await this.getTask(task.id);
   }
 

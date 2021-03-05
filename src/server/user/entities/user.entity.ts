@@ -1,15 +1,10 @@
-import { BaseEntity } from '@server/common/common.entity';
+import { BaseEntity, RoleType, ThirdAuthType } from '@server/common/common.entity';
 import { Entity, Column, JoinTable, ManyToMany, DeleteDateColumn, OneToMany } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { Comment } from '@server/task/entities/comment.entity';
 import { Asset } from '@server/task/entities/asset.entity';
 import { Member } from '@server/task/entities/space.entity';
 
-export enum RoleType {
-  ADMIN = 'admin',
-  USER = 'user',
-  GUEST = 'guest',
-}
 
 @Entity()
 export class User extends BaseEntity {
@@ -50,9 +45,6 @@ export class User extends BaseEntity {
   deleteAt: Date;
 }
 
-export enum ThirdAuthType {
-  WECHAT = 'wechat',
-}
 
 @Entity()
 export class ThirdAuth extends BaseEntity {

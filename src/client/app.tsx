@@ -30,7 +30,7 @@ export async function getInitialState(): Promise<initialState> {
   if (token) {
     try {
       currentUser = (await getCurrentUser()) as CurrentUserRes;
-      console.log(currentUser);
+      
       const currentSpaceId = parseInt(localStorage.getItem('currentSpaceId'));
       if (currentUser.spaces.length > 0) {
         // check currentSpaceId is right
@@ -50,7 +50,8 @@ export async function getInitialState(): Promise<initialState> {
       if (location.pathname !== '/login') history.push('/login');
     }
   }
-
+  console.log('currentUser',currentUser);
+  console.log('currentSpace',currentSpace);
   return { currentUser, currentSpace };
 }
 
