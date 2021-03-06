@@ -29,7 +29,6 @@ export class RoleAccessGuard implements CanActivate {
     const token = req.headers?.authorization?.split(' ')[1] || req._protocol;
     if (!token) throw new UnauthorizedException('no authorization token was found');
     let payload: tokenPayload;
-    console.log(token)
     try {
       payload = verify(token, this.configService.get('jwtSecret')) as tokenPayload;
     } catch (error) {
