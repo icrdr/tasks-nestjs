@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useModel } from 'umi';
+import React, { useEffect, useState } from "react";
+import { useModel } from "umi";
 import {
   Button,
   Dropdown,
@@ -12,18 +12,18 @@ import {
   Upload,
   message,
   Progress,
-} from 'antd';
-import { PictureOutlined, SettingOutlined } from '@ant-design/icons';
-import moment from 'moment';
-import AssetGallery from './AssetGallery';
-import { getOssClient } from '../../layout/layout.service';
-import { addSpaceAsset, addTaskAsset } from '../../task/task.service';
-import { sleep } from '@utils/utils';
-import { ViewOption } from '@server/common/common.entity';
-import { TaskMoreDetailRes } from '@dtos/task.dto';
+} from "antd";
+import { PictureOutlined, SettingOutlined } from "@ant-design/icons";
+import moment from "moment";
+import AssetGallery from "./AssetGallery";
+import { getOssClient } from "../../layout/layout.service";
+import { addSpaceAsset, addTaskAsset } from "../../task/task.service";
+import { getInitViewOption, sleep } from "@utils/utils";
+import { ViewOption } from "@server/common/common.entity";
+import { TaskMoreDetailRes } from "@dtos/task.dto";
 
 const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const [update, setUpdate] = useState(false);
   const [viewOption, setViewOption] = useState<ViewOption>(null);
@@ -34,39 +34,40 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
     ? `task${task.id}AssetViewOption`
     : `space${currentSpace.id}AssetViewOption`;
 
-  const isAdmin = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
-  const isEditable = isAdmin || task?.userAccess !== 'view';
+  const isFull =
+    currentSpace?.userAccess === "full" || task?.userAccess === "full";
+  const isEdit =
+    isFull ||
+    (task ? task.userAccess === "edit" : currentSpace.userAccess === "edit");
 
   useEffect(() => {
-    const initViewOption = JSON.parse(localStorage.getItem(viewOptionKey)) || {
-      form: 'gallery',
-      headers: [
-        {
-          title: 'name',
-          width: 150,
-          filter: undefined,
-          hidden: false,
-        },
-        {
-          title: 'format',
-          width: 150,
-          filter: undefined,
-          hidden: false,
-        },
-        {
-          title: 'createAt',
-          width: 200,
-          filter: undefined,
-          hidden: false,
-        },
-      ],
-    };
+    const initViewOption = getInitViewOption(
+      JSON.parse(localStorage.getItem(viewOptionKey)),
+      {
+        form: "gallery",
+        headers: [
+          {
+            title: "name",
+            width: 150,
+            filter: undefined,
+            hidden: false,
+          },
+          {
+            title: "format",
+            width: 150,
+            filter: undefined,
+            hidden: false,
+          },
+          {
+            title: "createAt",
+            width: 200,
+            filter: undefined,
+            hidden: false,
+          },
+        ],
+      }
+    );
 
-    //refresh role column
-    const commonHeaders = initViewOption.headers.filter((h) => h.title.split(':')[0] !== 'role');
-    const headers = [...commonHeaders];
-
-    initViewOption.headers = headers;
     setViewOption(initViewOption);
   }, []);
 
@@ -94,35 +95,35 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   const filter = viewOption?.headers
     .filter((header) => !header.hidden)
     .map((header, index: number) => {
-      const type = header.title.split(':')[0];
+      const type = header.title.split(":")[0];
       switch (type) {
-        case 'name':
+        case "name":
           return (
             <Input.Search
               key={index}
               style={{ width: 150 }}
-              placeholder="任务名"
+              placeholder="文件名"
               onSearch={(v) => handleFilter(index, v)}
-              defaultValue={header.filter || ''}
+              defaultValue={header.filter || ""}
               allowClear
             />
           );
-        case 'format':
+        case "format":
           return (
             <Input.Search
               key={index}
               style={{ width: 150 }}
               placeholder="格式名"
               onSearch={(v) => handleFilter(index, v)}
-              defaultValue={header.filter || ''}
+              defaultValue={header.filter || ""}
               allowClear
             />
           );
-        case 'createAt':
+        case "createAt":
           return (
             <DatePicker
               key={index}
-              placeholder={'上传日期之前'}
+              placeholder={"上传日期之前"}
               defaultValue={header.filter ? moment(header.filter) : undefined}
               onChange={(v) => handleFilter(index, v?.toDate() || undefined)}
             />
@@ -136,19 +137,19 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   const menu = (
     <Menu>
       {viewOption?.headers.map((header, index) => {
-        const type = header.title.split(':')[0];
+        const type = header.title.split(":")[0];
         let title = type;
 
-        let label = '';
+        let label = "";
         switch (title) {
-          case 'name':
-            label = '文件名';
+          case "name":
+            label = "文件名";
             break;
-          case 'format':
-            label = '格式名';
+          case "format":
+            label = "格式名";
             break;
-          case 'createAt':
-            label = '上传日期';
+          case "createAt":
+            label = "上传日期";
             break;
           default:
             label = title;
@@ -158,7 +159,7 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
           <Menu.Item key={index}>
             <Space>
               <Switch
-                disabled={title === 'name'}
+                disabled={title === "name"}
                 size="small"
                 defaultChecked={!header.hidden}
                 onChange={(v) => handleHeaderDisplay(index, v)}
@@ -180,15 +181,15 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
     setUploading(true);
     setUploadProgress(0);
     window.onbeforeunload = () => true;
-    const objectName = moment().format('YYYYMMDDhhmmss');
+    const objectName = moment().format("YYYYMMDDhhmmss");
     const oss = await getOssClient();
-    const name = options.file.name.split('.').slice(-999, -1).join('.');
-    const format = options.file.name.split('.').slice(-1)[0];
+    const name = options.file.name.split(".").slice(-999, -1).join(".");
+    const format = options.file.name.split(".").slice(-1)[0];
     const type = options.file.type;
     const size = options.file.size;
 
     if (!oss) {
-      message.error('no oss');
+      message.error("no oss");
       return false;
     }
     console.log(options.file);
@@ -208,13 +209,13 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
       } catch (err) {
         console.log(err);
         if (++attemptCount > maxTimes) {
-          message.error('bad network');
+          message.error("bad network");
           setUploading(false);
           window.onbeforeunload = undefined;
           return false;
         } else {
           console.log(attemptCount);
-          message.error('retry in 5 seconds');
+          message.error("retry in 5 seconds");
           await sleep(5000);
         }
       }
@@ -227,7 +228,7 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
           format,
           type,
           size,
-          source: 'oss:' + objectName,
+          source: "oss:" + objectName,
         });
       } else {
         await addSpaceAsset(currentSpace.id, {
@@ -235,11 +236,11 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
           format,
           type,
           size,
-          source: 'oss:' + objectName,
+          source: "oss:" + objectName,
         });
       }
 
-      console.log('ok');
+      console.log("ok");
       setUpdate(!update);
       setUploadProgress(100);
     } catch (err) {
@@ -251,15 +252,15 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   };
 
   return (
-    <Space size="middle" direction="vertical" style={{ width: '100%' }}>
+    <Space size="middle" direction="vertical" style={{ width: "100%" }}>
       <div>
         <Space>
-          {isEditable &&
+          {isEdit &&
             (isUploading ? (
               <Progress
                 percent={uploadProgress}
-                style={{ width: '110px' }}
-                format={(percent) => percent.toFixed(1) + '%'}
+                style={{ width: "110px" }}
+                format={(percent) => percent.toFixed(1) + "%"}
               />
             ) : (
               <Upload
@@ -268,7 +269,11 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
                 // beforeUpload={beforeUpload}
                 customRequest={handleUpload}
               >
-                <Button type={'primary'} disabled={isUploading} icon={<PictureOutlined />}>
+                <Button
+                  type={"primary"}
+                  disabled={isUploading}
+                  icon={<PictureOutlined />}
+                >
                   上传文件
                 </Button>
               </Upload>
@@ -282,9 +287,9 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
             <Button icon={<SettingOutlined />} />
           </Dropdown>
         </Space>
-        <Space style={{ float: 'right' }}>{filter}</Space>
+        <Space style={{ float: "right" }}>{filter}</Space>
       </div>
-      <div style={{ height: 'calc(100vh - 100px)' }}>
+      <div style={{ height: "calc(100vh - 100px)" }}>
         <AssetGallery option={viewOption} update={update} task={task} />
       </div>
     </Space>

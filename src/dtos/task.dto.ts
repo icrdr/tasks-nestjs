@@ -6,17 +6,21 @@ import {
   IsBoolean,
   IsNotEmpty,
   IsDate,
-} from 'class-validator';
-import { Exclude, Expose, Transform, Type } from 'class-transformer';
-import { Task, Content } from '../server/task/entities/task.entity';
-import { ListDTO, ListRes } from './misc.dto';
-import { OutputData } from '@editorjs/editorjs';
-import { Comment } from '../server/task/entities/comment.entity';
-import { UserRes } from './user.dto';
-import { Assignment, Space } from '../server/task/entities/space.entity';
-import { AssignmentRes } from './space.dto';
-import { Asset } from '../server/task/entities/asset.entity';
-import { AccessLevel, CommentType, TaskState } from '../server/common/common.entity';
+} from "class-validator";
+import { Exclude, Expose, Transform, Type } from "class-transformer";
+import { Task, Content } from "../server/task/entities/task.entity";
+import { ListDTO, ListRes } from "./misc.dto";
+import { OutputData } from "@editorjs/editorjs";
+import { Comment } from "../server/task/entities/comment.entity";
+import { UserRes } from "./user.dto";
+import { Assignment, Space } from "../server/task/entities/space.entity";
+import { AssignmentRes } from "./space.dto";
+import { Asset } from "../server/task/entities/asset.entity";
+import {
+  AccessLevel,
+  CommentType,
+  TaskState,
+} from "../server/common/common.entity";
 
 export class AddAssetDTO {
   @IsString()
@@ -42,6 +46,10 @@ export class ChangeTaskDTO {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  @IsNumber()
+  priority?: number;
 
   @IsOptional()
   @IsEnum(TaskState)
@@ -111,7 +119,7 @@ export class GetAssetsDTO extends ListDTO {
 
   @Type(() => String)
   @IsOptional()
-  @Transform((v) => v === 'true')
+  @Transform((v) => v === "true")
   @IsBoolean()
   isRoot?: boolean;
 }
@@ -137,7 +145,7 @@ export class GetTasksDTO extends ListDTO {
 
 export class ReviewTaskDTO {
   @Type(() => String)
-  @Transform((v) => v === 'true')
+  @Transform((v) => v === "true")
   @IsBoolean()
   isConfirmed: boolean;
 }
@@ -262,6 +270,9 @@ export class TaskDetailRes {
   name: string;
 
   @Expose()
+  priority: number;
+
+  @Expose()
   access: AccessLevel;
 
   @Expose()
@@ -319,6 +330,9 @@ export class TaskMoreDetailRes {
 
   @Expose()
   name: string;
+
+  @Expose()
+  priority: number;
 
   @Expose()
   createAt: Date;

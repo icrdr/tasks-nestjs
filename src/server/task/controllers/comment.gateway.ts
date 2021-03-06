@@ -34,7 +34,7 @@ export class CommentGateway implements OnGatewayConnection {
   ) {}
   @WebSocketServer() server: Server;
 
-  @Access('common.task.talk')
+  @Access('common.task.edit')
   @SubscribeMessage('comment')
   async comment(@ConnectedSocket() client: Socket, @MessageBody() data: CommentDTO) {
     await this.commentService.comment(data.taskId, client['currentUser'].id, {

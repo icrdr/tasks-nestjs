@@ -1,9 +1,8 @@
-@import '~antd/es/style/themes/default.less';
-@import 'components/editorTools/editor.less';
-@import 'components/editorTools/header.less';
-@import 'components/editorTools/image.less';
-@import '~emoji-mart/css/emoji-mart.css';
-@import '~react-virtualized/styles.css';
+@import "~antd/es/style/themes/default.less";
+@import "components/editorTools/editor.less";
+@import "components/editorTools/header.less";
+@import "components/editorTools/image.less";
+@import "~emoji-mart/css/emoji-mart.css";
 
 html,
 body,
@@ -138,7 +137,6 @@ ol {
   width: 100%;
   padding-top: 75%;
   position: relative;
-  
 
   .task-card-content {
     width: 100%;
@@ -176,4 +174,21 @@ ol {
 }
 .ant-pro-sider-extra.ant-pro-sider-extra-no-logo {
   padding: 0;
+}
+
+.badge-priority {
+  .ant-badge-count {
+    color: @btn-primary-color;
+    background-color: @btn-primary-bg;
+  }
+}
+
+.left-right-layout-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  margin-bottom: -8px;
+  .ant-space {
+    padding-bottom: 8px;
+  }
 }

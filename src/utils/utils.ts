@@ -1,27 +1,30 @@
-import { createHash } from 'crypto';
+import { createHash } from "crypto";
 
 export function hash(string: string) {
-  const hash = createHash('md5');
-  return hash.update(string).digest('hex');
+  const hash = createHash("md5");
+  return hash.update(string).digest("hex");
 }
 
 // https://stackoverflow.com/questions/26246601/wildcard-string-comparison-in-javascript?answertab=votes#tab-top
 export function stringMatch(str: string, rule: string) {
-  const escapeRegex = (str: string) => str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, '\\$1');
-  return new RegExp('^' + rule.split('*').map(escapeRegex).join('.*') + '$').test(str);
+  const escapeRegex = (str: string) =>
+    str.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+  return new RegExp(
+    "^" + rule.split("*").map(escapeRegex).join(".*") + "$"
+  ).test(str);
 }
 
 export function getBase64(img, callback) {
   const reader = new FileReader();
-  reader.addEventListener('load', () => callback(reader.result));
+  reader.addEventListener("load", () => callback(reader.result));
   reader.readAsDataURL(img);
 }
 
 export function isIntString(str: string) {
   return /(^[1-9]\d*$)/.test(str);
 }
-export function sleep(ms:number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+export function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export function unionArrays(arr: Array<any>) {
@@ -29,7 +32,9 @@ export function unionArrays(arr: Array<any>) {
 }
 
 export function unionEntityArrays(arr: Array<any>) {
-  return arr.filter((entity, index, self) => index === self.findIndex((t) => t.id === entity.id));
+  return arr.filter(
+    (entity, index, self) => index === self.findIndex((t) => t.id === entity.id)
+  );
 }
 
 export function getValidAccess(neededAccess: string[], ownedAccess: string[]) {
@@ -44,34 +49,65 @@ export function getValidAccess(neededAccess: string[], ownedAccess: string[]) {
   }
   return validAccess;
 }
+export const getInitViewOption = (savedOption, defaultOption, roles=[]) => {
+  const headers = [];
+  const form = savedOption?.form || defaultOption.form;
+  const savedOptionHeaderTitles = savedOption?.headers.map((h) => h.title) || [];
 
-export function selectFiles(config: { multiple?: boolean; accept?: string } = {}) {
+  for (const header of defaultOption.headers) {
+    const index = savedOptionHeaderTitles.indexOf(header.title);
+    if (index < 0) {
+      headers.push(header);
+    } else {
+      headers.push(savedOption.headers[index]);
+    }
+  }
+
+  for (const role of roles) {
+    const index = savedOptionHeaderTitles.indexOf(`role:${role.id}`);
+    if (index < 0) {
+      headers.push({
+        title: `role:${role.id}`,
+        width: 150,
+        filter: undefined,
+        hidden: false,
+      });
+    } else {
+      headers.push(savedOption.headers[index]);
+    }
+  }
+  return { form, headers };
+};
+
+export function selectFiles(
+  config: { multiple?: boolean; accept?: string } = {}
+) {
   return new Promise((resolve, reject) => {
     /**
      * Create a new INPUT element
      * @type {HTMLElement}
      */
-    const inputElement = document.createElement('INPUT');
+    const inputElement = document.createElement("INPUT");
 
     /**
      * Set a 'FILE' type for this input element
      * @type {string}
      */
     //@ts-ignore
-    inputElement.type = 'file';
+    inputElement.type = "file";
 
     if (config.multiple) {
-      inputElement.setAttribute('multiple', 'multiple');
+      inputElement.setAttribute("multiple", "multiple");
     }
 
     if (config.accept) {
-      inputElement.setAttribute('accept', config.accept);
+      inputElement.setAttribute("accept", config.accept);
     }
 
     /**
      * Do not show element
      */
-    inputElement.style.display = 'none';
+    inputElement.style.display = "none";
 
     /**
      * Append element to the body
@@ -83,7 +119,7 @@ export function selectFiles(config: { multiple?: boolean; accept?: string } = {}
      * Add onchange listener for «choose file» pop-up
      */
     inputElement.addEventListener(
-      'change',
+      "change",
       (event) => {
         /**
          * Get files from input field
@@ -101,7 +137,7 @@ export function selectFiles(config: { multiple?: boolean; accept?: string } = {}
          */
         document.body.removeChild(inputElement);
       },
-      false,
+      false
     );
 
     /**

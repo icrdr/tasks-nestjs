@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
-import { useModel, useRequest } from 'umi';
-import { Select, Table, Typography } from 'antd';
-import { RoleRes } from '@dtos/space.dto';
-import { changeRole, getSpaceRoles } from '../setting.service';
-import { useForm } from 'antd/es/form/Form';
+import React, { useState } from "react";
+import { useModel, useRequest } from "umi";
+import { Select, Table, Typography } from "antd";
+import { RoleRes } from "@dtos/space.dto";
+import { changeRole, getSpaceRoles } from "../setting.service";
+import { useForm } from "antd/es/form/Form";
 const { Text } = Typography;
 
 const RoleTable: React.FC<{ update?: boolean }> = (update) => {
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const { initialState, setInitialState } = useModel("@@initialState");
   const { currentUser, currentSpace } = initialState;
   const [roleList, setRoleList] = useState<RoleRes[]>([]);
-
 
   const getSpaceRolesReq = useRequest(() => getSpaceRoles(currentSpace.id), {
     refreshDeps: [update],
@@ -34,9 +33,9 @@ const RoleTable: React.FC<{ update?: boolean }> = (update) => {
 
   const columns = [
     {
-      title: '角色名',
-      dataIndex: 'name',
-      key: 'name',
+      title: "角色名",
+      dataIndex: "name",
+      key: "name",
       render: (_, role) => {
         return (
           <Text
@@ -52,19 +51,22 @@ const RoleTable: React.FC<{ update?: boolean }> = (update) => {
       },
     },
     {
-      title: '权限',
-      dataIndex: 'access',
-      key: 'access',
+      title: "权限",
+      dataIndex: "access",
+      key: "access",
       render: (_, role) => {
         return (
           <Select
             disabled={roleList.map((r) => r.id).indexOf(role.id) === 0}
             defaultValue={role.access}
-            onChange={(v) => changeRoleReq.run(currentSpace.id, role.id, { access: v })}
+            onChange={(v) =>
+              changeRoleReq.run(currentSpace.id, role.id, { access: v })
+            }
           >
             <Select.Option value="full">完全</Select.Option>
             <Select.Option value="edit">编辑</Select.Option>
             <Select.Option value="view">浏览</Select.Option>
+            <Select.Option value={null}>无</Select.Option>
           </Select>
         );
       },

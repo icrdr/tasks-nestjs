@@ -1,9 +1,9 @@
-import ImageS from '@editorjs/image';
-import moment from 'moment';
-import OSS from 'ali-oss';
-import { selectFiles } from '@utils/utils';
-import isEqual from 'lodash/isEqual';
-import { getOssClient } from '@/pages/layout/layout.service';
+import ImageS from "@editorjs/image";
+import moment from "moment";
+import OSS from "ali-oss";
+import { selectFiles } from "@utils/utils";
+import isEqual from "lodash/isEqual";
+import { getOssClient } from "@/pages/layout/layout.service";
 
 class Uploader {
   config: any;
@@ -17,20 +17,29 @@ class Uploader {
   }
 
   async ossUpload(file) {
-    const objectName = moment().format('YYYYMMDDhhmmss');
+    const objectName = moment().format("YYYYMMDDhhmmss");
     const oss = await getOssClient();
     const res = await oss.put(objectName, file);
     console.log(res);
     return {
       success: 1,
       file: {
-        source: 'oss:' + objectName,
+        source: "oss:" + objectName,
       },
     };
   }
 
   uploadSelectedFile({ onPreview }) {
     const upload = selectFiles({ accept: this.config.types }).then((files) => {
+      if (this.config.types && this.config.types.indexOf(files[0].type) < 0)
+        throw new Error("File is not accepted format");
+      if (this.config.size && files[0].size > this.config.size)
+        throw new Error(
+          `File is larger than maximum size (${(this.config.size / 1024).toFixed(
+            2
+          )}KB)`
+        );
+
       const reader = new FileReader();
       reader.readAsDataURL(files[0]);
       reader.onload = (e) => {
@@ -54,7 +63,7 @@ class Uploader {
       resolve({
         success: 1,
         file: {
-          source: 'url:' + url,
+          source: "url:" + url,
         },
       });
     });
@@ -87,23 +96,26 @@ class Uploader {
 }
 
 export class Image extends ImageS {
+  configS: any;
+
   constructor({ data, config, api, readOnly }) {
     //call on block's creation (init editor or insert a new block)
     super({ data, config, api, readOnly });
+    this.configS = config;
     const imagePreloader = (this as ImageS).ui.nodes.imagePreloader;
     const imageContainer = (this as ImageS).ui.nodes.imageContainer;
-    imagePreloader.className = 'oss-image-tool__image-preloader';
-    imageContainer.className = 'oss-image-tool__image';
+    imagePreloader.className = "oss-image-tool__image-preloader";
+    imageContainer.className = "oss-image-tool__image";
 
-    const spin = document.createElement('span');
-    spin.classList.add('ant-spin-dot', 'ant-spin-dot-spin');
+    const spin = document.createElement("span");
+    spin.classList.add("ant-spin-dot", "ant-spin-dot-spin");
     for (let index = 0; index < 4; index++) {
-      const dot = document.createElement('i');
-      dot.className = 'ant-spin-dot-item';
+      const dot = document.createElement("i");
+      dot.className = "ant-spin-dot-item";
       spin.append(dot);
     }
-    const contrainer = document.createElement('div');
-    contrainer.className = 'oss-image-tool__image-preloader-contrainer';
+    const contrainer = document.createElement("div");
+    contrainer.className = "oss-image-tool__image-preloader-contrainer";
 
     contrainer.append(imagePreloader);
     contrainer.append(spin);
@@ -111,7 +123,7 @@ export class Image extends ImageS {
     (this as ImageS).uploader = new Uploader({
       config: config,
       onUpload: (res) => (this as ImageS).onUpload(res),
-      onError: (err) => (this as ImageS).uploadingFailed(err),
+      onError: (err) => this.uploadingFailed(err),
     });
   }
 
@@ -122,10 +134,16 @@ export class Image extends ImageS {
     return super.render();
   }
 
+  uploadingFailed(errorText) {
+    if (!!this.configS.onError) this.configS.onError(errorText);
+
+    // return super.uploadingFailed();
+  }
+
   updateRender(data) {
     (this as ImageS).data = data;
     if ((this as ImageS).ui.nodes.caption) {
-      (this as ImageS).ui.nodes.caption.innerHTML = '';
+      (this as ImageS).ui.nodes.caption.innerHTML = "";
       (this as ImageS).ui.nodes.caption.textContent = (this as ImageS)._data.caption;
     }
   }
@@ -135,14 +153,16 @@ export class Image extends ImageS {
     if (isEqual(file, (this as ImageS)._data.file)) return;
     (this as ImageS)._data.file = file || {};
     if (file.source) {
-      const _source = file.source.split(':');
+      const _source = file.source.split(":");
       if ((this as ImageS).ui.nodes.imageEl)
-        (this as ImageS).ui.nodes.imageContainer.removeChild((this as ImageS).ui.nodes.imageEl);
+        (this as ImageS).ui.nodes.imageContainer.removeChild(
+          (this as ImageS).ui.nodes.imageEl
+        );
       switch (_source[0]) {
-        case 'url':
+        case "url":
           (this as ImageS).ui.fillImage(_source[1]);
           break;
-        case 'oss':
+        case "oss":
           getOssClient().then((oss) => {
             const url = oss.signatureUrl(_source[1], { expires: 3600 });
             (this as ImageS).ui.fillImage(url);

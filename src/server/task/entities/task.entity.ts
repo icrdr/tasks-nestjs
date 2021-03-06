@@ -1,4 +1,8 @@
-import { AccessLevel, BaseEntity, TaskState } from '@server/common/common.entity';
+import {
+  AccessLevel,
+  BaseEntity,
+  TaskState,
+} from "@server/common/common.entity";
 import {
   Entity,
   Column,
@@ -12,22 +16,25 @@ import {
   Tree,
   OneToOne,
   JoinColumn,
-} from 'typeorm';
-import { User } from '@server/user/entities/user.entity';
-import { OutputData } from '@editorjs/editorjs';
-import { Comment } from './comment.entity';
-import { property } from './property.entity';
-import { Asset } from '@server/task/entities/asset.entity';
-import { Assignment, Space } from './space.entity';
+} from "typeorm";
+import { User } from "@server/user/entities/user.entity";
+import { OutputData } from "@editorjs/editorjs";
+import { Comment } from "./comment.entity";
+import { property } from "./property.entity";
+import { Asset } from "@server/task/entities/asset.entity";
+import { Assignment, Space } from "./space.entity";
 
 @Entity()
-@Tree('nested-set')
+@Tree("nested-set")
 export class Task extends BaseEntity {
   @Column()
   name: string;
 
+  @Column("int", { default: 0 })
+  priority: number;
+
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: TaskState,
   })
   state: TaskState;
@@ -59,7 +66,7 @@ export class Task extends BaseEntity {
   @OneToMany(() => Comment, (comment) => comment.task)
   comments: Comment[];
 
-  @Column('simple-json', { nullable: true })
+  @Column("simple-json", { nullable: true })
   properties: any;
 
   @ManyToMany(() => Assignment, (assignment) => assignment.tasks)
@@ -70,7 +77,7 @@ export class Task extends BaseEntity {
   assets: Asset[];
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: AccessLevel,
     nullable: true,
   })
@@ -82,6 +89,6 @@ export class Content extends BaseEntity {
   @ManyToOne(() => Task, (task) => task.contents)
   task: Task;
 
-  @Column('simple-json', { nullable: true })
+  @Column("simple-json", { nullable: true })
   content: OutputData;
 }

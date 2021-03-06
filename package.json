@@ -19,6 +19,7 @@
   "dependencies": {
     "@ant-design/dark-theme": "^2.0.2",
     "@ant-design/icons": "^4.0.0",
+    "@ant-design/pro-layout": "^6.14.5",
     "@editorjs/checklist": "^1.3.0",
     "@editorjs/code": "^2.6.0",
     "@editorjs/delimiter": "^1.2.0",

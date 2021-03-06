@@ -1,14 +1,21 @@
-import React, { useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { Link, useParams, useRequest, useModel, useLocation, useHistory } from 'umi';
+import React, { useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import {
+  Link,
+  useParams,
+  useRequest,
+  useModel,
+  useLocation,
+  useHistory,
+} from "umi";
 import {
   addTaskAssignment,
   changeTask,
   changeTaskState,
   getSpaceGroups,
   removeTaskAssignment,
-} from './task.service';
-import { getTask } from './task.service';
+} from "./task.service";
+import { getTask } from "./task.service";
 import {
   Space,
   Button,
@@ -22,35 +29,46 @@ import {
   Spin,
   Descriptions,
   Tooltip,
-} from 'antd';
-import TaskState from '../../components/TaskState';
-import { EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
-import { TaskMoreDetailRes } from '@dtos/task.dto';
-import { AssignmentRes, MemberRes } from '@dtos/space.dto';
-import moment from 'moment';
-import { getSpaceMembers } from '../member/member.service';
+  InputNumber,
+  Input,
+  Badge,
+} from "antd";
+import TaskState from "../../components/TaskState";
+import {
+  EditOutlined,
+  EllipsisOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
+import { TaskMoreDetailRes } from "@dtos/task.dto";
+import { AssignmentRes, MemberRes } from "@dtos/space.dto";
+import moment from "moment";
+import { getSpaceMembers } from "../member/member.service";
 
 const { Text, Title } = Typography;
 
 const taskDetail: React.FC<{}> = (props) => {
-  const { initialState, setInitialState } = useModel('@@initialState');
+  const { initialState, setInitialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const currentTaskId = (useParams() as any).id;
   const [memberOptions, setMemberOptions] = useState([]);
   const location = useLocation();
   const history = useHistory();
-  const path = location.pathname.split('/');
+  const path = location.pathname.split("/");
   const tabActiveKey = path[path.length - 1];
   const [task, setTask] = useState<TaskMoreDetailRes>(null);
   const [dataUpdate, setDataUpdate] = useState(false);
-  const isAdmin = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
-  const isEditable = isAdmin || task?.userAccess !== 'view';
+  const [isEditingTitle, setEditingTitle] = useState(false);
+  const isFull =
+    currentSpace?.userAccess === "full" || task?.userAccess === "full";
 
   const getTaskReq = useRequest(() => getTask(currentTaskId), {
     refreshDeps: [dataUpdate],
     onSuccess: (res) => {
       res.contents.reverse();
       setTask(res);
+    },
+    onError: (err) => {
+      history.goBack();
     },
   });
 
@@ -72,14 +90,15 @@ const taskDetail: React.FC<{}> = (props) => {
           value: `user:${member.userId}`,
         };
       });
-      const groupOptions = memberOptions.filter((option) => option.value.split(':')[0] === 'group');
+      const groupOptions = memberOptions.filter(
+        (option) => option.value.split(":")[0] === "group"
+      );
       setMemberOptions([...groupOptions, ...memberOptions]);
     },
   });
 
   const getSpaceGroupsReq = useRequest(() => getSpaceGroups(currentSpace.id), {
     onSuccess: (res) => {
-      console.log(res);
       const memberOptions = res.list.map((group) => {
         return {
           label: group.name,
@@ -94,7 +113,9 @@ const taskDetail: React.FC<{}> = (props) => {
     manual: true,
     onSuccess: (res) => {
       console.log(res);
-      const groupOptions = memberOptions.filter((option) => option.value.split(':')[0] === 'group');
+      const groupOptions = memberOptions.filter(
+        (option) => option.value.split(":")[0] === "group"
+      );
       setMemberOptions(groupOptions);
       setDataUpdate(!dataUpdate);
     },
@@ -130,22 +151,32 @@ const taskDetail: React.FC<{}> = (props) => {
     const superTask = task?.superTask;
     return (
       <Space>
-        {superTask && <Link to={`/task/${superTask.id}`}>{superTask.name}</Link>}
+        {superTask && (
+          <Link to={`/task/${superTask.id}`}>{superTask.name}</Link>
+        )}
         {superTask && <span>/</span>}
-        <Text
-          style={{ width: '100%' }}
-          editable={
-            isAdmin
-              ? {
-                  onChange: (v) => {
-                    if (v) changeTaskReq.run(currentTaskId, { name: v });
-                  },
-                }
-              : false
-          }
-        >
-          {task?.name}
-        </Text>
+        {isEditingTitle ? (
+          <Input
+            defaultValue={task?.name}
+            onPressEnter={(e) => {
+              e.preventDefault();
+              const v = e.currentTarget.value;
+              if (v) changeTaskReq.run(currentTaskId, { name: v });
+              setEditingTitle(false);
+            }}
+          />
+        ) : (
+          <span>
+            {task?.name}
+            {isFull && (
+              <Button
+                type={"link"}
+                icon={<EditOutlined />}
+                onClick={() => setEditingTitle(true)}
+              />
+            )}
+          </span>
+        )}
       </Space>
     );
   };
@@ -155,36 +186,36 @@ const taskDetail: React.FC<{}> = (props) => {
       <Menu.Item key="1">删除</Menu.Item>
     </Menu>
   );
-  const extraContent = isAdmin ? (
+  const extraContent = isFull ? (
     <Space>
       <Button.Group>
-        {task?.state === 'suspended' && (
+        {task?.state === "suspended" && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'start')}
+            onClick={() => changeStateReq.run(currentTaskId, "start")}
             disabled={changeStateReq.loading}
           >
             启动
           </Button>
         )}
-        {task?.state === 'inProgress' && (
+        {task?.state === "inProgress" && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'suspend')}
+            onClick={() => changeStateReq.run(currentTaskId, "suspend")}
             disabled={changeStateReq.loading}
           >
             暂停
           </Button>
         )}
-        {task?.state === 'completed' && (
+        {task?.state === "completed" && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'restart')}
+            onClick={() => changeStateReq.run(currentTaskId, "restart")}
             disabled={changeStateReq.loading}
           >
             重启
           </Button>
         )}
-        {task?.state === 'unconfirmed' && (
+        {task?.state === "unconfirmed" && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'refuse')}
+            onClick={() => changeStateReq.run(currentTaskId, "refuse")}
             disabled={changeStateReq.loading}
           >
             打回
@@ -196,10 +227,10 @@ const taskDetail: React.FC<{}> = (props) => {
           </Button>
         </Dropdown>
       </Button.Group>
-      {task?.state !== 'completed' && (
+      {task?.state !== "completed" && (
         <Button
           type="primary"
-          onClick={() => changeStateReq.run(currentTaskId, 'complete')}
+          onClick={() => changeStateReq.run(currentTaskId, "complete")}
           disabled={changeStateReq.loading}
         >
           完成
@@ -207,11 +238,11 @@ const taskDetail: React.FC<{}> = (props) => {
       )}
     </Space>
   ) : (
-    task?.state === 'inProgress' &&
-    task?.userAccess === 'edit' && (
+    task?.state === "inProgress" &&
+    task?.userAccess === "edit" && (
       <Button
         type="primary"
-        onClick={() => changeStateReq.run(currentTaskId, 'commit')}
+        onClick={() => changeStateReq.run(currentTaskId, "commit")}
         disabled={changeStateReq.loading}
       >
         提交
@@ -220,9 +251,9 @@ const taskDetail: React.FC<{}> = (props) => {
   );
 
   const handleAddAssignment = (value: string, roleName: string) => {
-    const type = value.split(':')[0];
-    const id = parseInt(value.split(':')[1]);
-    if (type === 'user') {
+    const type = value.split(":")[0];
+    const id = parseInt(value.split(":")[1]);
+    if (type === "user") {
       addAssignmentReq.run(currentTaskId, {
         userId: [id],
         roleName,
@@ -239,12 +270,17 @@ const taskDetail: React.FC<{}> = (props) => {
   };
 
   const description = (
-    <Descriptions labelStyle={{ lineHeight: '32px' }} column={1}>
-      <Descriptions.Item key="due" label="计划日期">
-        {isAdmin ? (
+    <Descriptions labelStyle={{ lineHeight: "32px" }} column={2}>
+      <Descriptions.Item
+        key="due"
+        label="计划日期"
+        span={2}
+        contentStyle={{ lineHeight: "32px" }}
+      >
+        {isFull ? (
           <DatePicker.RangePicker
             ranges={{
-              下周: [moment(), moment().add(7, 'd')],
+              下周: [moment(), moment().add(7, "d")],
             }}
             value={[
               task?.beginAt ? moment(task?.beginAt) : undefined,
@@ -265,67 +301,115 @@ const taskDetail: React.FC<{}> = (props) => {
             }}
           />
         ) : (
-          <DatePicker.RangePicker
-            allowClear={false}
-            bordered={false}
-            disabledDate={() => true}
-            value={[
-              task?.beginAt ? moment(task.beginAt) : undefined,
-              task?.dueAt ? moment(task.dueAt) : undefined,
-            ]}
-          />
+          <Space size="large">
+            <span>{`开始日期 ${
+              task?.beginAt ? moment(task.beginAt).format("YYYY/MM/DD") : "/"
+            }`}</span>
+            <span>{`死线日期 ${
+              task?.dueAt ? moment(task.dueAt).format("YYYY/MM/DD") : "/"
+            }`}</span>
+          </Space>
         )}
       </Descriptions.Item>
-      <Descriptions.Item key="access" label="默认权限">
-        <Select
-          disabled={!isAdmin}
-          value={task?.access}
-          onChange={(v) => changeTaskReq.run(currentTaskId, { access: v })}
-        >
-          <Select.Option value="view">浏览</Select.Option>
-          <Select.Option value="edit">编辑</Select.Option>
-          <Select.Option value="full">完全</Select.Option>
-        </Select>
+      <Descriptions.Item
+        key="priority"
+        label="优先级"
+        contentStyle={{ lineHeight: "32px" }}
+      >
+        {isFull ? (
+          <InputNumber
+            min={0}
+            max={10}
+            value={task?.priority}
+            onChange={(v: number) =>
+              changeTaskReq.run(currentTaskId, { priority: v })
+            }
+          />
+        ) : (
+          <span>
+            <Badge className="badge-priority" count={task?.priority} />
+          </span>
+        )}
+      </Descriptions.Item>
+      <Descriptions.Item
+        key="access"
+        label="默认权限"
+        contentStyle={{ lineHeight: "32px" }}
+      >
+        {isFull ? (
+          <Select
+            value={task?.access}
+            onChange={(v) => changeTaskReq.run(currentTaskId, { access: v })}
+          >
+            <Select.Option value="full">完全</Select.Option>
+            <Select.Option value="edit">编辑</Select.Option>
+            <Select.Option value="view">浏览</Select.Option>
+            <Select.Option value={null}>无</Select.Option>
+          </Select>
+        ) : (
+          <span>
+            {task?.access === "full"
+              ? "完全"
+              : task?.access === "edit"
+              ? "编辑"
+              : task?.access === "view"
+              ? "浏览"
+              : "无"}
+          </span>
+        )}
       </Descriptions.Item>
       {currentSpace.roles.map((role, index) => (
-        <Descriptions.Item key={index} label={role.name}>
-          <Space size={'small'} align="start">
+        <Descriptions.Item key={index} label={role.name} span={2}>
+          <Space size={"small"} align="start">
             <Avatar.Group>
-              {task?.roles[role.id]?.map((assignment: AssignmentRes, index: number) => (
-                <Dropdown
-                  disabled={!isAdmin}
-                  overlay={
-                    <Menu>
-                      <Menu.Item key="1" onClick={() => handleRemoveAssignment(assignment?.id)}>
-                        删除
-                      </Menu.Item>
-                    </Menu>
-                  }
-                  key={index}
-                  trigger={['contextMenu']}
-                >
-                  <Tooltip
-                    title={assignment.name || (assignment?.members[0] as MemberRes).username}
+              {task?.roles[role.id]?.map(
+                (assignment: AssignmentRes, index: number) => (
+                  <Dropdown
+                    disabled={!isFull}
+                    overlay={
+                      <Menu>
+                        <Menu.Item
+                          key="1"
+                          onClick={() => handleRemoveAssignment(assignment?.id)}
+                        >
+                          删除
+                        </Menu.Item>
+                      </Menu>
+                    }
+                    key={index}
+                    trigger={["contextMenu"]}
                   >
-                    <Avatar>
-                      {assignment.name || (assignment?.members[0] as MemberRes).username}
-                    </Avatar>
-                  </Tooltip>
-                </Dropdown>
-              ))}
+                    <Tooltip
+                      title={
+                        assignment.name ||
+                        (assignment?.members[0] as MemberRes).username
+                      }
+                    >
+                      <Avatar>
+                        {assignment.name ||
+                          (assignment?.members[0] as MemberRes).username}
+                      </Avatar>
+                    </Tooltip>
+                  </Dropdown>
+                )
+              )}
             </Avatar.Group>
-            {isAdmin && (
+            {isFull && (
               <Popover
                 placement="right"
                 content={
                   <Select
                     style={{ width: 100 }}
                     onChange={(v: string) => handleAddAssignment(v, role.name)}
-                    onSearch={(v) => getSpaceMembersReq.run(currentSpace.id, { username: v })}
+                    onSearch={(v) =>
+                      getSpaceMembersReq.run(currentSpace.id, { username: v })
+                    }
                     options={memberOptions}
                     showSearch
                     filterOption={false}
-                    notFoundContent={getSpaceMembersReq.loading ? <Spin size="small" /> : null}
+                    notFoundContent={
+                      getSpaceMembersReq.loading ? <Spin size="small" /> : null
+                    }
                   />
                 }
               >
@@ -340,12 +424,12 @@ const taskDetail: React.FC<{}> = (props) => {
 
   const tabList = [
     {
-      key: 'content',
-      tab: '内容',
+      key: "content",
+      tab: "内容",
     },
-    isEditable && {
-      key: 'asset',
-      tab: '资源',
+    {
+      key: "asset",
+      tab: "资源",
     },
     // {
     //   key: "subTask",
@@ -368,10 +452,11 @@ const taskDetail: React.FC<{}> = (props) => {
       content={description}
       tabActiveKey={tabActiveKey}
       onTabChange={handleTabChange}
-      loading={getTaskReq.loading}
+      // loading cause unnecessary update child component which causing editor uncertain rebuilding
+      // loading={getTaskReq.loading}
       tabList={tabList}
     >
-      {childrenWithProps}
+      {task && childrenWithProps}
     </PageContainer>
   );
 };
