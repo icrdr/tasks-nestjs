@@ -1,5 +1,7 @@
 import {
   ForbiddenException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -13,8 +15,6 @@ import { unionArrays } from "@utils/utils";
 import { ConfigService } from "@nestjs/config";
 import { SpaceService } from "./space.service";
 import { Comment } from "../entities/comment.entity";
-import { DateRange } from "@dtos/misc.dto";
-import moment from "moment";
 import { AccessLevel, TaskState } from "../../common/common.entity";
 
 @Injectable()
@@ -23,6 +23,7 @@ export class TaskService {
   commentQuery: SelectQueryBuilder<Comment>;
   constructor(
     private userService: UserService,
+    @Inject(forwardRef(() => SpaceService))
     private spaceService: SpaceService,
     private configService: ConfigService,
     private manager: EntityManager

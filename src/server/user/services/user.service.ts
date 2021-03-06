@@ -17,7 +17,7 @@ import { RoleType } from '../../common/common.entity';
 @Injectable()
 export class UserService {
   userQuery: SelectQueryBuilder<User>;
-  constructor(private manager: EntityManager, private spaceService: SpaceService) {
+  constructor(private manager: EntityManager) {
     this.userQuery = this.manager.createQueryBuilder(User, 'user');
   }
 
