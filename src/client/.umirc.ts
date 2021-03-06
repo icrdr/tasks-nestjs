@@ -2,6 +2,9 @@ import routes from "./routes";
 import darkTheme from "@ant-design/dark-theme";
 
 export default {
+  define: {
+    "process.env.WS": process.env.WS,
+  },
   alias: {
     "@utils": process.cwd() + "/src/utils",
     "@dtos": process.cwd() + "/src/dtos",

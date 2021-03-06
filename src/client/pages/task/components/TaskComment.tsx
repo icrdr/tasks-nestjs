@@ -137,7 +137,9 @@ const TaskComment = ({ taskId, editable }, ref) => {
   });
 
   const { sendMessage, connect } = useWebSocket(
-    `ws://localhost:3000?target=discuss&taskId=${taskId}`,
+    `${
+      process.env.WS || "ws://localhost:3000"
+    }?target=discuss&taskId=${taskId}`,
     {
       reconnectInterval: 5000,
       manual: true,

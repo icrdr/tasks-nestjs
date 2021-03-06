@@ -46,6 +46,7 @@ const Editor: React.FC<{
 
   //editor init
   useEffect(() => {
+    console.log(process.env.WS)
     if (debug) console.log("creating editor", editable);
     const tools = {
       header: {
@@ -96,7 +97,7 @@ const Editor: React.FC<{
       const yArray = ydoc.getArray("editorjs");
       const indexeddbProvider = new IndexeddbPersistence(wsRoom, ydoc);
       const websocketProvider = new WebsocketProvider(
-        "ws://localhost:3000",
+        process.env.WS||'ws://localhost:3000',
         wsRoom,
         ydoc,
         {
