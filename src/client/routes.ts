@@ -3,7 +3,13 @@
     path: '/login',
     component: 'layout/base.layout',
     layout: false,
-    routes: [{ component: 'login/login.page' }],
+    routes: [{ component: 'auth/login.page' }],
+  },
+  {
+    path: '/signup',
+    component: 'layout/base.layout',
+    layout: false,
+    routes: [{ component: 'auth/signup.page' }],
   },
   {
     path: '/me',

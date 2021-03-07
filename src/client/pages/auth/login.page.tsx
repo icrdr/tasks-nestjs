@@ -17,8 +17,14 @@ import {
   Input,
   Checkbox,
 } from "antd";
-import { LockTwoTone, SmileTwoTone, WechatOutlined } from "@ant-design/icons";
-import { login } from "./login.service";
+import {
+  LockOutlined,
+  LockTwoTone,
+  SmileTwoTone,
+  UserOutlined,
+  WechatOutlined,
+} from "@ant-design/icons";
+import { login } from "./auth.service";
 import Cookies from "js-cookie";
 import OSS from "ali-oss";
 import { SpaceDetailRes } from "@dtos/space.dto";
@@ -48,7 +54,7 @@ const LoginForm: React.FC = () => {
           0
             ? currentSpaceId
             : currentUser.spaces[0].id;
-        
+
         currentSpace = (await getSpace(spaceId)) as SpaceDetailRes;
         localStorage.setItem("currentSpaceId", currentSpace.id.toString());
       } else {
@@ -69,8 +75,6 @@ const LoginForm: React.FC = () => {
   return (
     <Form
       layout="vertical"
-      name="basic"
-      initialValues={{ remember: true }}
       onFinish={(values) => {
         loginReq.run(values);
       }}
@@ -78,27 +82,30 @@ const LoginForm: React.FC = () => {
       <Form.Item
         label="用户名或邮箱"
         name="username"
-        rules={[{ required: true, message: "Please input your username!" }]}
+        rules={[{ required: true, message: "Please input your Username!" }]}
       >
-        <Input />
+        <Input prefix={<UserOutlined />} placeholder="Username" />
       </Form.Item>
-
       <Form.Item
         label="密码"
         name="password"
-        rules={[{ required: true, message: "Please input your password!" }]}
+        rules={[{ required: true, message: "Please input your Password!" }]}
       >
-        <Input.Password />
+        <Input
+          prefix={<LockOutlined />}
+          type="password"
+          placeholder="Password"
+        />
       </Form.Item>
-
-      <Form.Item name="记住我" valuePropName="checked">
-        <Checkbox>Remember me</Checkbox>
-      </Form.Item>
-
       <Form.Item>
-        <Button type="primary" htmlType="submit">
-          登录
-        </Button>
+        <Space direction={"vertical"} style={{ width: "100%" }}>
+          <Button type="primary" htmlType="submit" block>
+            登录
+          </Button>
+          <span>
+            或者 <a href="/signup">注册</a>
+          </span>
+        </Space>
       </Form.Item>
     </Form>
   );
@@ -110,9 +117,6 @@ const Login: React.FC<{}> = () => {
       <Space direction="vertical" style={{ width: "100%" }}>
         <Title> YIMU </Title>
         <LoginForm />
-        <Space>
-          <FormattedMessage id="page.login.loginWith.tex" />
-        </Space>
       </Space>
     </Col>
   );

@@ -43,6 +43,15 @@ export async function addSpaceGroupMember(
   });
 }
 
+export async function removeSpaceMember(
+  id: number,
+  userId: number,
+): Promise<AssignmentRes> {
+  return request(`/api/spaces/${id}/members/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function removeSpaceGroupMember(
   id: number,
   groupId: number,

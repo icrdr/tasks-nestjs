@@ -226,6 +226,18 @@ export class SpaceController {
 
   @UseGuards(SpaceAccessGuard)
   @Access("common.space.delete")
+  @Delete("/:id/members/:userId")
+  async removeSpaceMember(
+    @TargetSpace() space: Space,
+    @Param("userId") userId: number,
+    @CurrentUser() user: User
+  ) {
+    await this.spaceService.removeMember(space, userId);
+    return {msg:'ok'};
+  }
+
+  @UseGuards(SpaceAccessGuard)
+  @Access("common.space.delete")
   @Delete("/:id/groups/:groupId/members/:userId")
   async removeSpaceGroupMember(
     @TargetSpace() space: Space,

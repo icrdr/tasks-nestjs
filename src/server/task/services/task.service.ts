@@ -152,6 +152,11 @@ export class TaskService {
     return unionArrays(access);
   }
 
+  async removeTask(task: Task | number) {
+    task = task instanceof Task ? task : await this.getTask(task);
+    this.manager.softDelete(Task, task.id);
+  }
+
   async getTask(id: number, exception = true) {
     const query = this.taskQuery.clone().where("task.id = :id", { id });
     const task = await query.getOne();

@@ -41,7 +41,8 @@ const SpaceMenu: React.FC<{}> = () => {
   const location = useLocation();
 
   if (!currentUser) {
-    if (location.pathname !== "/login") history.push("/login");
+    if (["/login", "/signup"].indexOf(location.pathname) < 0)
+      history.push("/login");
   }
 
   const [isModalVisible, setModalVisible] = useState(false);

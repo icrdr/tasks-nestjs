@@ -382,6 +382,11 @@ export class SpaceService {
     return await this.getMember(space.id, user.id, false);
   }
 
+  async removeMember(space: Space | number, user: User | number) {
+    const member = await this.getMember(space, user);
+    await this.manager.delete(Member, member.id);
+  }
+
   async getMember(
     space: Space | number,
     user: User | number,

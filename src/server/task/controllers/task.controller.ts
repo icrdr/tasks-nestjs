@@ -172,6 +172,14 @@ export class TaskController {
   }
 
   @UseGuards(TaskAccessGuard)
+  @Access("common.task.remove")
+  @Delete("/:id")
+  async removeTask(@TargetTask() task: Task, @CurrentUser() user: User) {
+    await this.taskService.removeTask(task);
+    return { msg: "ok" };
+  }
+
+  @UseGuards(TaskAccessGuard)
   @Access("common.task.view")
   @Get("/:id/tasks")
   async getSubTasks(

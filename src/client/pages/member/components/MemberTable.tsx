@@ -1,33 +1,58 @@
-import React, { useRef, useState } from 'react';
-import { PageContainer } from '@ant-design/pro-layout';
-import { history, useModel, useRequest } from 'umi';
-import { Button, Card, Form, Input, Select, Space, Table, Typography } from 'antd';
-import { GetMembersDTO, MemberRes, RoleRes } from '@dtos/space.dto';
-import { useForm } from 'antd/es/form/Form';
-import { EditOutlined, HighlightOutlined } from '@ant-design/icons';
-import { getSpaceMembers } from '../member.service';
-import VTable from '@components/VTable';
-import { ViewOption } from '@server/common/common.entity';
+import React, { useRef, useState } from "react";
+import { PageContainer } from "@ant-design/pro-layout";
+import { history, useModel, useRequest } from "umi";
+import {
+  Button,
+  Card,
+  Dropdown,
+  Form,
+  Input,
+  Menu,
+  Select,
+  Space,
+  Table,
+  Typography,
+} from "antd";
+import { GetMembersDTO, MemberRes, RoleRes } from "@dtos/space.dto";
+import { useForm } from "antd/es/form/Form";
+import {
+  EditOutlined,
+  EllipsisOutlined,
+  HighlightOutlined,
+} from "@ant-design/icons";
+import { getSpaceMembers, removeSpaceMember } from "../member.service";
+import VTable from "@components/VTable";
+import { ViewOption } from "@server/common/common.entity";
 
 const { Text } = Typography;
 
-const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({ option, update }) => {
-  const { initialState, setInitialState } = useModel('@@initialState');
+const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
+  option,
+  update,
+}) => {
+  const { initialState, setInitialState } = useModel("@@initialState");
   const { currentUser, currentSpace } = initialState;
   const [dataUpdate, setDataUpdate] = useState(false);
   const [viewUpdate, setViewUpdate] = useState(false);
   const [memberList, setMemberList] = useState<MemberRes[]>([]);
   const fetchCountRef = useRef(0);
 
+  const removeSpaceMemberReq = useRequest(removeSpaceMember, {
+    manual: true,
+    onSuccess: (res) => {
+      setDataUpdate(dataUpdate);
+    },
+  });
+
   const columns = option.headers
     .filter((header) => !header.hidden)
     .map((header) => {
-      const type = header.title.split(':')[0];
+      const type = header.title.split(":")[0];
       switch (type) {
-        case 'username':
+        case "username":
           return {
-            dataIndex: 'username',
-            title: '用户名',
+            dataIndex: "username",
+            title: "用户名",
             width: header.width,
             render: (_, member: MemberRes) => <span>{member.username}</span>,
           };
@@ -37,13 +62,35 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({ optio
     })
     .filter((c) => c !== undefined);
 
+  const actionMenu = (member: MemberRes) => (
+    <Menu>
+      <Menu.Item
+        disabled={memberList.length <= 1}
+        key="1"
+        onClick={() => removeSpaceMemberReq.run(currentSpace.id, member.userId)}
+      >
+        删除
+      </Menu.Item>
+    </Menu>
+  );
+
+  columns.push({
+    dataIndex: "action",
+    title: "操作",
+    width: 100,
+    render: (_, member: MemberRes) => (
+      <Dropdown overlay={actionMenu(member)}>
+        <Button icon={<EllipsisOutlined />}></Button>
+      </Dropdown>
+    ),
+  });
   const getMembers = async (body: GetMembersDTO) => {
     const params = {};
     for (const header of option.headers.filter((header) => !header.hidden)) {
       if (header.filter) {
         switch (header.title) {
-          case 'dueAt':
-            params['dueBefore'] = header.filter;
+          case "dueAt":
+            params["dueBefore"] = header.filter;
             break;
 
           default:
@@ -69,7 +116,11 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({ optio
   const getSpaceMembersReq = useRequest(getMembers, {
     manual: true,
     onSuccess: (res, params) => {
-      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
+      for (
+        let index = params[0].skip;
+        index < params[0].skip + params[0].take;
+        index++
+      ) {
         memberList[index] = res.list[index - params[0].skip];
       }
       setMemberList(memberList);

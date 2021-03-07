@@ -81,6 +81,12 @@ export const changeTask = async (id: number, body: ChangeTaskDTO): Promise<TaskD
   });
 };
 
+export const removeTask = async (id: number) => {
+  return request(`/api/tasks/${id}`, {
+    method: 'DELETE',
+  });
+};
+
 export const addSpaceAsset = async (id: number, body: AddAssetDTO): Promise<AssetRes> => {
   return request(`/api/spaces/${id}/assets`, {
     method: 'POST',

@@ -13,6 +13,7 @@ import {
   changeTask,
   changeTaskState,
   getSpaceGroups,
+  removeTask,
   removeTaskAssignment,
 } from "./task.service";
 import { getTask } from "./task.service";
@@ -143,6 +144,13 @@ const taskDetail: React.FC<{}> = (props) => {
     },
   });
 
+  const removeTaskReq = useRequest(removeTask, {
+    manual: true,
+    onSuccess: (res) => {
+      history.goBack()
+    },
+  });
+
   const handleTabChange = (tabActiveKey: string) => {
     history.push(`/task/${currentTaskId}/${tabActiveKey}`);
   };
@@ -180,12 +188,14 @@ const taskDetail: React.FC<{}> = (props) => {
       </Space>
     );
   };
+  
 
   const otherActionMenu = (
     <Menu>
-      <Menu.Item key="1">删除</Menu.Item>
+      <Menu.Item key="1" onClick={()=>removeTaskReq.run(task.id)}>删除</Menu.Item>
     </Menu>
   );
+
   const extraContent = isFull ? (
     <Space>
       <Button.Group>
