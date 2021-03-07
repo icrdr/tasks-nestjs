@@ -46,7 +46,6 @@ const Editor: React.FC<{
 
   //editor init
   useEffect(() => {
-    console.log(process.env.WS)
     if (debug) console.log("creating editor", editable);
     const tools = {
       header: {
