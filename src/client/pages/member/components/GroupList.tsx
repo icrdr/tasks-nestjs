@@ -1,8 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { PlusOutlined, EllipsisOutlined } from '@ant-design/icons';
 import {
   Button,
-  Tag,
   Space,
   Menu,
   Dropdown,
@@ -14,18 +13,20 @@ import {
   Spin,
   Typography,
   Tooltip,
+  Popconfirm,
 } from 'antd';
-import ProTable, { ProColumns, TableDropdown, ActionType } from '@ant-design/pro-table';
-import { PageContainer } from '@ant-design/pro-layout';
-import { useIntl, useModel, useRequest } from 'umi';
+import { useModel, useRequest } from 'umi';
 import {
   addSpaceGroupMember,
   changeSpaceGroup,
   getSpaceMembers,
+  removeSpaceGroup,
   removeSpaceGroupMember,
 } from '../member.service';
-import { AssignmentRes, MemberRes, RoleRes } from '@dtos/space.dto';
 import { getSpaceGroups } from '../../task/task.service';
+import { UserRes } from '@dtos/user.dto';
+import { AssignmentRes } from '@dtos/assignment.dto';
+import { RoleRes } from '@dtos/role.dto';
 const { Text, Title } = Typography;
 
 const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
@@ -34,6 +35,13 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
   const [groupList, setGroupList] = useState<AssignmentRes[]>([]);
   const [dataUpdate, setDataUpdate] = useState(false);
   const removeSpaceGroupMemberReq = useRequest(removeSpaceGroupMember, {
+    manual: true,
+    onSuccess: (res) => {
+      setDataUpdate(!dataUpdate);
+    },
+  });
+
+  const removeSpaceGroupReq = useRequest(removeSpaceGroup, {
     manual: true,
     onSuccess: (res) => {
       setDataUpdate(!dataUpdate);
@@ -76,6 +84,22 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
       setMemberOptions(memberOptions);
     },
   });
+
+  const actionMenu = (group: AssignmentRes) => (
+    <Menu>
+      <Menu.Item disabled={groupList.map((g) => g.id).indexOf(group.id) === 0} key="1">
+        <Popconfirm
+          title="你确定要删除该小组么？"
+          onConfirm={() => removeSpaceGroupReq.run(currentSpace.id, group.id)}
+          okText="确认"
+          cancelText="取消"
+        >
+          <a href="#">删除</a>
+        </Popconfirm>
+      </Menu.Item>
+    </Menu>
+  );
+
   return (
     <List
       grid={{
@@ -83,8 +107,9 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
         xs: 1,
         sm: 2,
         md: 3,
-        lg: 3,
-        xl: 3,
+        lg: 4,
+        xl: 4,
+        xxl: 4,
       }}
       loading={getSpaceGroupsReq.loading}
       dataSource={groupList}
@@ -102,8 +127,10 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
                 {item?.name}
               </Text>
             }
-            extra={
+            extra={[
               <Select
+                key="access"
+                style={{ marginRight: 10 }}
                 disabled={index === 0}
                 value={item.role.id}
                 options={currentSpace.roles.map((role: RoleRes) => {
@@ -113,20 +140,23 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
                   };
                 })}
                 onChange={(v) => changeSpaceGroupReq.run(currentSpace.id, item.id, { roleId: v })}
-              ></Select>
-            }
+              ></Select>,
+              <Dropdown key="action" overlay={actionMenu(item)}>
+                <Button icon={<EllipsisOutlined />}></Button>
+              </Dropdown>,
+            ]}
           >
             <Space size={'small'} align="start">
               <Avatar.Group>
-                {(item.members as MemberRes[]).map((member, i: number) => (
+                {(item.users as UserRes[]).map((user, i: number) => (
                   <Dropdown
-                    disabled={index === 0 && item.members.length <= 1}
+                    disabled={index === 0 && item.users.length <= 1}
                     overlay={
                       <Menu>
                         <Menu.Item
                           key="1"
                           onClick={() =>
-                            removeSpaceGroupMemberReq.run(currentSpace.id, item.id, member.userId)
+                            removeSpaceGroupMemberReq.run(currentSpace.id, item.id, user.id)
                           }
                         >
                           删除
@@ -136,8 +166,8 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
                     key={i}
                     trigger={['contextMenu']}
                   >
-                    <Tooltip title={member.username}>
-                      <Avatar>{member.username}</Avatar>
+                    <Tooltip title={user.username}>
+                      <Avatar>{user.username}</Avatar>
                     </Tooltip>
                   </Dropdown>
                 ))}

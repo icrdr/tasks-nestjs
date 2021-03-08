@@ -1,12 +1,6 @@
 import { request } from 'umi';
 import {
-  AssetListRes,
-  AssetRes,
-  CommentListRes,
-  AddAssetDTO,
   AddTaskDTO,
-  GetAssetsDTO,
-  GetCommentsDTO,
   GetTasksDTO,
   TaskDetailRes,
   TaskListRes,
@@ -14,8 +8,14 @@ import {
   ChangeTaskDTO,
 } from '@dtos/task.dto';
 import { GetUsersDTO, UserListRes, UserRes } from '@dtos/user.dto';
-import { AddAssignmentDTO, AssignmentListRes, AssignmentRes, GetAssignmentDTO } from '@dtos/space.dto';
-import { ListDTO } from '@dtos/misc.dto';
+import { AddAssetDTO, AssetListRes, AssetRes, GetAssetsDTO } from '@dtos/asset.dto';
+import {
+  AddAssignmentDTO,
+  AssignmentListRes,
+  AssignmentRes,
+  GetAssignmentDTO,
+} from '@dtos/assignment.dto';
+import { CommentListRes, GetCommentsDTO } from '@dtos/comment.dto';
 
 export async function getUsers(params: GetUsersDTO): Promise<UserListRes> {
   return request('/api/users', { params });
@@ -106,7 +106,10 @@ export const getSpaceAssets = async (id: number, params?: GetAssetsDTO): Promise
   });
 };
 
-export const getSpaceGroups = async (id: number, params?: GetAssignmentDTO): Promise<AssignmentListRes> => {
+export const getSpaceGroups = async (
+  id: number,
+  params?: GetAssignmentDTO,
+): Promise<AssignmentListRes> => {
   return request(`/api/spaces/${id}/groups`, {
     params,
   });

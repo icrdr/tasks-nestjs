@@ -1,14 +1,6 @@
 import { request } from 'umi';
-import { GetUsersDTO } from '@dtos/user.dto';
-import {
-  AddAssignmentDTO,
-  AssignmentRes,
-  ChangeAssetDTO,
-  ChangeAssignmentDTO,
-  GetMembersDTO,
-  MemberListRes,
-  MemberRes,
-} from '@dtos/space.dto';
+import { GetMembersDTO, MemberListRes, MemberRes } from '@dtos/member.dto';
+import { AddAssignmentDTO, AssignmentRes, ChangeAssignmentDTO } from '@dtos/assignment.dto';
 
 export async function getSpaceMembers(id: number, params?: GetMembersDTO): Promise<MemberListRes> {
   return request(`/api/spaces/${id}/members`, {
@@ -43,10 +35,7 @@ export async function addSpaceGroupMember(
   });
 }
 
-export async function removeSpaceMember(
-  id: number,
-  userId: number,
-): Promise<AssignmentRes> {
+export async function removeSpaceMember(id: number, userId: number): Promise<AssignmentRes> {
   return request(`/api/spaces/${id}/members/${userId}`, {
     method: 'DELETE',
   });
@@ -58,6 +47,12 @@ export async function removeSpaceGroupMember(
   userId: number,
 ): Promise<AssignmentRes> {
   return request(`/api/spaces/${id}/groups/${groupId}/members/${userId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function removeSpaceGroup(id: number, groupId: number) {
+  return request(`/api/spaces/${id}/groups/${groupId}`, {
     method: 'DELETE',
   });
 }

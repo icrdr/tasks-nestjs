@@ -86,9 +86,9 @@ export class Assignment extends BaseEntity {
   @Column({ nullable: true })
   name: string;
 
-  @ManyToMany(() => Member)
+  @ManyToMany(() => User)
   @JoinTable()
-  members: Member[];
+  users: User[];
 
   @ManyToOne(() => Role, (role) => role.assignment)
   role: Role;

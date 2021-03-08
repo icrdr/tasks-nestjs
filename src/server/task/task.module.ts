@@ -1,6 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { TaskService } from './services/task.service';
-import { TaskController } from './controllers/task.controller';
+import { SpaceTaskController, TaskController } from './controllers/task.controller';
 import { CommonModule } from '../common/common.module';
 import { UserModule } from '../user/user.module';
 import { YjsGateway } from './controllers/yjs.gateway';
@@ -13,6 +13,18 @@ import { AssetService } from './services/asset.service';
 import { BullModule } from '@nestjs/bull';
 import { AssetProcessor } from './services/asset.processor';
 import { PropertyService } from './services/property.service';
+import { SpaceAssetController, TaskAssetController } from './controllers/asset.controller';
+import { RoleController } from './controllers/role.controller';
+import { MemberController } from './controllers/member.controller';
+import {
+  SpaceAssignmentController,
+  TaskAssignmentController,
+} from './controllers/assignment.controller';
+import { GroupController } from './controllers/group.controller';
+import { AssignmentService } from './services/assignment.service';
+import { MemberService } from './services/member.service';
+import { RoleService } from './services/role.service';
+import { PropertyController } from './controllers/property.controller';
 
 @Module({
   imports: [
@@ -26,6 +38,11 @@ import { PropertyService } from './services/property.service';
     TaskService,
     PropertyService,
     SpaceService,
+    PropertyService,
+    AssignmentService,
+    MemberService,
+    RoleService,
+    AssetService,
     CommentGateway,
     CommentService,
     YjsGateway,
@@ -33,7 +50,19 @@ import { PropertyService } from './services/property.service';
     AssetService,
     AssetProcessor,
   ],
-  controllers: [TaskController, SpaceController],
+  controllers: [
+    TaskController,
+    SpaceController,
+    TaskAssetController,
+    SpaceAssetController,
+    SpaceTaskController,
+    PropertyController,
+    RoleController,
+    MemberController,
+    SpaceAssignmentController,
+    TaskAssignmentController,
+    GroupController,
+  ],
   exports: [TaskService, SpaceService, AssetService],
 })
 export class TaskModule {}

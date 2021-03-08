@@ -3,7 +3,7 @@ import { Entity, Column, JoinTable, ManyToMany, DeleteDateColumn, OneToMany } fr
 import { Exclude } from 'class-transformer';
 import { Comment } from '@server/task/entities/comment.entity';
 import { Asset } from '@server/task/entities/asset.entity';
-import { Member } from '@server/task/entities/space.entity';
+import { Assignment, Member } from '@server/task/entities/space.entity';
 
 
 @Entity()
@@ -16,7 +16,7 @@ export class User extends BaseEntity {
   password: string;
 
   @Column({ nullable: true })
-  fullName: string;
+  nickname: string;
 
   @Column({ nullable: true })
   email: string;
@@ -26,6 +26,9 @@ export class User extends BaseEntity {
 
   @ManyToMany(() => Member, (member) => member.user)
   members: Member[];
+
+  @ManyToMany(() => Assignment, (assigment) => assigment.users)
+  assigments: Assignment[];
 
   @Column({
     type: 'enum',

@@ -74,7 +74,7 @@ export class UserService {
     username: string,
     password: string,
     options: {
-      fullName?: string;
+      nickname?: string;
       email?: string;
       mobile?: string;
       role?: RoleType;
@@ -85,7 +85,7 @@ export class UserService {
     let user = new User();
     user.username = username;
     user.password = hash(username + password);
-    if (options.fullName) user.fullName = options.fullName;
+    if (options.nickname) user.nickname = options.nickname;
     if (options.email) user.email = options.email;
     if (options.mobile) user.mobile = options.mobile;
     if (options.role) user.role = options.role;

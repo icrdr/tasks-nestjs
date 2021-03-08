@@ -1,48 +1,32 @@
-import React, {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-  useState,
-} from "react";
-import {
-  Button,
-  Card,
-  Form,
-  Mentions,
-  Popover,
-  Space,
-  message,
-  Upload,
-  Typography,
-} from "antd";
-import Cookies from "js-cookie";
-import { CommentRes } from "@dtos/task.dto";
-import useWebSocket from "@hooks/useWebSocket";
-import { useModel, useRequest } from "umi";
-import { getSpaceMembers } from "../../member/member.service";
-import { MemberRes } from "@dtos/space.dto";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Button, Card, Form, Mentions, Popover, Space, message, Upload, Typography } from 'antd';
+import Cookies from 'js-cookie';
+import useWebSocket from '@hooks/useWebSocket';
+import { useModel, useRequest } from 'umi';
+import { getSpaceMembers } from '../../member/member.service';
 import {
   LoadingOutlined,
   MessageOutlined,
   PictureOutlined,
   SmileOutlined,
-} from "@ant-design/icons";
-import { Picker } from "emoji-mart";
-import { getTaskComments } from "../task.service";
-import MessageCard from "./MessageCard";
-import moment from "moment";
-import { getOssClient } from "../../layout/layout.service";
-import { RcFile } from "antd/lib/upload";
-import FsLightbox from "@components/fslightbox";
-import { VariableSizeList } from "react-window";
-import AutoSizer from "react-virtualized-auto-sizer";
-import InfiniteLoader from "react-window-infinite-loader";
-import { CommentType } from "../../../../server/common/common.entity";
+} from '@ant-design/icons';
+import { Picker } from 'emoji-mart';
+import { getTaskComments } from '../task.service';
+import MessageCard from './MessageCard';
+import moment from 'moment';
+import { getOssClient } from '../../layout/layout.service';
+import { RcFile } from 'antd/lib/upload';
+import FsLightbox from '@components/fslightbox';
+import { VariableSizeList } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import InfiniteLoader from 'react-window-infinite-loader';
+import { CommentType } from '@server/common/common.entity';
+import { CommentRes } from '@dtos/comment.dto';
+import { MemberRes } from '@dtos/member.dto';
 const { Text, Paragraph } = Typography;
 
 const TaskComment = ({ taskId, editable }, ref) => {
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentUser, currentSpace } = initialState;
 
   const vListRef = useRef<VariableSizeList>(null);
@@ -76,7 +60,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
     getTaskComments(taskId, { dateAfter: date }).then((res) => {
       console.log(res);
       if (res.list.length > 0) {
-        vListRef.current.scrollToItem(res.list[0].index, "start");
+        vListRef.current.scrollToItem(res.list[0].index, 'start');
       } else {
         scrollToBottom();
       }
@@ -84,7 +68,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
   };
 
   const scrollToBottom = () => {
-    vListRef.current.scrollToItem(commentListRef.current.length - 1, "end");
+    vListRef.current.scrollToItem(commentListRef.current.length - 1, 'end');
   };
 
   useImperativeHandle(ref, () => ({
@@ -99,21 +83,17 @@ const TaskComment = ({ taskId, editable }, ref) => {
     onSuccess: async (res, params) => {
       const oss = await getOssClient();
 
-      for (
-        let index = params[1].skip;
-        index < params[1].skip + params[1].take;
-        index++
-      ) {
+      for (let index = params[1].skip; index < params[1].skip + params[1].take; index++) {
         const comment = res.list[index - params[1].skip];
-        if (comment?.type === "image" && !comment["_source"]) {
-          comment["_source"] = "url";
+        if (comment?.type === 'image' && !comment['_source']) {
+          comment['_source'] = 'url';
 
-          comment["_source"] = oss.signatureUrl(comment.content, {
+          comment['_source'] = oss.signatureUrl(comment.content, {
             expires: 3600,
           });
-          comment["_preview"] = oss.signatureUrl(comment.content, {
+          comment['_preview'] = oss.signatureUrl(comment.content, {
             expires: 3600,
-            process: "image/resize,w_300,h_300",
+            process: 'image/resize,w_300,h_300',
           });
         }
         commentList[comment.index] = comment;
@@ -137,37 +117,34 @@ const TaskComment = ({ taskId, editable }, ref) => {
   });
 
   const { sendMessage, connect } = useWebSocket(
-    `${
-      process.env.WS || "ws://localhost:3000"
-    }?target=discuss&taskId=${taskId}`,
+    `${process.env.WS || 'ws://localhost:3000'}?target=discuss&taskId=${taskId}`,
     {
       reconnectInterval: 5000,
       manual: true,
-      protocols: Cookies.get("token"),
-      onMessage: (msg: WebSocketEventMap["message"]) => {
+      protocols: Cookies.get('token'),
+      onMessage: (msg: WebSocketEventMap['message']) => {
         const data = JSON.parse(msg.data);
         console.log(data);
         if (!data.status) {
           const oss = getOssClient().then((oss) => {
             const comment = data;
-            if (comment?.type === "image" && !comment["_source"]) {
-              comment["_source"] = "url";
+            if (comment?.type === 'image' && !comment['_source']) {
+              comment['_source'] = 'url';
 
-              comment["_source"] = oss.signatureUrl(comment.content, {
+              comment['_source'] = oss.signatureUrl(comment.content, {
                 expires: 3600,
               });
-              comment["_preview"] = oss.signatureUrl(comment.content, {
+              comment['_preview'] = oss.signatureUrl(comment.content, {
                 expires: 3600,
-                process: "image/resize,w_300,h_300",
+                process: 'image/resize,w_300,h_300',
               });
             }
             setCommentList([...commentListRef.current, data]);
             setLightBoxUpdate(lightBoxUpdate + 1);
 
             const isUserSending = data.sender.id === currentUser.id;
-            const list = document.getElementsByClassName("v-list")[0];
-            const isNearBottom =
-              list.scrollTop + list.clientHeight + 300 < list.scrollHeight;
+            const list = document.getElementsByClassName('v-list')[0];
+            const isNearBottom = list.scrollTop + list.clientHeight + 300 < list.scrollHeight;
             if (isUserSending || isNearBottom) {
               scrollToBottom();
             }
@@ -176,7 +153,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
           message.error(data.message);
         }
       },
-    }
+    },
   );
 
   useEffect(() => {
@@ -190,22 +167,20 @@ const TaskComment = ({ taskId, editable }, ref) => {
       type: type,
     };
 
-    const sendData = JSON.stringify({ event: "comment", data });
+    const sendData = JSON.stringify({ event: 'comment', data });
     sendMessage(sendData);
     form.resetFields();
   };
 
   const handleEmojiSelete = (emoji) => {
     const preValue = form.getFieldsValue();
-    preValue.content = preValue.content
-      ? preValue.content + emoji.native
-      : emoji.native;
+    preValue.content = preValue.content ? preValue.content + emoji.native : emoji.native;
     form.setFieldsValue(preValue);
   };
   const contentRule = [
     {
       required: true,
-      message: "必填",
+      message: '必填',
     },
   ];
 
@@ -244,11 +219,11 @@ const TaskComment = ({ taskId, editable }, ref) => {
         <MessageCard
           ref={rowRef}
           onTapContent={() => {
-            if (comment?.type === "image") {
+            if (comment?.type === 'image') {
               const sourceList = commentList
-                .filter((comment) => comment?.type === "image")
-                .map((comment) => comment["_source"]);
-              const i = sourceList.indexOf(comment["_source"]);
+                .filter((comment) => comment?.type === 'image')
+                .map((comment) => comment['_source']);
+              const i = sourceList.indexOf(comment['_source']);
               setLightBoxSlide(i);
               setLightBoxToggle(!lightBoxToggle);
             }
@@ -259,9 +234,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
           author={comment?.sender?.username}
           datetime={comment?.createAt}
           avatar={comment?.sender?.username}
-          content={
-            comment?.type === "image" ? comment["_preview"] : comment?.content
-          }
+          content={comment?.type === 'image' ? comment['_preview'] : comment?.content}
         />
       </div>
     );
@@ -299,40 +272,40 @@ const TaskComment = ({ taskId, editable }, ref) => {
   );
 
   const beforeUpload = (file: RcFile) => {
-    const isJpgOrPng = file.type === "image/jpeg" || file.type === "image/png";
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png';
     if (!isJpgOrPng) {
-      message.error("You can only upload JPG/PNG file!");
+      message.error('You can only upload JPG/PNG file!');
     }
     const isLt2M = file.size / 1024 / 1024 < 2;
     if (!isLt2M) {
-      message.error("Image must smaller than 2MB!");
+      message.error('Image must smaller than 2MB!');
     }
     return isJpgOrPng && isLt2M;
   };
 
   const handleUpload = async (options) => {
     setUploading(true);
-    const objectName = moment().format("YYYYMMDDhhmmss");
+    const objectName = moment().format('YYYYMMDDhhmmss');
     const ossClient = await getOssClient();
     await ossClient.put(objectName, options.file);
-    handleSend(objectName, "image");
+    handleSend(objectName, 'image');
     setUploading(false);
   };
 
   return (
-    <div style={{ height: "100%", minWidth: "250px", position: "relative" }}>
+    <div style={{ height: '100%', minWidth: '250px', position: 'relative' }}>
       <Card
         bordered={false}
         style={{
-          height: editable ? "calc(100vh - 182px)" : "100vh",
+          height: editable ? 'calc(100vh - 182px)' : '100vh',
         }}
-        bodyStyle={{ height: "100%", padding: 0 }}
+        bodyStyle={{ height: '100%', padding: 0 }}
       >
         {infiniteLoader}
       </Card>
       {editable && (
-        <Form form={form} onFinish={(v) => handleSend(v.content, "text")}>
-          <div style={{ padding: "10px 0", width: "100%" }}>
+        <Form form={form} onFinish={(v) => handleSend(v.content, 'text')}>
+          <div style={{ padding: '10px 0', width: '100%' }}>
             <Space>
               <Upload
                 disabled={isUploading}
@@ -344,7 +317,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
                 <Button icon={<PictureOutlined />} />
               </Upload>
               <Popover
-                trigger={"click"}
+                trigger={'click'}
                 content={
                   <Picker
                     set="apple"
@@ -360,7 +333,7 @@ const TaskComment = ({ taskId, editable }, ref) => {
             <Button
               disabled={isUploading}
               icon={isUploading ? <LoadingOutlined /> : <MessageOutlined />}
-              style={{ float: "right" }}
+              style={{ float: 'right' }}
               type="primary"
               htmlType="submit"
             >
@@ -369,20 +342,17 @@ const TaskComment = ({ taskId, editable }, ref) => {
           </div>
           <Form.Item name="content" rules={contentRule}>
             <Mentions
-              placeholder={"输入@来提醒某成员"}
-              style={{ width: "100%" }}
+              placeholder={'输入@来提醒某成员'}
+              style={{ width: '100%' }}
               loading={getSpaceMembersReq.loading}
               autoSize={{ minRows: 5, maxRows: 5 }}
               onSearch={(text) => {
-                console.log("text");
+                console.log('text');
                 getSpaceMembersReq.run(currentSpace.id, { username: text });
               }}
             >
               {memberList.map((member) => (
-                <Mentions.Option
-                  key={member.userId.toString()}
-                  value={member.username}
-                >
+                <Mentions.Option key={member.userId.toString()} value={member.username}>
                   <span>{member.username}</span>
                 </Mentions.Option>
               ))}
@@ -393,12 +363,11 @@ const TaskComment = ({ taskId, editable }, ref) => {
 
       <FsLightbox
         key={lightBoxUpdate}
-        style={{ zIndex: 99999 }}
         toggler={lightBoxToggle}
         sourceIndex={lightBoxSlide}
         sources={commentList
-          .filter((comment) => comment?.type === "image")
-          .map((comment) => comment["_source"])}
+          .filter((comment) => comment?.type === 'image')
+          .map((comment) => comment['_source'])}
         type="image"
       />
     </div>

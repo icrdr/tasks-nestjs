@@ -9,6 +9,10 @@ import { OptionService } from '../option/option.service';
 import { join } from 'path';
 import { SpaceService } from '../task/services/space.service';
 import { TaskService } from '../task/services/task.service';
+import { AssignmentService } from '../task/services/assignment.service';
+import { MemberService } from '../task/services/member.service';
+import { RoleService } from '../task/services/role.service';
+import { PropertyService } from '../task/services/property.service';
 
 @Injectable()
 class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -37,6 +41,16 @@ class TypeOrmConfigService implements TypeOrmOptionsFactory {
       useClass: TypeOrmConfigService,
     }),
   ],
-  providers: [DatabaseService, OptionService, UserService, SpaceService, TaskService],
+  providers: [
+    DatabaseService,
+    OptionService,
+    UserService,
+    SpaceService,
+    TaskService,
+    AssignmentService,
+    PropertyService,
+    MemberService,
+    RoleService,
+  ],
 })
 export class DatabaseModule {}

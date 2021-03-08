@@ -1,10 +1,15 @@
 import { Column, Entity, ManyToOne, OneToMany } from 'typeorm';
 import { User } from '@server/user/entities/user.entity';
 import { Task } from './task.entity';
-import { BaseEntity, PropertyForm, PropertyType, ViewOption, ViewType } from '@server/common/common.entity';
+import {
+  BaseEntity,
+  PropertyForm,
+  PropertyType,
+  ViewOption,
+  ViewType,
+} from '@server/common/common.entity';
 import { Asset } from '@server/task/entities/asset.entity';
 import { Member, Space } from './space.entity';
-
 
 @Entity()
 export class View extends BaseEntity {
@@ -44,7 +49,7 @@ export class Property extends BaseEntity {
   })
   form: PropertyForm;
 
-  @Column('simple-json')
+  @Column('simple-json', { nullable: true })
   items: string[];
 }
 

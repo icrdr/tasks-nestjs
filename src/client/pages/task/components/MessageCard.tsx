@@ -62,7 +62,7 @@ const MessageCard: React.FC<{
           <Card
             className={isMe ? 'chat-message-card-me' : 'chat-message-card-other'}
             style={{ width: 'auto', maxWidth: '400px' }}
-            bodyStyle={{ padding: '10px', wordBreak: 'break-word' }}
+            bodyStyle={{ padding: '10px', wordBreak: 'break-word',overflow:'hidden' }}
           >
             {isLoading ? (
               <Skeleton paragraph={{ rows: 1, width: '160px' }} title={false} active />

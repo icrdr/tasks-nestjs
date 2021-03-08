@@ -1,46 +1,11 @@
-import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsEnum,
-  IsBoolean,
-  IsNotEmpty,
-  IsDate,
-} from "class-validator";
-import { Exclude, Expose, Transform, Type } from "class-transformer";
-import { Task, Content } from "../server/task/entities/task.entity";
-import { ListDTO, ListRes } from "./misc.dto";
-import { OutputData } from "@editorjs/editorjs";
-import { Comment } from "../server/task/entities/comment.entity";
-import { UserRes } from "./user.dto";
-import { Assignment, Space } from "../server/task/entities/space.entity";
-import { AssignmentRes } from "./space.dto";
-import { Asset } from "../server/task/entities/asset.entity";
-import {
-  AccessLevel,
-  CommentType,
-  TaskState,
-} from "../server/common/common.entity";
-
-export class AddAssetDTO {
-  @IsString()
-  name: string;
-
-  @IsString()
-  source: string;
-
-  @IsOptional()
-  @IsString()
-  format?: string;
-
-  @IsOptional()
-  @IsString()
-  type?: string;
-
-  @IsOptional()
-  @IsNumber()
-  size?: number;
-}
+import { IsString, IsOptional, IsNumber, IsEnum, IsBoolean, IsDate } from 'class-validator';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
+import { Task, Content } from '../server/task/entities/task.entity';
+import { ListDTO, ListRes } from './misc.dto';
+import { OutputData } from '@editorjs/editorjs';
+import { Assignment, Space } from '../server/task/entities/space.entity';
+import { AccessLevel, TaskState } from '../server/common/common.entity';
+import { AssignmentRes } from './assignment.dto';
 
 export class ChangeTaskDTO {
   @IsOptional()
@@ -58,6 +23,9 @@ export class ChangeTaskDTO {
   @IsOptional()
   @IsEnum(AccessLevel)
   access?: AccessLevel;
+
+  @IsOptional()
+  properties?: any;
 
   @IsOptional()
   @IsDate()
@@ -82,48 +50,6 @@ export class AddTaskDTO {
   memberId?: number[];
 }
 
-export class GetCommentsDTO extends ListDTO {
-  @IsOptional()
-  @IsDate()
-  dateAfter?: Date;
-
-  @IsOptional()
-  @IsDate()
-  dateBefore?: Date;
-}
-
-export class GetAssetsDTO extends ListDTO {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  format?: string;
-
-  @IsOptional()
-  @IsDate()
-  uploadAfter?: Date;
-
-  @IsOptional()
-  @IsDate()
-  uploadBefore?: Date;
-
-  @IsOptional()
-  @IsNumber()
-  taskId?: number;
-
-  @IsOptional()
-  @IsNumber()
-  spaceId?: number;
-
-  @Type(() => String)
-  @IsOptional()
-  @Transform((v) => v === "true")
-  @IsBoolean()
-  isRoot?: boolean;
-}
-
 export class GetTasksDTO extends ListDTO {
   @IsOptional()
   @IsString()
@@ -141,77 +67,16 @@ export class GetTasksDTO extends ListDTO {
   @IsOptional()
   @IsDate()
   dueBefore?: Date;
+
+  @IsOptional()
+  properties?: any;
 }
 
 export class ReviewTaskDTO {
   @Type(() => String)
-  @Transform((v) => v === "true")
+  @Transform((v) => v === 'true')
   @IsBoolean()
   isConfirmed: boolean;
-}
-
-export class CommentDTO {
-  taskId: number;
-  content: string;
-  type: CommentType;
-}
-
-@Exclude()
-export class CommentRes {
-  @Expose()
-  createAt: Date;
-
-  @Expose()
-  @Transform((i) => (i ? new UserRes(i) : null))
-  sender: UserRes;
-
-  @Expose()
-  content: string;
-
-  @Expose()
-  type: string;
-
-  @Expose()
-  index: number;
-
-  constructor(partial: Partial<CommentRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-@Exclude()
-export class AssetRes {
-  @Expose()
-  id: number;
-
-  @Expose()
-  createAt: Date;
-
-  @Expose()
-  @Transform((i) => (i ? new UserRes(i) : null))
-  uploader: UserRes;
-
-  @Expose()
-  name: string;
-
-  @Expose()
-  type: string;
-
-  @Expose()
-  format: string;
-
-  @Expose()
-  size: number;
-
-  @Expose()
-  source: string;
-
-  @Expose()
-  preview: string;
-
-  constructor(partial: Partial<CommentRes>) {
-    Object.assign(this, partial);
-  }
 }
 
 @Exclude()
@@ -287,6 +152,9 @@ export class TaskDetailRes {
   @Expose()
   dueAt: Date;
 
+  @Expose()
+  properties: any;
+
   contents: Content[];
 
   @Expose()
@@ -353,6 +221,9 @@ export class TaskMoreDetailRes {
   userAccess: string;
 
   @Expose()
+  properties: any;
+
+  @Expose()
   @Transform((a) => (a ? a.map((i: Content) => new ContentRes(i)) : []))
   contents: ContentRes[];
 
@@ -379,26 +250,6 @@ export class TaskMoreDetailRes {
   subTasks: TaskRes[];
 
   constructor(partial: Partial<TaskMoreDetailRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-export class CommentListRes extends ListRes {
-  @Transform((a) => (a ? a.map((i: Comment) => new CommentRes(i)) : []))
-  list: CommentRes[];
-
-  constructor(partial: Partial<CommentListRes>) {
-    super();
-    Object.assign(this, partial);
-  }
-}
-
-export class AssetListRes extends ListRes {
-  @Transform((a) => (a ? a.map((i: Asset) => new AssetRes(i)) : []))
-  list: AssetRes[];
-
-  constructor(partial: Partial<AssetListRes>) {
-    super();
     Object.assign(this, partial);
   }
 }

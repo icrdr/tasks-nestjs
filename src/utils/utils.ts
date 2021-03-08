@@ -49,7 +49,7 @@ export function getValidAccess(neededAccess: string[], ownedAccess: string[]) {
   }
   return validAccess;
 }
-export const getInitViewOption = (savedOption, defaultOption, roles=[]) => {
+export const getInitViewOption = (savedOption, defaultOption, roles=[], properties=[]) => {
   const headers = [];
   const form = savedOption?.form || defaultOption.form;
   const savedOptionHeaderTitles = savedOption?.headers.map((h) => h.title) || [];
@@ -68,6 +68,20 @@ export const getInitViewOption = (savedOption, defaultOption, roles=[]) => {
     if (index < 0) {
       headers.push({
         title: `role:${role.id}`,
+        width: 150,
+        filter: undefined,
+        hidden: false,
+      });
+    } else {
+      headers.push(savedOption.headers[index]);
+    }
+  }
+
+  for (const property of properties) {
+    const index = savedOptionHeaderTitles.indexOf(`prop:${property.id}`);
+    if (index < 0) {
+      headers.push({
+        title: `prop:${property.id}`,
         width: 150,
         filter: undefined,
         hidden: false,

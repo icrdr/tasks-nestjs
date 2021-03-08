@@ -1,58 +1,12 @@
-import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsEnum,
-  IsArray,
-  ValidateIf,
-  IsDefined,
-  IsNumberString,
-  IsBoolean,
-  IsNotEmpty,
-} from 'class-validator';
-import { Exclude, Expose, plainToClass, Transform, Type } from 'class-transformer';
+import { IsString, IsOptional, IsNumber, IsEnum } from 'class-validator';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 import { ListDTO, ListRes } from './misc.dto';
-import { UserRes } from './user.dto';
-import { User } from '../server/user/entities/user.entity';
-import { Assignment, Member, Role, Space } from '../server/task/entities/space.entity';
-import { AccessLevel } from '../server/common/common.entity';
-
-export class GetMembersDTO extends ListDTO {
-  @IsOptional()
-  @IsString()
-  username?: string;
-
-  @IsOptional()
-  @IsString()
-  fullName?: string;
-}
-
-export class GetAssignmentDTO extends ListDTO {}
-
-export class ChangeRoleDTO {
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsEnum(AccessLevel)
-  access?: AccessLevel;
-}
-
-export class ChangeAssetDTO {
-  @IsOptional()
-  @IsString()
-  name?: string;
-}
-
-export class AddRoleDTO {
-  @IsString()
-  name: string;
-
-  @IsOptional()
-  @IsEnum(AccessLevel)
-  access?: AccessLevel;
-}
+import { Member, Role, Space } from '../server/task/entities/space.entity';
+import { AccessLevel, PropertyType } from '../server/common/common.entity';
+import { MemberRes } from './member.dto';
+import { RoleRes } from './role.dto';
+import { Property } from '../server/task/entities/property.entity';
+import { PropertyRes } from './property.dto';
 
 export class ChangeSpaceDTO {
   @IsOptional()
@@ -62,39 +16,6 @@ export class ChangeSpaceDTO {
   @IsOptional()
   @IsString()
   name?: string;
-}
-
-export class ChangeAssignmentDTO {
-  @IsOptional()
-  @IsNumber()
-  roleId?: number;
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-}
-
-export class AddAssignmentDTO {
-  @IsOptional()
-  @Type(() => Number)
-  @IsNumber({}, { each: true })
-  userId?: number[];
-
-  @IsOptional()
-  @IsString()
-  name?: string;
-
-  @IsOptional()
-  @IsString()
-  roleName?: string;
-
-  @IsOptional()
-  @IsNumber()
-  groupId?: number;
-
-  @IsOptional()
-  @IsEnum(AccessLevel)
-  roleAccess?: AccessLevel;
 }
 
 export class AddSpaceDTO {
@@ -121,64 +42,6 @@ export class SpaceRes {
   @Expose()
   name: string;
   constructor(partial: Partial<SpaceRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-export class GetRolesDTO extends ListDTO {}
-
-@Exclude()
-export class MemberRes {
-  user: User;
-
-  @Expose()
-  get userId(): number {
-    return this.user.id;
-  }
-
-  @Expose()
-  get username(): string {
-    return this.user.username;
-  }
-
-  constructor(partial: Partial<MemberRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-@Exclude()
-export class RoleRes {
-  @Expose()
-  id: number;
-
-  @Expose()
-  name: string;
-
-  @Expose()
-  access: AccessLevel;
-
-  constructor(partial: Partial<RoleRes>) {
-    Object.assign(this, partial);
-  }
-}
-
-@Exclude()
-export class AssignmentRes {
-  @Expose()
-  id: number;
-
-  @Expose()
-  name: string;
-
-  @Expose()
-  @Transform((i) => (i ? new RoleRes(i) : null))
-  role: Role;
-
-  @Expose()
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
-  members: Member[] | MemberRes[];
-
-  constructor(partial: Partial<AssignmentRes>) {
     Object.assign(this, partial);
   }
 }
@@ -211,25 +74,26 @@ export class SpaceDetailRes {
   constructor(partial: Partial<SpaceDetailRes>) {
     Object.assign(this, partial);
   }
-}
 
-export class RoleListRes extends ListRes {
-  @Transform((a) => (a ? a.map((i: Role) => new RoleRes(i)) : []))
-  list: RoleRes[];
+  properties: Property[];
 
-  constructor(partial: Partial<RoleListRes>) {
-    super();
-    Object.assign(this, partial);
+  @Expose()
+  get taskProperties(): PropertyRes[] {
+    return this.properties
+      .filter((p) => p.type === PropertyType.TASK)
+      .map((i: Property) => new PropertyRes(i));
   }
-}
-
-export class MemberListRes extends ListRes {
-  @Transform((a) => (a ? a.map((i: Member) => new MemberRes(i)) : []))
-  list: MemberRes[];
-
-  constructor(partial: Partial<MemberListRes>) {
-    super();
-    Object.assign(this, partial);
+  @Expose()
+  get memberProperties(): PropertyRes[] {
+    return this.properties
+      .filter((p) => p.type === PropertyType.MEMBER)
+      .map((i: Property) => new PropertyRes(i));
+  }
+  @Expose()
+  get assetProperties(): PropertyRes[] {
+    return this.properties
+      .filter((p) => p.type === PropertyType.ASSET)
+      .map((i: Property) => new PropertyRes(i));
   }
 }
 
@@ -238,16 +102,6 @@ export class SpaceListRes extends ListRes {
   list: SpaceDetailRes[];
 
   constructor(partial: Partial<SpaceListRes>) {
-    super();
-    Object.assign(this, partial);
-  }
-}
-
-export class AssignmentListRes extends ListRes {
-  @Transform((a) => (a ? a.map((i: Assignment) => new AssignmentRes(i)) : []))
-  list: AssignmentRes[];
-
-  constructor(partial: Partial<AssignmentListRes>) {
     super();
     Object.assign(this, partial);
   }

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { useModel, useRequest } from "umi";
+import React, { useEffect, useState } from 'react';
+import { useModel, useRequest } from 'umi';
 import {
   Badge,
   Button,
@@ -13,19 +13,19 @@ import {
   Space,
   Spin,
   DatePicker,
-} from "antd";
-import TaskTable from "./TaskTable";
-import TaskGallery from "./TaskGallery";
-import { ViewOption } from "@server/common/common.entity";
-import { addSpaceTask, addSubTask, getUser } from "../task.service";
-import { AddTaskDTO, TaskMoreDetailRes } from "@dtos/task.dto";
-import { SettingOutlined } from "@ant-design/icons";
-import moment from "moment";
-import { getSpaceMembers } from "../../member/member.service";
-import { getInitViewOption } from "@utils/utils";
+} from 'antd';
+import TaskTable from './TaskTable';
+import TaskGallery from './TaskGallery';
+import { ViewOption } from '@server/common/common.entity';
+import { addSpaceTask, addSubTask, getUser } from '../task.service';
+import { AddTaskDTO, TaskMoreDetailRes } from '@dtos/task.dto';
+import { SettingOutlined } from '@ant-design/icons';
+import moment from 'moment';
+import { getSpaceMembers } from '../../member/member.service';
+import { getInitViewOption } from '@utils/utils';
 
 const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
-  const { initialState } = useModel("@@initialState");
+  const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
   const [viewUpdate, setViewUpdate] = useState(false);
   const [viewOption, setViewOption] = useState<ViewOption>(null);
@@ -37,51 +37,49 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
     ? `task${task.id}SubTaskViewOption`
     : `space${currentSpace.id}TaskViewOption`;
 
-  const isFull =
-    currentSpace?.userAccess === "full" || task?.userAccess === "full";
-  const isEdit =
-    isFull ||
-    (task ? task.userAccess === "edit" : currentSpace.userAccess === "edit");
+  const isFull = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
+  const isEdit = isFull || (task ? task.userAccess === 'edit' : currentSpace.userAccess === 'edit');
 
   useEffect(() => {
     const initViewOption = getInitViewOption(
       JSON.parse(localStorage.getItem(viewOptionKey)),
       {
-        form: "table",
+        form: 'table',
         headers: [
           {
-            title: "name",
+            title: 'name',
             width: 200,
             filter: undefined,
             hidden: false,
           },
           {
-            title: "priority",
+            title: 'priority',
             width: 100,
             filter: undefined,
             hidden: true,
           },
           {
-            title: "state",
+            title: 'state',
             width: 100,
             filter: undefined,
             hidden: false,
           },
           {
-            title: "dueAt",
+            title: 'dueAt',
             width: 150,
             filter: undefined,
             hidden: false,
           },
         ],
       },
-      currentSpace.roles
+      currentSpace.roles,
+      currentSpace.taskProperties,
     );
 
     // get role default filter user
     initViewOption.headers.forEach((header, index) => {
-      const type = header.title.split(":")[0];
-      if (type === "role" && header.filter) {
+      const type = header.title.split(':')[0];
+      if (type === 'role' && header.filter) {
         getUser(header.filter)
           .then((res) => {
             setMemberOptions([{ label: res.username, value: res.id }]);
@@ -99,9 +97,7 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   }, [viewUpdate]);
 
   const addTask = (body: AddTaskDTO) => {
-    return task
-      ? addSubTask(task.id, body)
-      : addSpaceTask(currentSpace.id, body);
+    return task ? addSubTask(task.id, body) : addSpaceTask(currentSpace.id, body);
   };
 
   const addTaskReq = useRequest(addTask, {
@@ -152,29 +148,29 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   //   headers[index]['filter'] = v;
   //   saveOption({ ...viewOption, headers });
   // };
-  console.log(viewOption?.headers);
+
   const filter = viewOption?.headers
     .filter((header) => !header.hidden)
     .map((header, index: number) => {
-      const type = header.title.split(":")[0];
+      const type = header.title.split(':')[0];
       switch (type) {
-        case "name":
+        case 'name':
           return (
             <Input.Search
               key={index}
               style={{ width: 150 }}
               placeholder="任务名"
               onSearch={(v) => handleFilter(index, v)}
-              defaultValue={header.filter || ""}
+              defaultValue={header.filter || ''}
               allowClear
             />
           );
-        case "state":
+        case 'state':
           return (
             <Select
               key={index}
               style={{ width: 150 }}
-              placeholder={"状态"}
+              placeholder={'状态'}
               defaultValue={header.filter || undefined}
               onChange={(v) => handleFilter(index, v)}
               allowClear
@@ -193,18 +189,18 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
               </Select.Option>
             </Select>
           );
-        case "dueAt":
+        case 'dueAt':
           return (
             <DatePicker
               key={index}
-              placeholder={"死线之前"}
+              placeholder={'死线之前'}
               defaultValue={header.filter ? moment(header.filter) : undefined}
               onChange={(v) => handleFilter(index, v?.toDate() || undefined)}
             />
           );
-        case "role":
+        case 'role':
           const role = currentSpace.roles.filter(
-            (r) => r.id === parseInt(header.title.split(":")[1])
+            (r) => r.id === parseInt(header.title.split(':')[1]),
           )[0];
           return (
             <Select
@@ -213,20 +209,29 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
               placeholder={role.name}
               defaultValue={header.filter || undefined}
               onChange={(v) => handleFilter(index, v)}
-              onSearch={(v) =>
-                getSpaceMembersReq.run(currentSpace.id, { username: v })
-              }
+              onSearch={(v) => getSpaceMembersReq.run(currentSpace.id, { username: v })}
               options={memberOptions}
               showSearch
               showArrow={false}
               filterOption={false}
-              notFoundContent={
-                getSpaceMembersReq.loading ? <Spin size="small" /> : null
-              }
+              notFoundContent={getSpaceMembersReq.loading ? <Spin size="small" /> : null}
               allowClear
             />
           );
-
+        case 'prop':
+          const property = currentSpace.taskProperties.filter(
+            (p) => p.id === parseInt(header.title.split(':')[1]),
+          )[0];
+          return (
+            <Input
+              key={index}
+              style={{ width: 100 }}
+              placeholder={property.name}
+              defaultValue={header.filter || undefined}
+              onPressEnter={(e) => handleFilter(index, e.currentTarget.value)}
+              allowClear
+            />
+          );
         default:
           <div></div>;
       }
@@ -235,37 +240,36 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
   const menu = (
     <Menu>
       {viewOption?.headers.map((header, index) => {
-        const type = header.title.split(":")[0];
-        let title =
-          type === "role"
-            ? currentSpace.roles.filter(
-                (r) => r.id === parseInt(header.title.split(":")[1])
-              )[0].name
-            : type;
+        const type = header.title.split(':')[0];
 
-        let label = "";
-        switch (title) {
-          case "name":
-            label = "任务名";
+        let label = '';
+        switch (type) {
+          case 'name':
+            label = '任务名';
             break;
-          case "priority":
-            label = "优先级";
+          case 'priority':
+            label = '优先级';
             break;
-          case "state":
-            label = "状态";
+          case 'state':
+            label = '状态';
             break;
-          case "dueAt":
-            label = "截止日";
+          case 'dueAt':
+            label = '截止日';
             break;
-          default:
-            label = title;
+          case 'role':
+            const roleId = parseInt(header.title.split(':')[1]);
+            label = currentSpace.roles.filter((r) => r.id === roleId)[0].name;
+            break;
+          case 'prop':
+            const propId = parseInt(header.title.split(':')[1]);
+            label = currentSpace.taskProperties.filter((p) => p.id === propId)[0].name;
             break;
         }
         return (
           <Menu.Item key={index}>
             <Space>
               <Switch
-                disabled={title === "name"}
+                disabled={type === 'name'}
                 size="small"
                 defaultChecked={!header.hidden}
                 onChange={(v) => handleHeaderDisplay(index, v)}
@@ -276,7 +280,7 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
         );
       })}
       <Menu.Item
-        key={"reset"}
+        key={'reset'}
         onClick={() => {
           setViewUpdate(!viewUpdate);
           localStorage.removeItem(viewOptionKey);
@@ -289,7 +293,7 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
 
   return (
     <>
-      <Space size="middle" direction="vertical" style={{ width: "100%" }}>
+      <Space size="middle" direction="vertical" style={{ width: '100%' }}>
         <div className="left-right-layout-container">
           <Space>
             {isEdit && (
@@ -307,12 +311,12 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
           </Space>
           <Space wrap>{filter}</Space>
         </div>
-        <div style={{ height: "calc(100vh - 100px)" }}>
-          {viewOption?.form === "table" && (
-            <TaskTable option={viewOption} update={viewUpdate} />
+        <div style={{ height: 'calc(100vh - 100px)' }}>
+          {viewOption?.form === 'table' && (
+            <TaskTable headers={viewOption.headers} update={viewUpdate} />
           )}
-          {viewOption?.form === "gallery" && (
-            <TaskGallery option={viewOption} update={viewUpdate} task={task} />
+          {viewOption?.form === 'gallery' && (
+            <TaskGallery headers={viewOption.headers} update={viewUpdate} task={task} />
           )}
         </div>
       </Space>
@@ -336,7 +340,7 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
           <Form.Item
             label="任务名"
             name="name"
-            rules={[{ required: true, message: "任务名是必须的" }]}
+            rules={[{ required: true, message: '任务名是必须的' }]}
           >
             <Input />
           </Form.Item>

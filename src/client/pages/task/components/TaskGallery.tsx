@@ -7,9 +7,9 @@ import VGallery from '@components/VGallery';
 import TaskCard from './TaskCard';
 import { ViewOption } from '@server/common/common.entity';
 
-const TaskGallery: React.FC<{ task?:TaskMoreDetailRes, option?: ViewOption; update?: boolean }> = ({
+const TaskGallery: React.FC<{ task?: TaskMoreDetailRes; headers?: any[]; update?: boolean }> = ({
   task,
-  option,
+  headers = [],
   update = false,
 }) => {
   const { initialState } = useModel('@@initialState');
@@ -21,7 +21,7 @@ const TaskGallery: React.FC<{ task?:TaskMoreDetailRes, option?: ViewOption; upda
 
   const getTasks = async (body: GetTasksDTO) => {
     const params = {};
-    for (const header of option.headers) {
+    for (const header of headers) {
       if (header.filter) {
         switch (header.title) {
           case 'dueAt':
@@ -40,7 +40,7 @@ const TaskGallery: React.FC<{ task?:TaskMoreDetailRes, option?: ViewOption; upda
   };
 
   const initTasksReq = useRequest(getTasks, {
-    refreshDeps: [task, update, dataUpdate, option],
+    refreshDeps: [task, update, dataUpdate, headers],
     onSuccess: (res, params) => {
       setTaskList(Array(res.total).fill(undefined));
       if (fetchCountRef.current !== 0) {
@@ -88,8 +88,8 @@ const TaskGallery: React.FC<{ task?:TaskMoreDetailRes, option?: ViewOption; upda
   });
 
   const loadMoreItems = (startIndex: number, stopIndex: number) => {
-    console.log(startIndex);
-    console.log(stopIndex);
+    // console.log(startIndex);
+    // console.log(stopIndex);
     return getTasksReq.run({
       skip: startIndex,
       take: stopIndex - startIndex + 1,

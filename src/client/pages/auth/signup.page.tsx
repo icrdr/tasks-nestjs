@@ -101,15 +101,15 @@ const SignUpForm: React.FC = () => {
         name="username"
         rules={[
           { required: true, message: "Please input your Username!" },
-          {
-            validator: async (_, v) => {
-              const res = await getUsers({ username: v });
-              console.log(res)
-              res.list.length === 0
-                ? Promise.resolve()
-                : Promise.reject(new Error("Should accept agreement"));
-            },
-          },
+          // {
+          //   validator: async (_, v) => {
+          //     const res = await getUsers({ username: v });
+          //     console.log(res)
+          //     res.list.length === 0
+          //       ? Promise.resolve()
+          //       : Promise.reject(new Error("Should accept agreement"));
+          //   },
+          // },
         ]}
       >
         <Input

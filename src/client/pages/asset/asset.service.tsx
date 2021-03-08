@@ -1,6 +1,5 @@
-import { ChangeAssetDTO } from '@dtos/space.dto';
-import { AssetRes } from '@dtos/task.dto';
 import { request } from 'umi';
+import { AssetRes, ChangeAssetDTO } from '@dtos/asset.dto';
 
 export const changeAsset = async (
   id: number,

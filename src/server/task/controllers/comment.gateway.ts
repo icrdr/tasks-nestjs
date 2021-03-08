@@ -18,8 +18,8 @@ import { Access } from '@server/user/access.decorator';
 import { RoleAccessGuard } from '@server/user/roleAccess.guard';
 import { UserService } from '@server/user/services/user.service';
 import { WsExceptionFilter } from '@server/error/wsError.filter';
-import { CommentDTO } from '@dtos/task.dto';
 import { CommentService } from '../services/comment.service';
+import { CommentDTO } from '@dtos/comment.dto';
 
 
 @UseFilters(WsExceptionFilter)

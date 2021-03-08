@@ -1,13 +1,12 @@
 import { request } from 'umi';
+import { ChangeSpaceDTO, SpaceDetailRes } from '@dtos/space.dto';
+import { AddRoleDTO, ChangeRoleDTO, GetRolesDTO, RoleListRes, RoleRes } from '@dtos/role.dto';
 import {
-  AddRoleDTO,
-  ChangeRoleDTO,
-  ChangeSpaceDTO,
-  GetRolesDTO,
-  RoleListRes,
-  RoleRes,
-  SpaceDetailRes,
-} from '@dtos/space.dto';
+  AddPropertyDTO,
+  ChangePropertyDTO,
+  GetPropertiesDTO,
+  PropertyListRes,
+} from '@dtos/property.dto';
 
 export const getSpaceRoles = async (id: number, params?: GetRolesDTO): Promise<RoleListRes> => {
   return request(`/api/spaces/${id}/roles`, {
@@ -15,7 +14,13 @@ export const getSpaceRoles = async (id: number, params?: GetRolesDTO): Promise<R
   });
 };
 
-export const changeRole = async (
+export async function removeSpaceRole(id: number, roleId: number) {
+  return request(`/api/spaces/${id}/roles/${roleId}`, {
+    method: 'DELETE',
+  });
+}
+
+export const changeSpaceRole = async (
   id: number,
   roleId: number,
   body: ChangeRoleDTO,
@@ -39,3 +44,36 @@ export const addSpaceRole = async (id: number, body: AddRoleDTO): Promise<RoleRe
     data: body,
   });
 };
+
+export const addSpaceProperty = async (id: number, body: AddPropertyDTO): Promise<RoleRes> => {
+  return request(`/api/spaces/${id}/properties`, {
+    method: 'POST',
+    data: body,
+  });
+};
+
+export const getSpaceProperties = async (
+  id: number,
+  params?: GetPropertiesDTO,
+): Promise<PropertyListRes> => {
+  return request(`/api/spaces/${id}/properties`, {
+    params,
+  });
+};
+
+export const changeSpaceProperty = async (
+  id: number,
+  propertyId: number,
+  body: ChangePropertyDTO,
+): Promise<RoleRes> => {
+  return request(`/api/spaces/${id}/properties/${propertyId}`, {
+    method: 'PUT',
+    data: body,
+  });
+};
+
+export async function removeSpaceProperty(id: number, propertyId: number) {
+  return request(`/api/spaces/${id}/properties/${propertyId}`, {
+    method: 'DELETE',
+  });
+}

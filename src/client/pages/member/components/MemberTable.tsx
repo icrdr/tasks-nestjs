@@ -1,36 +1,15 @@
-import React, { useRef, useState } from "react";
-import { PageContainer } from "@ant-design/pro-layout";
-import { history, useModel, useRequest } from "umi";
-import {
-  Button,
-  Card,
-  Dropdown,
-  Form,
-  Input,
-  Menu,
-  Select,
-  Space,
-  Table,
-  Typography,
-} from "antd";
-import { GetMembersDTO, MemberRes, RoleRes } from "@dtos/space.dto";
-import { useForm } from "antd/es/form/Form";
-import {
-  EditOutlined,
-  EllipsisOutlined,
-  HighlightOutlined,
-} from "@ant-design/icons";
-import { getSpaceMembers, removeSpaceMember } from "../member.service";
-import VTable from "@components/VTable";
-import { ViewOption } from "@server/common/common.entity";
+import React, { useRef, useState } from 'react';
+import { useModel, useRequest } from 'umi';
+import { Button, Dropdown, Menu, Popconfirm, Typography } from 'antd';
+import { EllipsisOutlined } from '@ant-design/icons';
+import { getSpaceMembers, removeSpaceMember } from '../member.service';
+import VTable from '@components/VTable';
+import { GetMembersDTO, MemberRes } from '@dtos/member.dto';
 
 const { Text } = Typography;
 
-const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
-  option,
-  update,
-}) => {
-  const { initialState, setInitialState } = useModel("@@initialState");
+const MemberTable: React.FC<{ headers?: any[]; update?: boolean }> = ({ headers = [], update }) => {
+  const { initialState, setInitialState } = useModel('@@initialState');
   const { currentUser, currentSpace } = initialState;
   const [dataUpdate, setDataUpdate] = useState(false);
   const [viewUpdate, setViewUpdate] = useState(false);
@@ -40,19 +19,19 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
   const removeSpaceMemberReq = useRequest(removeSpaceMember, {
     manual: true,
     onSuccess: (res) => {
-      setDataUpdate(dataUpdate);
+      setDataUpdate(!dataUpdate);
     },
   });
 
-  const columns = option.headers
+  const columns = headers
     .filter((header) => !header.hidden)
     .map((header) => {
-      const type = header.title.split(":")[0];
+      const type = header.title.split(':')[0];
       switch (type) {
-        case "username":
+        case 'username':
           return {
-            dataIndex: "username",
-            title: "用户名",
+            dataIndex: 'username',
+            title: '用户名',
             width: header.width,
             render: (_, member: MemberRes) => <span>{member.username}</span>,
           };
@@ -64,19 +43,22 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
 
   const actionMenu = (member: MemberRes) => (
     <Menu>
-      <Menu.Item
-        disabled={memberList.length <= 1}
-        key="1"
-        onClick={() => removeSpaceMemberReq.run(currentSpace.id, member.userId)}
-      >
-        删除
+      <Menu.Item disabled={memberList.length <= 1} key="1">
+        <Popconfirm
+          title="你确定要移除该成员么？"
+          onConfirm={() => removeSpaceMemberReq.run(currentSpace.id, member.userId)}
+          okText="确认"
+          cancelText="取消"
+        >
+          <a href="#">删除</a>
+        </Popconfirm>
       </Menu.Item>
     </Menu>
   );
 
   columns.push({
-    dataIndex: "action",
-    title: "操作",
+    dataIndex: 'action',
+    title: '操作',
     width: 100,
     render: (_, member: MemberRes) => (
       <Dropdown overlay={actionMenu(member)}>
@@ -86,11 +68,11 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
   });
   const getMembers = async (body: GetMembersDTO) => {
     const params = {};
-    for (const header of option.headers.filter((header) => !header.hidden)) {
+    for (const header of headers.filter((header) => !header.hidden)) {
       if (header.filter) {
         switch (header.title) {
-          case "dueAt":
-            params["dueBefore"] = header.filter;
+          case 'dueAt':
+            params['dueBefore'] = header.filter;
             break;
 
           default:
@@ -103,7 +85,7 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
     return await getSpaceMembers(currentSpace.id, { ...params, ...body });
   };
   const initSpaceMembersReq = useRequest(getMembers, {
-    refreshDeps: [update, dataUpdate, option],
+    refreshDeps: [update, dataUpdate, headers],
     onSuccess: (res, params) => {
       setMemberList(Array(res.total).fill(undefined));
       if (fetchCountRef.current !== 0) {
@@ -116,11 +98,7 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
   const getSpaceMembersReq = useRequest(getMembers, {
     manual: true,
     onSuccess: (res, params) => {
-      for (
-        let index = params[0].skip;
-        index < params[0].skip + params[0].take;
-        index++
-      ) {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         memberList[index] = res.list[index - params[0].skip];
       }
       setMemberList(memberList);
@@ -128,8 +106,8 @@ const MemberTable: React.FC<{ option: ViewOption; update?: boolean }> = ({
   });
 
   const loadMoreItems = (startIndex: number, stopIndex: number) => {
-    console.log(startIndex);
-    console.log(stopIndex);
+    // console.log(startIndex);
+    // console.log(stopIndex);
     return getSpaceMembersReq.run({
       skip: startIndex,
       take: stopIndex - startIndex + 1,

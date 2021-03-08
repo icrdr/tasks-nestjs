@@ -24,8 +24,10 @@ export enum PropertyType {
 }
 
 export enum PropertyForm {
-  NUMBER = 'number',
   STRING = 'string',
+  NUMBER = 'number',
+  RADIO = 'radio',
+  SELECT = 'select',
 }
 
 export enum ViewForm {
