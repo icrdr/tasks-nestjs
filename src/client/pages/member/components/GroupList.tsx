@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { PlusOutlined, EllipsisOutlined } from '@ant-design/icons';
+import React, { useState } from "react";
+import { PlusOutlined, EllipsisOutlined } from "@ant-design/icons";
 import {
   Button,
   Space,
@@ -14,23 +14,24 @@ import {
   Typography,
   Tooltip,
   Popconfirm,
-} from 'antd';
-import { useModel, useRequest } from 'umi';
+} from "antd";
+import { useModel, useRequest } from "umi";
 import {
   addSpaceGroupMember,
   changeSpaceGroup,
   getSpaceMembers,
   removeSpaceGroup,
   removeSpaceGroupMember,
-} from '../member.service';
-import { getSpaceGroups } from '../../task/task.service';
-import { UserRes } from '@dtos/user.dto';
-import { AssignmentRes } from '@dtos/assignment.dto';
-import { RoleRes } from '@dtos/role.dto';
+} from "../member.service";
+import { getSpaceGroups } from "../../task/task.service";
+import { UserRes } from "@dtos/user.dto";
+import { AssignmentRes } from "@dtos/assignment.dto";
+import { RoleRes } from "@dtos/role.dto";
+import PropertyAvatar from "@components/PropertyAvatar";
 const { Text, Title } = Typography;
 
 const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const [groupList, setGroupList] = useState<AssignmentRes[]>([]);
   const [dataUpdate, setDataUpdate] = useState(false);
@@ -66,7 +67,6 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
   const getSpaceGroupsReq = useRequest(() => getSpaceGroups(currentSpace.id), {
     refreshDeps: [update, dataUpdate],
     onSuccess: (res) => {
-      console.log('groupList', res.list);
       setGroupList(res.list);
     },
   });
@@ -87,7 +87,10 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
 
   const actionMenu = (group: AssignmentRes) => (
     <Menu>
-      <Menu.Item disabled={groupList.map((g) => g.id).indexOf(group.id) === 0} key="1">
+      <Menu.Item
+        disabled={groupList.map((g) => g.id).indexOf(group.id) === 0}
+        key="1"
+      >
         <Popconfirm
           title="你确定要删除该小组么？"
           onConfirm={() => removeSpaceGroupReq.run(currentSpace.id, group.id)}
@@ -120,7 +123,10 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
               <Text
                 editable={{
                   onChange: (v) => {
-                    if (v) changeSpaceGroupReq.run(currentSpace.id, item.id, { name: v });
+                    if (v)
+                      changeSpaceGroupReq.run(currentSpace.id, item.id, {
+                        name: v,
+                      });
                   },
                 }}
               >
@@ -139,59 +145,32 @@ const GroupList: React.FC<{ update?: boolean }> = ({ update }) => {
                     value: role.id,
                   };
                 })}
-                onChange={(v) => changeSpaceGroupReq.run(currentSpace.id, item.id, { roleId: v })}
+                onChange={(v) =>
+                  changeSpaceGroupReq.run(currentSpace.id, item.id, {
+                    roleId: v,
+                  })
+                }
               ></Select>,
               <Dropdown key="action" overlay={actionMenu(item)}>
                 <Button icon={<EllipsisOutlined />}></Button>
               </Dropdown>,
             ]}
           >
-            <Space size={'small'} align="start">
-              <Avatar.Group>
-                {(item.users as UserRes[]).map((user, i: number) => (
-                  <Dropdown
-                    disabled={index === 0 && item.users.length <= 1}
-                    overlay={
-                      <Menu>
-                        <Menu.Item
-                          key="1"
-                          onClick={() =>
-                            removeSpaceGroupMemberReq.run(currentSpace.id, item.id, user.id)
-                          }
-                        >
-                          删除
-                        </Menu.Item>
-                      </Menu>
-                    }
-                    key={i}
-                    trigger={['contextMenu']}
-                  >
-                    <Tooltip title={user.username}>
-                      <Avatar>{user.username}</Avatar>
-                    </Tooltip>
-                  </Dropdown>
-                ))}
-              </Avatar.Group>
-              <Popover
-                placement="right"
-                content={
-                  <Select
-                    style={{ width: 100 }}
-                    onChange={(v: number) =>
-                      addSpaceGroupMemberReq.run(currentSpace.id, item.id, v)
-                    }
-                    onSearch={(v) => getSpaceMembersReq.run(currentSpace.id, { username: v })}
-                    options={memberOptions}
-                    showSearch
-                    showArrow={false}
-                    filterOption={false}
-                    notFoundContent={getSpaceMembersReq.loading ? <Spin size="small" /> : null}
-                  />
-                }
-              >
-                <Button icon={<PlusOutlined />} type="primary" shape="circle" />
-              </Popover>
-            </Space>
+            <PropertyAvatar
+              editable={true}
+              users={item.users}
+              searchLoading={getSpaceMembersReq.loading}
+              options={memberOptions}
+              onAdd={(v) =>
+                addSpaceGroupMemberReq.run(currentSpace.id, item.id, v)
+              }
+              onRemove={(id) =>
+                removeSpaceGroupMemberReq.run(currentSpace.id, item.id, id)
+              }
+              onSearch={(v) =>
+                getSpaceMembersReq.run(currentSpace.id, { username: v })
+              }
+            />
           </Card>
         </List.Item>
       )}

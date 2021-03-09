@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { history, useModel, useRequest } from 'umi';
+import React, { useEffect, useState } from "react";
+import { history, useModel, useRequest } from "umi";
 import {
   Button,
   DatePicker,
@@ -12,19 +12,24 @@ import {
   Space,
   Spin,
   Switch,
-} from 'antd';
-import RoleTable from './components/MemberTable';
-import { addSpaceGroup, addSpaceMember, getSpaceMembers } from './member.service';
-import MemberTable from './components/MemberTable';
-import { getUsers } from '../task/task.service';
-import GroupList from './components/GroupList';
-import { SettingOutlined } from '@ant-design/icons';
-import { ViewOption } from '@server/common/common.entity';
-import { getInitViewOption } from '@utils/utils';
+} from "antd";
+import RoleTable from "./components/MemberTable";
+import {
+  addSpaceGroup,
+  addSpaceMember,
+  getSpaceMembers,
+} from "./member.service";
+import MemberTable from "./components/MemberTable";
+import { getUsers } from "../task/task.service";
+import GroupList from "./components/GroupList";
+import { SettingOutlined } from "@ant-design/icons";
+import { ViewOption } from "@server/common/common.entity";
+import { getInitViewOption } from "@utils/utils";
+import HeaderFilter from "../../components/HeaderFilter";
+import HeaderSetting from "../../components/HeaderSetting";
 
 const Resource: React.FC<{}> = (props) => {
-  
-  const { initialState } = useModel('@@initialState');
+  const { initialState } = useModel("@@initialState");
   const { currentSpace } = initialState;
   const [addMemberForm] = Form.useForm();
   const [addGroupForm] = Form.useForm();
@@ -35,21 +40,24 @@ const Resource: React.FC<{}> = (props) => {
   const [memberUpdate, setMemberUpdate] = useState(false);
   const [viewOption, setViewOption] = useState<ViewOption>(null);
 
-  const [type, setType] = useState('member');
+  const [type, setType] = useState("member");
   const viewOptionKey = `spaceMemberViewOption`;
 
   useEffect(() => {
-    const initViewOption = getInitViewOption(JSON.parse(localStorage.getItem(viewOptionKey)), {
-      form: 'gallery',
-      headers: [
-        {
-          title: 'username',
-          width: 150,
-          filter: undefined,
-          hidden: false,
-        },
-      ],
-    });
+    const initViewOption = getInitViewOption(
+      JSON.parse(localStorage.getItem(viewOptionKey)),
+      {
+        form: "gallery",
+        headers: [
+          {
+            title: "username",
+            width: 150,
+            filter: undefined,
+            hidden: false,
+          },
+        ],
+      }
+    );
 
     setViewOption(initViewOption);
   }, []);
@@ -108,16 +116,16 @@ const Resource: React.FC<{}> = (props) => {
   const filter = viewOption?.headers
     .filter((header) => !header.hidden)
     .map((header, index: number) => {
-      const type = header.title.split(':')[0];
+      const type = header.title.split(":")[0];
       switch (type) {
-        case 'username':
+        case "username":
           return (
             <Input.Search
               key={index}
               style={{ width: 150 }}
               placeholder="用户名"
               onSearch={(v) => handleFilter(index, v)}
-              defaultValue={header.filter || ''}
+              defaultValue={header.filter || ""}
               allowClear
             />
           );
@@ -129,13 +137,13 @@ const Resource: React.FC<{}> = (props) => {
   const menu = (
     <Menu>
       {viewOption?.headers.map((header, index) => {
-        const type = header.title.split(':')[0];
+        const type = header.title.split(":")[0];
         let title = type;
 
-        let label = '';
+        let label = "";
         switch (title) {
-          case 'username':
-            label = '用户名';
+          case "username":
+            label = "用户名";
             break;
           default:
             label = title;
@@ -145,7 +153,7 @@ const Resource: React.FC<{}> = (props) => {
           <Menu.Item key={index}>
             <Space>
               <Switch
-                disabled={title === 'username'}
+                disabled={title === "username"}
                 size="small"
                 defaultChecked={!header.hidden}
                 onChange={(v) => handleHeaderDisplay(index, v)}
@@ -160,24 +168,47 @@ const Resource: React.FC<{}> = (props) => {
 
   return (
     <div style={{ padding: 20 }}>
-      <Space size="middle" direction="vertical" style={{ width: '100%' }}>
+      <Space size="middle" direction="vertical" style={{ width: "100%" }}>
         <Button type="primary" onClick={() => setAddGroupVisible(true)}>
           新小组
         </Button>
         <GroupList update={groupUpdate} />
-        <div>
+        <div className="left-right-layout-container">
           <Space>
             <Button type="primary" onClick={() => setAddMemberVisible(true)}>
               新成员
             </Button>
-            <Dropdown overlay={menu}>
-              <Button icon={<SettingOutlined />} />
-            </Dropdown>
+            <HeaderSetting
+              headers={viewOption?.headers}
+              properties={currentSpace.assetProperties}
+              onChange={(index, v) => {
+                const headers = viewOption.headers;
+                headers[index].hidden = !v;
+                saveOption({ ...viewOption, headers });
+              }}
+              onReset={() => {
+                setMemberUpdate(!memberUpdate);
+                localStorage.removeItem(viewOptionKey);
+              }}
+            />
           </Space>
-          <Space style={{ float: 'right' }}>{filter}</Space>
+          <HeaderFilter
+            headers={viewOption?.headers}
+            roles={currentSpace.roles}
+            properties={currentSpace.taskProperties}
+            onChange={(index, v) => {
+              const headers = viewOption.headers.filter(
+                (header) => !header.hidden
+              );
+              headers[index].filter = v;
+              saveOption({ ...viewOption, headers });
+            }}
+          />
         </div>
-        <div style={{ height: 'calc(100vh - 100px)' }}>
-          {viewOption && <MemberTable headers={viewOption.headers} update={memberUpdate} />}
+        <div style={{ height: "calc(100vh - 100px)" }}>
+          {viewOption && (
+            <MemberTable headers={viewOption.headers} update={memberUpdate} />
+          )}
         </div>
       </Space>
       <Modal
@@ -199,7 +230,7 @@ const Resource: React.FC<{}> = (props) => {
           <Form.Item
             label="用户名"
             name="username"
-            rules={[{ required: true, message: '用户名是必须的' }]}
+            rules={[{ required: true, message: "用户名是必须的" }]}
           >
             <Select
               style={{ width: 100 }}
@@ -208,7 +239,9 @@ const Resource: React.FC<{}> = (props) => {
               showSearch
               showArrow={false}
               filterOption={false}
-              notFoundContent={getUsersReq.loading ? <Spin size="small" /> : null}
+              notFoundContent={
+                getUsersReq.loading ? <Spin size="small" /> : null
+              }
             />
           </Form.Item>
         </Form>
@@ -232,7 +265,7 @@ const Resource: React.FC<{}> = (props) => {
           <Form.Item
             label="小组名"
             name="name"
-            rules={[{ required: true, message: '小组名是必须的' }]}
+            rules={[{ required: true, message: "小组名是必须的" }]}
           >
             <Input />
           </Form.Item>

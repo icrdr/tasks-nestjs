@@ -108,7 +108,7 @@ const Editor: React.FC<{
       );
       indexeddbProvider.on('synced', async () => {
         await editor.isReady;
-        const binding = new EditorBinding(editor, yArray, debug);
+        const binding = new EditorBinding(editor, yArray);
         bindingRef.current = binding;
         await binding.isReady;
         setReady(true);

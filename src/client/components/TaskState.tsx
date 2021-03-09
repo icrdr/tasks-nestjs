@@ -1,6 +1,6 @@
 import { Alert, Badge } from 'antd';
 import React from 'react';
-import { Access as UmiAccess, useAccess, useIntl } from 'umi';
+import { useIntl } from 'umi';
 
 const TaskState: React.FC<{ state?: string }> = ({ state }) => {
   const intl = useIntl();

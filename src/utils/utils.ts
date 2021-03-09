@@ -49,10 +49,16 @@ export function getValidAccess(neededAccess: string[], ownedAccess: string[]) {
   }
   return validAccess;
 }
-export const getInitViewOption = (savedOption, defaultOption, roles=[], properties=[]) => {
+export const getInitViewOption = (
+  savedOption,
+  defaultOption,
+  properties = [],
+  roles = []
+) => {
   const headers = [];
   const form = savedOption?.form || defaultOption.form;
-  const savedOptionHeaderTitles = savedOption?.headers.map((h) => h.title) || [];
+  const savedOptionHeaderTitles =
+    savedOption?.headers.map((h) => h.title) || [];
 
   for (const header of defaultOption.headers) {
     const index = savedOptionHeaderTitles.indexOf(header.title);
