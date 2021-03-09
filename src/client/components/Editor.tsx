@@ -1,15 +1,15 @@
-import React, { useEffect, useRef, useState } from "react";
-import { useLocation, useModel, useParams, useRequest } from "umi";
-import { Button, Card, message, Spin } from "antd";
-import DragDrop from "editorjs-drag-drop";
-import EditorJS, { LogLevels, OutputData } from "@editorjs/editorjs";
-import { Paragraph, Header, Image } from "./editorTools";
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
+import React, { useEffect, useRef, useState } from 'react';
+import { useLocation, useModel, useParams, useRequest } from 'umi';
+import { Button, Card, message, Spin } from 'antd';
+import DragDrop from 'editorjs-drag-drop';
+import EditorJS, { LogLevels, OutputData } from '@editorjs/editorjs';
+import { Paragraph, Header, Image } from './editorTools';
+import * as Y from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
 // import { IndexeddbPersistence } from "y-indexeddb";
-import { EditorBinding } from "./EditorBinding";
+import { EditorBinding } from './EditorBinding';
 
-const { IndexeddbPersistence } = require("y-indexeddb/dist/y-indexeddb.cjs");
+const { IndexeddbPersistence } = require('y-indexeddb/dist/y-indexeddb.cjs');
 
 const Editor: React.FC<{
   wsRoom?: string;
@@ -23,7 +23,7 @@ const Editor: React.FC<{
 }> = ({
   wsRoom,
   data,
-  currentUser = { id: 0, username: "unkown" },
+  currentUser = { id: 0, username: 'unkown' },
   update = false,
   editable = false,
   loading = false,
@@ -46,7 +46,7 @@ const Editor: React.FC<{
 
   //editor init
   useEffect(() => {
-    if (debug) console.log("creating editor", editable);
+    if (debug) console.log('creating editor');
     const tools = {
       header: {
         class: Header,
@@ -54,7 +54,7 @@ const Editor: React.FC<{
           levels: [1, 2, 3],
           defaultLevel: 1,
         },
-        inlineToolbar: ["link"],
+        inlineToolbar: ['link'],
       },
       paragraph: {
         class: Paragraph,
@@ -65,7 +65,7 @@ const Editor: React.FC<{
       image: {
         class: Image,
         config: {
-          types: ["image/png", "image/jpeg"],
+          types: ['image/png', 'image/jpeg'],
           size: 2097152,
           onError: (err: Error) => {
             message.error(err.message);
@@ -73,46 +73,47 @@ const Editor: React.FC<{
         },
       },
     };
+
     const editor = new EditorJS({
-      holder: "editorjs",
+      holder: 'editorjs',
       data: data,
       tools: tools,
-      logLevel: "ERROR" as LogLevels,
-      readOnly: !editable && !wsRoom,
+      logLevel: 'ERROR' as LogLevels,
+      readOnly: !editable || !wsRoom,
       onReady: () => {
-        const holder = document.getElementById("editorjs");
+        const holder = document.getElementById('editorjs');
         if (data) setReady(true);
-        if ((editable || wsRoom) && holder) new DragDrop(editor);
+        if (editable && wsRoom && holder) new DragDrop(editor);
       },
       onChange: () => {
         onChange();
       },
     });
     editorRef.current = editor;
-    if (wsRoom && !data) {
+    if (wsRoom) {
       // wss://demos.yjs.dev
       // ws://localhost:3000
       const ydoc = new Y.Doc();
-      const yArray = ydoc.getArray("editorjs");
+      const yArray = ydoc.getArray('editorjs');
       const indexeddbProvider = new IndexeddbPersistence(wsRoom, ydoc);
       const websocketProvider = new WebsocketProvider(
-        process.env.WS||'ws://localhost:3000',
+        process.env.WS || 'ws://localhost:3000',
         wsRoom,
         ydoc,
         {
           params: {
-            target: "editorjs",
+            target: 'editorjs',
           },
-        }
+        },
       );
-      indexeddbProvider.on("synced", async () => {
+      indexeddbProvider.on('synced', async () => {
         await editor.isReady;
         const binding = new EditorBinding(editor, yArray, debug);
         bindingRef.current = binding;
         await binding.isReady;
         setReady(true);
       });
-      websocketProvider.on("sync", async (isSynced: boolean) => {
+      websocketProvider.on('sync', async (isSynced: boolean) => {
         if (debug) console.log(`wsProvider state: ${isSynced}`);
         setConnect(isSynced);
       });
@@ -122,7 +123,7 @@ const Editor: React.FC<{
     }
 
     return () => {
-      if (debug) console.log("destroy editor");
+      if (debug) console.log('destroy editor');
       if (editorRef.current.destroy) editorRef.current.destroy();
       if (websocketProviderRef.current) websocketProviderRef.current.destroy();
       if (indexeddbProviderRef.current) indexeddbProviderRef.current.destroy();
@@ -142,9 +143,9 @@ const Editor: React.FC<{
   const showSaved = () => {
     console.log(
       yDocRef.current
-        .getArray("editorjs")
+        .getArray('editorjs')
         .toArray()
-        .map((item: Y.Map<any>) => item.toJSON())
+        .map((item: Y.Map<any>) => item.toJSON()),
     );
   };
 
@@ -152,10 +153,7 @@ const Editor: React.FC<{
     <div style={{ padding: 10 }}>
       {/* <Button onClick={showSaved}>showSaved</Button> */}
       {(loading || !isReady) && <Spin />}
-      <div
-        id="editorjs"
-        style={{ visibility: loading || !isReady ? "hidden" : "visible" }}
-      ></div>
+      <div id="editorjs" style={{ visibility: loading || !isReady ? 'hidden' : 'visible' }}></div>
     </div>
   );
 };

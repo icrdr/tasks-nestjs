@@ -13,6 +13,7 @@ import {
   Space,
   Spin,
   DatePicker,
+  Tag,
 } from 'antd';
 import TaskTable from './TaskTable';
 import TaskGallery from './TaskGallery';
@@ -222,16 +223,40 @@ const TaskView: React.FC<{ task?: TaskMoreDetailRes }> = ({ task }) => {
           const property = currentSpace.taskProperties.filter(
             (p) => p.id === parseInt(header.title.split(':')[1]),
           )[0];
-          return (
-            <Input
-              key={index}
-              style={{ width: 100 }}
-              placeholder={property.name}
-              defaultValue={header.filter || undefined}
-              onPressEnter={(e) => handleFilter(index, e.currentTarget.value)}
-              allowClear
-            />
-          );
+          switch (property.form) {
+            case 'string':
+              return (
+                <Input.Search
+                  key={index}
+                  style={{ width: 150 }}
+                  placeholder={property.name}
+                  defaultValue={header.filter || undefined}
+                  onSearch={(v) => handleFilter(index, v)}
+                  allowClear
+                />
+              );
+            case 'select':
+              return (
+                <Select
+                  key={index}
+                  style={{ width: 100 }}
+                  placeholder={property.name}
+                  defaultValue={header.filter || undefined}
+                  onChange={(v) => handleFilter(index, v)}
+                  allowClear
+                >
+                  {property.items &&
+                    Object.entries(property.items).map((item: [string, { color: string }]) => {
+                      return (
+                        <Select.Option key={item[0]} value={item[0]}>
+                          {item[0]}
+                        </Select.Option>
+                      );
+                    })}
+                </Select>
+              );
+          }
+
         default:
           <div></div>;
       }

@@ -81,6 +81,12 @@ export const changeTask = async (id: number, body: ChangeTaskDTO): Promise<TaskD
   });
 };
 
+export const saveTaskContent = async (id: number): Promise<TaskDetailRes> => {
+  return request(`/api/tasks/${id}/content`, {
+    method: 'PUT',
+  });
+};
+
 export const removeTask = async (id: number) => {
   return request(`/api/tasks/${id}`, {
     method: 'DELETE',

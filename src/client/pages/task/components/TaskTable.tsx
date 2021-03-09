@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Avatar, Badge, Tooltip, Typography } from 'antd';
+import { Avatar, Badge, Tag, Tooltip, Typography } from 'antd';
 import moment from 'moment';
 import { Link, useModel, useRequest } from 'umi';
 import { getSpaceTasks, getSubTasks } from '../task.service';
@@ -107,12 +107,28 @@ const TaskTable: React.FC<{
             dataIndex: header.title,
             width: header.width,
             render: (_, task: TaskDetailRes) => {
-              const value = task.properties ? task.properties[property.id] : undefined;
-              return (
-                <Text ellipsis={{ tooltip: value }} style={{ width: 100, overflow: 'hidden' }}>
-                  {value}
-                </Text>
-              );
+              const value = task.properties
+                ? task.properties['prop' + property.id]?.toString()
+                : undefined;
+              const form = property.form as string;
+              switch (form) {
+                case 'string':
+                  return (
+                    <Text ellipsis={{ tooltip: value }} style={{ width: 100, overflow: 'hidden' }}>
+                      {value}
+                    </Text>
+                  );
+                case 'number':
+                  return <Badge className="badge-priority" count={value} />;
+                case 'radio':
+                  return <Tag color={property.items[value]?.color}>{value}</Tag>;
+                case 'select':
+                  return value?.split(',').map((v, i) => (
+                    <Tag key={i} color={property.items[v]?.color}>
+                      {v}
+                    </Tag>
+                  ));
+              }
             },
           };
         default:

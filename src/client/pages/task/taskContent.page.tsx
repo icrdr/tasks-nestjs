@@ -10,7 +10,7 @@ import { TaskMoreDetailRes } from '@dtos/task.dto';
 import { useUpdateEffect } from 'ahooks';
 const { Text } = Typography;
 
-const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
+const TaskContent: React.FC<{ task: TaskMoreDetailRes; update? }> = ({ task, update = false }) => {
   const { initialState } = useModel('@@initialState');
   const { currentUser, currentSpace } = initialState;
   const [contentIndex, setContentIndex] = useState(0);
@@ -33,7 +33,7 @@ const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
 
   useUpdateEffect(() => {
     setEditorUpdate(!editorUpdate);
-  }, [task]);
+  }, [update]);
 
   const waitChangeReq = useRequest(waitChange, {
     debounceInterval: 2000,
@@ -54,6 +54,7 @@ const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
 
   const handleContentChange = (index: number) => {
     setContentIndex(index);
+    setEditorUpdate(!editorUpdate);
     setHistoryVisible(false);
     if (index !== 0) {
       const date = moment(task?.contents[index]?.createAt).toDate();
@@ -70,8 +71,9 @@ const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
     waitChangeReq.run();
   };
 
-  const editable = task.state === 'inProgress' && contentIndex === 0 && isEdit;
-
+  const editable =
+    ['inProgress', 'unconfirmed'].indexOf(task.state) >= 0 && contentIndex === 0 && isEdit;
+  
   return (
     <>
       <div
@@ -121,7 +123,6 @@ const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
                   )
                 )}
               </div>
-
               <Editor
                 loading={!task}
                 wsRoom={editable ? `task-${task.id}` : undefined}
@@ -138,7 +139,7 @@ const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
               />
             </Card>
           </div>
-          <Affix offsetTop={0} style={{ zIndex: 99999999 }}>
+          <Affix offsetTop={0}>
             <div
               style={{
                 overflowY: 'auto',
@@ -149,7 +150,7 @@ const TaskContent: React.FC<{ task: TaskMoreDetailRes }> = ({ task }) => {
             </div>
           </Affix>
         </Split>
-        <Affix offsetTop={0} style={{ position: 'absolute', top: '10px', right: '10px' }}>
+        <Affix offsetTop={0} style={{ position: 'absolute', top: '0px', right: '-20px' }}>
           <Button icon={<HistoryOutlined />} shape="circle" onClick={handleHistoryOpen} />
         </Affix>
       </div>

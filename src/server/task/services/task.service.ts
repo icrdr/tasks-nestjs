@@ -31,6 +31,7 @@ export class TaskService {
     @Inject(forwardRef(() => SpaceService))
     private spaceService: SpaceService,
     private configService: ConfigService,
+    @Inject(forwardRef(() => AssignmentService))
     private assignmentService: AssignmentService,
     private propertyService: PropertyService,
     private memberService: MemberService,
@@ -202,12 +203,13 @@ export class TaskService {
             ? prop.property
             : await this.propertyService.getProperty(prop.property);
 
-        console.log(property);
-        query = query.andWhere("task.properties->'$.14' = :value", {
-          value: prop.value,
-        });
+        query = query.andWhere(
+          `task.properties ->'$.prop${property.id}' LIKE CONCAT('%',:value,'%')`,
+          { value: prop.value },
+        );
       }
     }
+    console.log(query.getSql());
 
     if (options.superTask) {
       const superTaskId = await this.getTaskId(options.superTask);
@@ -251,7 +253,7 @@ export class TaskService {
     if (options.skip !== undefined && options.take) {
       query = query.skip(options.skip).take(options.take);
     }
-    query.printSql()
+    query.printSql();
     return await query.getManyAndCount();
   }
 
@@ -348,6 +350,22 @@ export class TaskService {
     task.state = TaskState.IN_PROGRESS;
     await this.manager.save(task);
     // await this.addLog(task, LogAction.REFUSE, executor);
+    if (task.contents.length > 0) {
+      let cloneContent = new Content();
+      cloneContent.content = task.contents[task.contents.length - 1].content;
+      cloneContent.task = task;
+      cloneContent = await this.manager.save(cloneContent);
+    }
+    return await this.getTask(task.id);
+  }
+
+  async saveTaskContent(task: Task | number, executor?: User | number) {
+    task = task instanceof Task ? task : await this.getTask(task);
+    if (task.state !== TaskState.IN_PROGRESS)
+      throw new ForbiddenException('Task does not in progress, forbidden response.');
+
+    await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
+
     if (task.contents.length > 0) {
       let cloneContent = new Content();
       cloneContent.content = task.contents[task.contents.length - 1].content;

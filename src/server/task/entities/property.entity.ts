@@ -50,7 +50,7 @@ export class Property extends BaseEntity {
   form: PropertyForm;
 
   @Column('simple-json', { nullable: true })
-  items: string[];
+  items: {};
 }
 
 export interface property {

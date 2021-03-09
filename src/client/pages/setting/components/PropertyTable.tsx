@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useModel, useRequest } from 'umi';
-import { Button, Dropdown, Menu, Popconfirm, Select, Table, Typography } from 'antd';
+import { Button, Dropdown, Input, Menu, Popconfirm, Select, Table, Tag, Typography } from 'antd';
 import { changeSpaceProperty, getSpaceProperties, removeSpaceProperty } from '../setting.service';
 import { EllipsisOutlined } from '@ant-design/icons';
 import { getSpace } from '../../layout/layout.service';
@@ -37,7 +37,7 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
 
   const changeSpacePropertyReq = useRequest(changeSpaceProperty, {
     manual: true,
-    onSuccess: async () => {
+    onSuccess: async (_, params) => {
       // setDataUpdate(!dataUpdate);
       const res = await getSpace(currentSpace.id);
       setInitialState({ ...initialState, currentSpace: res });
@@ -83,7 +83,52 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
         );
       },
     },
+    {
+      title: '选项',
+      dataIndex: 'item',
+      key: 'item',
+      render: (_, property: PropertyRes) => {
+        return (
+          ['radio', 'select'].indexOf(property.form) >= 0 && (
+            <Dropdown overlay={itemsMenu(property)}>
+              <Input
+                style={{ width: '200px' }}
+                onPressEnter={(e) => {
+                  const items = property.items || {};
+                  items[e.currentTarget.value] = { color: 'blue' };
+                  changeSpacePropertyReq.run(currentSpace.id, property.id, { items });
+                }}
+                allowClear
+              />
+            </Dropdown>
+          )
+        );
+      },
+    },
   ];
+
+  const itemsMenu = (property: PropertyRes) => (
+    <Menu>
+      {property.items &&
+        Object.entries(property.items).map((item: [string, { color: string }]) => {
+          return (
+            <Menu.Item key={item[0]}>
+              <Tag
+                closable
+                color={item[1].color || 'blue'}
+                onClose={() => {
+                  const items = property.items || {};
+                  delete items[item[0]];
+                  changeSpacePropertyReq.run(currentSpace.id, property.id, { items });
+                }}
+              >
+                {item[0]}
+              </Tag>
+            </Menu.Item>
+          );
+        })}
+    </Menu>
+  );
 
   const actionMenu = (property: PropertyRes) => (
     <Menu>

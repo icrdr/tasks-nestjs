@@ -360,7 +360,6 @@ const TaskComment = ({ taskId, editable }, ref) => {
           </Form.Item>
         </Form>
       )}
-
       <FsLightbox
         key={lightBoxUpdate}
         toggler={lightBoxToggle}

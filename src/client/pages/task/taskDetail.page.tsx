@@ -8,6 +8,7 @@ import {
   getSpaceGroups,
   removeTask,
   removeTaskAssignment,
+  saveTaskContent,
 } from './task.service';
 import { getTask } from './task.service';
 import {
@@ -28,6 +29,7 @@ import {
   Badge,
   Popconfirm,
   Divider,
+  Tag,
 } from 'antd';
 import TaskState from '../../components/TaskState';
 import { EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
@@ -50,6 +52,7 @@ const taskDetail: React.FC<{}> = (props) => {
   const tabActiveKey = path[path.length - 1];
   const [task, setTask] = useState<TaskMoreDetailRes>(null);
   const [dataUpdate, setDataUpdate] = useState(false);
+  const [viewUpdate, setViewUpdate] = useState(false);
   const [isEditingTitle, setEditingTitle] = useState(false);
   const isFull = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
 
@@ -117,7 +120,14 @@ const taskDetail: React.FC<{}> = (props) => {
     },
   });
 
-  const changeStateReq = useRequest(changeTaskState, {
+  const changeTaskStateReq = useRequest(changeTaskState, {
+    manual: true,
+    onSuccess: (res) => {
+      setDataUpdate(!dataUpdate);
+    },
+  });
+
+  const saveTaskContentReq = useRequest(saveTaskContent, {
     manual: true,
     onSuccess: (res) => {
       setDataUpdate(!dataUpdate);
@@ -172,7 +182,10 @@ const taskDetail: React.FC<{}> = (props) => {
 
   const otherActionMenu = (
     <Menu>
-      <Menu.Item key="1">
+      <Menu.Item key="save" onClick={() => saveTaskContentReq.run(task.id)}>
+        保存
+      </Menu.Item>
+      <Menu.Item key="delete">
         <Popconfirm
           title="你确定要删除该任务么？"
           onConfirm={() => removeTaskReq.run(task.id)}
@@ -190,32 +203,32 @@ const taskDetail: React.FC<{}> = (props) => {
       <Button.Group>
         {task?.state === 'suspended' && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'start')}
-            disabled={changeStateReq.loading}
+            onClick={() => changeTaskStateReq.run(currentTaskId, 'start')}
+            disabled={changeTaskStateReq.loading}
           >
             启动
           </Button>
         )}
         {task?.state === 'inProgress' && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'suspend')}
-            disabled={changeStateReq.loading}
+            onClick={() => changeTaskStateReq.run(currentTaskId, 'suspend')}
+            disabled={changeTaskStateReq.loading}
           >
             暂停
           </Button>
         )}
         {task?.state === 'completed' && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'restart')}
-            disabled={changeStateReq.loading}
+            onClick={() => changeTaskStateReq.run(currentTaskId, 'restart')}
+            disabled={changeTaskStateReq.loading}
           >
             重启
           </Button>
         )}
         {task?.state === 'unconfirmed' && (
           <Button
-            onClick={() => changeStateReq.run(currentTaskId, 'refuse')}
-            disabled={changeStateReq.loading}
+            onClick={() => changeTaskStateReq.run(currentTaskId, 'refuse')}
+            disabled={changeTaskStateReq.loading}
           >
             打回
           </Button>
@@ -229,8 +242,8 @@ const taskDetail: React.FC<{}> = (props) => {
       {task?.state !== 'completed' && (
         <Button
           type="primary"
-          onClick={() => changeStateReq.run(currentTaskId, 'complete')}
-          disabled={changeStateReq.loading}
+          onClick={() => changeTaskStateReq.run(currentTaskId, 'complete')}
+          disabled={changeTaskStateReq.loading}
         >
           完成
         </Button>
@@ -241,8 +254,8 @@ const taskDetail: React.FC<{}> = (props) => {
     task?.userAccess === 'edit' && (
       <Button
         type="primary"
-        onClick={() => changeStateReq.run(currentTaskId, 'commit')}
-        disabled={changeStateReq.loading}
+        onClick={() => changeTaskStateReq.run(currentTaskId, 'commit')}
+        disabled={changeTaskStateReq.loading}
       >
         提交
       </Button>
@@ -306,8 +319,6 @@ const taskDetail: React.FC<{}> = (props) => {
       <Descriptions.Item key="priority" label="优先级" contentStyle={{ lineHeight: '32px' }}>
         {isFull ? (
           <InputNumber
-            min={0}
-            max={10}
             value={task?.priority}
             onChange={(v: number) => changeTaskReq.run(currentTaskId, { priority: v })}
           />
@@ -341,25 +352,102 @@ const taskDetail: React.FC<{}> = (props) => {
         )}
       </Descriptions.Item>
       {currentSpace.taskProperties.map((property, index) => {
-        const value = task?.properties ? task.properties[property.id] : undefined;
+        const value = task?.properties
+          ? task.properties['prop' + property.id]?.toString()
+          : undefined;
+        const form = property.form;
+        let itemRender;
+        switch (form) {
+          case 'string':
+            itemRender = (
+              <Text
+                editable={
+                  isFull
+                    ? {
+                        onChange: (v: string) => {
+                          const properties = task.properties || {};
+                          properties['prop' + property.id] = v;
+                          if (v) changeTaskReq.run(currentTaskId, { properties });
+                        },
+                      }
+                    : false
+                }
+              >
+                {value}
+              </Text>
+            );
+            break;
+          case 'number':
+            itemRender = isFull ? (
+              <InputNumber
+                value={value}
+                onChange={(v: number) => {
+                  const properties = task.properties || {};
+                  properties['prop' + property.id] = v;
+                  if (v) changeTaskReq.run(currentTaskId, { properties });
+                }}
+              />
+            ) : (
+              <Badge className="badge-priority" count={value} />
+            );
+            break;
+          case 'radio':
+            itemRender = isFull ? (
+              <Select
+                style={{ width: '100%' }}
+                value={value}
+                onChange={(v) => {
+                  const properties = task.properties || {};
+                  properties['prop' + property.id] = v;
+                  if (v) changeTaskReq.run(currentTaskId, { properties });
+                }}
+                allowClear
+              >
+                {property.items &&
+                  Object.entries(property.items).map((item: [string, { color: string }]) => {
+                    return (
+                      <Select.Option key={item[0]} value={item[0]}>
+                        {item[0]}
+                      </Select.Option>
+                    );
+                  })}
+              </Select>
+            ) : (
+              <Tag color={property.items[value]?.color}>{value}</Tag>
+            );
+            break;
+          case 'select':
+            itemRender = isFull ? (
+              <Select
+                style={{ width: '100%' }}
+                mode="multiple"
+                value={value ? value.split(',') : undefined}
+                onChange={(v) => {
+                  const properties = task.properties || {};
+                  properties['prop' + property.id] = v.join(',');
+                  if (v) changeTaskReq.run(currentTaskId, { properties });
+                }}
+                options={Object.entries(property.items).map((item: [string, { color: string }]) => {
+                  return { label: item[0], value: item[0] };
+                })}
+                allowClear
+              />
+            ) : (
+              value?.split(',').map((v, i) => (
+                <Tag key={i} color={property.items[v]?.color}>
+                  {v}
+                </Tag>
+              ))
+            );
+            break;
+        }
         return (
           <Descriptions.Item
             contentStyle={{ lineHeight: '32px' }}
             key={property.id + index}
             label={property.name}
-            span={2}
           >
-            <Text
-              editable={{
-                onChange: (v) => {
-                  const properties = task.properties || {};
-                  properties[property.id] = v;
-                  if (v) changeTaskReq.run(currentTaskId, { properties });
-                },
-              }}
-            >
-              {value}
-            </Text>
+            <span style={{ width: '100%' }}>{itemRender}</span>
           </Descriptions.Item>
         );
       })}
@@ -427,7 +515,7 @@ const taskDetail: React.FC<{}> = (props) => {
   const childrenWithProps = React.Children.map(props.children, (child) => {
     // checking isValidElement is the safe way and avoids a typescript error too
     if (React.isValidElement(child)) {
-      return React.cloneElement(child, { task: task });
+      return React.cloneElement(child, { task: task, update: task?.state });
     }
     return child;
   });

@@ -26,6 +26,9 @@ export class ChangePropertyDTO {
   @IsOptional()
   @IsEnum(PropertyForm)
   form?: PropertyForm;
+
+  @IsOptional()
+  items?: {};
 }
 
 export class AddPropertyDTO {
@@ -53,6 +56,9 @@ export class PropertyRes {
 
   @Expose()
   type: PropertyType;
+
+  @Expose()
+  items: {};
 
   constructor(partial: Partial<PropertyRes>) {
     Object.assign(this, partial);

@@ -6,6 +6,7 @@ import { OutputData } from '@editorjs/editorjs';
 import { Assignment, Space } from '../server/task/entities/space.entity';
 import { AccessLevel, TaskState } from '../server/common/common.entity';
 import { AssignmentRes } from './assignment.dto';
+import { User } from '../server/user/entities/user.entity';
 
 export class ChangeTaskDTO {
   @IsOptional()
@@ -217,8 +218,20 @@ export class TaskMoreDetailRes {
   @Expose()
   access: AccessLevel;
 
+  currentUser: User;
+
   @Expose()
-  userAccess: string;
+  get userAccess(): string {
+    if (!this.currentUser) return null;
+    const accessPriority = [AccessLevel.VIEW, AccessLevel.EDIT, AccessLevel.FULL];
+    const userAccess = [accessPriority.indexOf(this.access)];
+    this.assignments.map((a) => {
+      const u = a.users.filter((u) => u.id === this.currentUser.id);
+      if (u.length > 0) userAccess.push(accessPriority.indexOf(a.role.access));
+    });
+    const index = Math.max(...userAccess);
+    return index >= 0 ? accessPriority[index] : null;
+  }
 
   @Expose()
   properties: any;
@@ -249,8 +262,9 @@ export class TaskMoreDetailRes {
   @Transform((a) => (a ? a.map((i: Task) => new TaskRes(i)) : []))
   subTasks: TaskRes[];
 
-  constructor(partial: Partial<TaskMoreDetailRes>) {
+  constructor(partial: Partial<TaskMoreDetailRes>, currentUser?: User) {
     Object.assign(this, partial);
+    this.currentUser = currentUser;
   }
 }
 

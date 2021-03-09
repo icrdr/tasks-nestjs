@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { EntityManager, SelectQueryBuilder } from 'typeorm';
 import { Space } from '../entities/space.entity';
 import { SpaceService } from './space.service';
@@ -8,7 +8,11 @@ import { PropertyForm, PropertyType } from '../../common/common.entity';
 @Injectable()
 export class PropertyService {
   propertyQuery: SelectQueryBuilder<Property>;
-  constructor(private spaceService: SpaceService, private manager: EntityManager) {
+  constructor(
+    @Inject(forwardRef(() => SpaceService))
+    private spaceService: SpaceService,
+    private manager: EntityManager,
+  ) {
     this.propertyQuery = this.manager
       .createQueryBuilder(Property, 'property')
       .leftJoinAndSelect('property.space', 'space');
@@ -60,7 +64,7 @@ export class PropertyService {
 
   async changeProperty(
     property: Property | number,
-    options: { name?: string; type?: PropertyType; form?: PropertyForm; items?: string[] } = {},
+    options: { name?: string; type?: PropertyType; form?: PropertyForm; items?: {} } = {},
   ) {
     property = property instanceof Property ? property : await this.getProperty(property, false);
     if (options.name) property.name = options.name;

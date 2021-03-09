@@ -66,15 +66,7 @@ export class TaskController {
   @Access('common.task.view')
   @Get('/:id')
   async getTask(@TargetTask() task: Task, @CurrentUser() user: User) {
-    const accessPriority = [AccessLevel.VIEW, AccessLevel.EDIT, AccessLevel.FULL];
-    const userAccess = [accessPriority.indexOf(task.access)];
-    const assignements = (await this.assignmentService.getAssignments({ task, user }))[0];
-    for (const assignement of assignements) {
-      userAccess.push(accessPriority.indexOf(assignement.role.access));
-    }
-    const index = Math.max(...userAccess);
-    task['userAccess'] = index >= 0 ? accessPriority[index] : null;
-    return new TaskMoreDetailRes(task);
+    return new TaskMoreDetailRes(task, user);
   }
 
   @UseGuards(TaskAccessGuard)
@@ -110,6 +102,13 @@ export class TaskController {
     @TargetTask() task: Task,
   ) {
     return new TaskDetailRes(await this.taskService.changeTask(task, user, body));
+  }
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.task.change')
+  @Put('/:id/content')
+  async saveTaskContent(@CurrentUser() user: User, @TargetTask() task: Task) {
+    return new TaskDetailRes(await this.taskService.saveTaskContent(task, user));
   }
 
   @UseGuards(TaskAccessGuard)
@@ -195,7 +194,6 @@ export class SpaceTaskController {
     @Query() query: GetTasksDTO,
     @CurrentUser() user: User,
   ) {
-
     const roles = [];
     const properties = [];
     for (const key in query) {
@@ -226,7 +224,7 @@ export class SpaceTaskController {
           break;
       }
     }
-    
+
     const tasks = await this.taskService.getTasks({
       space,
       user,
