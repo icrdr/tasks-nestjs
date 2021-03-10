@@ -1,35 +1,35 @@
-import { Select, Tag } from "antd";
-import React from "react";
+import { Select, Space, Tag } from 'antd';
+import React from 'react';
 
 const PropertySelect: React.FC<{
-  items: any;
+  options: { label: string; value: string; color?: string }[];
   value: string;
   editable?: boolean;
   onChange?: (v: any) => void;
-}> = ({ items, value, editable = false, onChange = () => {} }) => {
+}> = ({ options, value, editable = false, onChange = () => {} }) => {
+  const optionColorMap = new Map();
+  for (const option of options) {
+    optionColorMap.set(option.value, option.color);
+  }
   return editable ? (
     <Select
-      style={{ width: "100%" }}
+      style={{ minWidth: '100px' }}
       mode="multiple"
-      value={value ? value.split(",") : undefined}
+      value={value ? value.split(',') : undefined}
       onChange={(v) => {
-        onChange(v.join(","));
+        onChange(v.join(','));
       }}
-      options={Object.entries(items).map(
-        (item: [string, { color: string }]) => {
-          return { label: item[0], value: item[0] };
-        }
-      )}
+      options={options}
       allowClear
     />
   ) : (
-    <>
-      {value?.split(",").map((v, i) => (
-        <Tag key={i} color={items[v]?.color}>
+    <Space size={0} wrap align="start">
+      {value?.split(',').map((v, i) => (
+        <Tag key={i} color={optionColorMap.get(v)?.color || 'blue'}>
           {v}
         </Tag>
       ))}
-    </>
+    </Space>
   );
 };
 

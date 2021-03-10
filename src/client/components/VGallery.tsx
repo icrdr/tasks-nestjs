@@ -45,6 +45,7 @@ const VGallery: React.FC<{
   const resetColumnWidth = () => {
     if (vGridRef.current) vGridRef.current.resetAfterColumnIndex(0);
   };
+  
   const resetHeightWidth = () => {
     setUpdateRowHeights(!updateRowHeights);
   };

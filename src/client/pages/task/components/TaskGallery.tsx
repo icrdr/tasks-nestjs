@@ -53,9 +53,9 @@ const TaskGallery: React.FC<{ task?: TaskMoreDetailRes; headers?: any[]; update?
   const getTasksReq = useRequest(getTasks, {
     manual: true,
     onSuccess: async (res, params) => {
-      const oss = await getOssClient();
       for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         const task = res.list[index - params[0].skip];
+        const oss = await getOssClient();
         let cover;
         for (const block of task.content.content?.blocks || []) {
           if (block.type === 'image') {

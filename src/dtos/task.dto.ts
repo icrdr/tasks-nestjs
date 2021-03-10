@@ -220,9 +220,10 @@ export class TaskMoreDetailRes {
 
   currentUser: User;
 
+  assignments: Assignment[];
   @Expose()
   get userAccess(): string {
-    if (!this.currentUser) return null;
+    if (!this.currentUser || this.assignments.length === 0) return null;
     const accessPriority = [AccessLevel.VIEW, AccessLevel.EDIT, AccessLevel.FULL];
     const userAccess = [accessPriority.indexOf(this.access)];
     this.assignments.map((a) => {
@@ -239,8 +240,6 @@ export class TaskMoreDetailRes {
   @Expose()
   @Transform((a) => (a ? a.map((i: Content) => new ContentRes(i)) : []))
   contents: ContentRes[];
-
-  assignments: Assignment[];
 
   space: Space;
 

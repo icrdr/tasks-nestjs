@@ -10,10 +10,18 @@ import { TaskAccessGuard } from '../../user/taskAccess.guard';
 import { Task } from '../entities/task.entity';
 import { User } from '../../user/entities/user.entity';
 import { AddAssignmentDTO, AssignmentListRes } from '@dtos/assignment.dto';
+import { TaskService } from '../services/task.service';
+import { SpaceService } from '../services/space.service';
+import { TaskMoreDetailRes } from '../../../dtos/task.dto';
+import { SpaceDetailRes } from '../../../dtos/space.dto';
 
 @Controller('api/spaces')
 export class SpaceAssignmentController {
-  constructor(private assignmentService: AssignmentService, private roleService: RoleService) {}
+  constructor(
+    private assignmentService: AssignmentService,
+    private spaceService: SpaceService,
+    private roleService: RoleService,
+  ) {}
 
   @UseGuards(SpaceAccessGuard)
   @Access('common.space.view')
@@ -26,31 +34,44 @@ export class SpaceAssignmentController {
   @UseGuards(SpaceAccessGuard)
   @Access('common.space.add')
   @Post('/:id/assignments')
-  async addSpaceAssignment(@TargetSpace() space: Space, @Body() body: AddAssignmentDTO) {
+  async addSpaceAssignment(
+    @TargetSpace() space: Space,
+    @CurrentUser() user: User,
+    @Body() body: AddAssignmentDTO,
+  ) {
     if (body.groupId) {
       const assignment = await this.assignmentService.getAssignment(body.groupId);
-      return await this.assignmentService.appendAssignment(space, assignment);
+      await this.assignmentService.appendAssignment(space, assignment);
     } else {
       const role = await this.roleService.getRoleByName(space, body.roleName);
-      return await this.assignmentService.addAssignment(body.userId, role, {
+      await this.assignmentService.addAssignment(body.userId, role, {
         ...body,
         space,
       });
     }
+    return new SpaceDetailRes(await this.spaceService.getSpace(space.id), user);
   }
 
   @UseGuards(SpaceAccessGuard)
   @Access('common.space.delete')
   @Delete('/:id/assignments/:assignmentId')
-  async removeSpaceAssignment(@Param('assignmentId') assignmentId: number) {
+  async removeSpaceAssignment(
+    @TargetSpace() space: Space,
+    @CurrentUser() user: User,
+    @Param('assignmentId') assignmentId: number,
+  ) {
     await this.assignmentService.removeAssignment(assignmentId);
-    return { msg: 'ok' };
+    return new SpaceDetailRes(await this.spaceService.getSpace(space.id), user);
   }
 }
 
 @Controller('api/tasks')
 export class TaskAssignmentController {
-  constructor(private assignmentService: AssignmentService, private roleService: RoleService) {}
+  constructor(
+    private assignmentService: AssignmentService,
+    private taskService: TaskService,
+    private roleService: RoleService,
+  ) {}
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.remove')
@@ -61,7 +82,7 @@ export class TaskAssignmentController {
     @Param('assignmentId') assignmentId: number,
   ) {
     await this.assignmentService.removeAssignment(assignmentId);
-    return { msg: 'ok' };
+    return new TaskMoreDetailRes(await this.taskService.getTask(task.id), user);
   }
 
   @UseGuards(TaskAccessGuard)
@@ -74,10 +95,11 @@ export class TaskAssignmentController {
   ) {
     if (body.groupId) {
       const assignment = await this.assignmentService.getAssignment(body.groupId);
-      return await this.assignmentService.appendAssignment(task, assignment);
+      await this.assignmentService.appendAssignment(task, assignment);
     } else {
       const role = await this.roleService.getRoleByName(task.space, body.roleName);
-      return await this.assignmentService.addAssignment(body.userId, role, { task });
+      await this.assignmentService.addAssignment(body.userId, role, { task });
     }
+    return new TaskMoreDetailRes(await this.taskService.getTask(task.id), user);
   }
 }

@@ -58,7 +58,10 @@ export const removeSpaceAsset = async (id: number, assetId: number) => {
   });
 };
 
-export const removeTaskAssignment = async (id: number, assignmentId: number) => {
+export const removeTaskAssignment = async (
+  id: number,
+  assignmentId: number,
+): Promise<TaskMoreDetailRes> => {
   return request(`/api/tasks/${id}/assignments/${assignmentId}`, {
     method: 'DELETE',
   });
@@ -67,21 +70,21 @@ export const removeTaskAssignment = async (id: number, assignmentId: number) => 
 export const addTaskAssignment = async (
   id: number,
   body: AddAssignmentDTO,
-): Promise<AssignmentRes> => {
+): Promise<TaskMoreDetailRes> => {
   return request(`/api/tasks/${id}/assignments`, {
     method: 'POST',
     data: body,
   });
 };
 
-export const changeTask = async (id: number, body: ChangeTaskDTO): Promise<TaskDetailRes> => {
+export const changeTask = async (id: number, body: ChangeTaskDTO): Promise<TaskMoreDetailRes> => {
   return request(`/api/tasks/${id}`, {
     method: 'PUT',
     data: body,
   });
 };
 
-export const saveTaskContent = async (id: number): Promise<TaskDetailRes> => {
+export const saveTaskContent = async (id: number): Promise<TaskMoreDetailRes> => {
   return request(`/api/tasks/${id}/content`, {
     method: 'PUT',
   });
@@ -149,6 +152,6 @@ export async function getSubTasks(id: number, params?: GetTasksDTO): Promise<Tas
 export async function changeTaskState(
   id: number,
   action: 'start' | 'suspend' | 'complete' | 'restart' | 'commit' | 'refuse',
-): Promise<TaskDetailRes> {
+): Promise<TaskMoreDetailRes> {
   return request(`/api/tasks/${id}/${action}`, { method: 'PUT' });
 }

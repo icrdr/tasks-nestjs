@@ -1,32 +1,30 @@
-import { Select, Tag } from "antd";
-import React from "react";
+import { Select, Space, Tag } from 'antd';
+import React from 'react';
 
 const PropertyRadio: React.FC<{
-  items: any;
+  options: { label: string; value: string; color?: string }[];
   value: string;
   editable?: boolean;
   onChange?: (v: any) => void;
-}> = ({ items, value, editable = false, onChange = () => {} }) => {
+}> = ({ options, value, editable = false, onChange = () => {} }) => {
+  const optionColorMap = new Map();
+  for (const option of options) {
+    optionColorMap.set(option.value, option.color);
+  }
   return editable ? (
     <Select
-      style={{ width: "100%" }}
+      style={{ minWidth: '100px' }}
       value={value}
       onChange={(v) => {
         onChange(v);
       }}
+      options={options}
       allowClear
-    >
-      {items &&
-        Object.entries(items).map((item: [string, { color: string }]) => {
-          return (
-            <Select.Option key={item[0]} value={item[0]}>
-              {item[0]}
-            </Select.Option>
-          );
-        })}
-    </Select>
+    />
   ) : (
-    <Tag color={items[value]?.color}>{value}</Tag>
+    <Space size={0} wrap align="start">
+      <Tag color={optionColorMap.get(value)?.color || 'blue'}>{value}</Tag>
+    </Space>
   );
 };
 

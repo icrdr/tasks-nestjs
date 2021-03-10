@@ -31,7 +31,8 @@ export class SpaceService {
       .leftJoinAndSelect('space.roles', 'sRole')
       .leftJoinAndSelect('space.assignments', 'assignment')
       .leftJoinAndSelect('space.properties', 'property')
-      .leftJoinAndSelect('assignment.role', 'role');
+      .leftJoinAndSelect('assignment.role', 'role')
+      .leftJoinAndSelect('assignment.users', 'aUser');
   }
 
   async addSpace(

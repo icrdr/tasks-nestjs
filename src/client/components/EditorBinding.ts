@@ -1,8 +1,8 @@
 import * as Y from "yjs";
-import genUUID from "uuid/dist/v4";
 import EditorJS, { BlockAPI } from "@editorjs/editorjs";
 import { YArrayEvent, YMapEvent } from "yjs";
 import { createMutex } from "lib0/mutex.js";
+import { nanoid } from 'nanoid'
 
 // from editor.js
 const Block = {
@@ -77,7 +77,7 @@ export class EditorBinding {
     return this.yBlocks.find((b) => b.get("uuid") === uuid);
   }
   getElementUuid(element: HTMLElement) {
-    if (!element.dataset.uuid) element.setAttribute("data-uuid", genUUID());
+    if (!element.dataset.uuid) element.setAttribute("data-uuid", nanoid());
     return element.dataset.uuid;
   }
 
@@ -141,7 +141,7 @@ export class EditorBinding {
       });
       this.eApi.delete(this.eApi.getBlocksCount() - 1);
     } else {
-      const uuid = genUUID();
+      const uuid = nanoid();
       this.getEBlockByIndex(0).holder.setAttribute("data-uuid", uuid);
       const yBlock = new Y.Map([
         ["type", "paragraph"],

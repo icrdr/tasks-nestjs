@@ -1,23 +1,20 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { VariableSizeGrid } from 'react-window';
 import { Table } from 'antd';
 import InfiniteLoader from 'react-window-infinite-loader';
 import AutoSizer from 'react-virtualized-auto-sizer';
+import { useRequest } from 'umi';
 
 const VTable: React.FC<{
-  loading?: boolean;
+  request?: (body: any) => Promise<any>;
   columns: Array<any>;
-  dataSource: Array<any>;
   update?: boolean;
   rowHeight?: number;
   defaultColumnWidth?: number;
   defaultHeight?: number;
-  loadMoreItems: (startIndex: number, stopIndex: number) => Promise<any>;
 }> = ({
-  loading = false,
+  request,
   columns,
-  dataSource,
-  loadMoreItems,
   update = false,
   rowHeight = 56,
   defaultColumnWidth = 200,
@@ -26,20 +23,74 @@ const VTable: React.FC<{
   const infiniteLoaderRef = useRef(null);
   const vGridRef = useRef(null);
   const wrapperRef = useRef(null);
+  const fetchCountRef = useRef(0);
+  const [items, setItems] = useState([]);
+  const [updateRowHeights, setUpdateRowHeights] = useState(false);
+  const rowHeights = useRef({});
+
   const height = wrapperRef.current?.clientHeight - 54 || defaultHeight;
   columns = columns.map((column) => {
     column.width = column.width || defaultColumnWidth;
     return column;
   });
 
-  const isItemLoaded = (index: number) => {
-    return !!dataSource[index];
+  const initItemsReq = useRequest(request, {
+    refreshDeps: [update],
+    onSuccess: (res, params) => {
+      setItems(Array(res.total).fill(undefined));
+      if (fetchCountRef.current !== 0) {
+        resetloadMore();
+      }
+      fetchCountRef.current++;
+    },
+  });
+
+  const getTasksReq = useRequest(request, {
+    manual: true,
+    onSuccess: (res, params) => {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
+        const item = res.list[index - params[0].skip];
+        items[index] = item;
+      }
+      setItems(items);
+    },
+  });
+
+  const loadMoreItems = (startIndex: number, stopIndex: number) => {
+    console.log(startIndex);
+    console.log(stopIndex);
+    return getTasksReq.run({
+      skip: startIndex,
+      take: stopIndex - startIndex + 1,
+    });
   };
+
+  const isItemLoaded = (index: number) => {
+    return !!items[index];
+  };
+
   const resetloadMore = () => {
     if (infiniteLoaderRef.current) infiniteLoaderRef.current.resetloadMoreItemsCache(true);
   };
+
   const resetColumnWidth = () => {
     if (vGridRef.current) vGridRef.current.resetAfterColumnIndex(0);
+  };
+
+  const getRowHeight = (index: number) => {
+    // console.log(rowHeights.current);
+    return rowHeights.current[index] + 22 || 54;
+  };
+
+  const setRowHeight = (index: number, size: number) => {
+    const _size = Math.max(size, rowHeights.current[index] || 0);
+    // console.log(_size);
+    vGridRef.current.resetAfterRowIndex(0);
+    rowHeights.current = { ...rowHeights.current, [index]: _size };
+  };
+
+  const resetHeightWidth = () => {
+    setUpdateRowHeights(!updateRowHeights);
   };
 
   useEffect(() => {
@@ -51,17 +102,19 @@ const VTable: React.FC<{
   }, [columns]);
 
   const Cell = ({ columnIndex, rowIndex, style }) => {
-    const task = dataSource[rowIndex];
-    const column = columns[columnIndex];
-    let content;
-    if (task && column?.render) {
-      content = columns[columnIndex].render(<></>, task);
-    } else {
-      content = '';
-    }
+    const item = items[rowIndex];
+    const render = columns[columnIndex]?.render;
+    const rowRef = useRef(null);
+
+    useEffect(() => {
+      if (rowRef.current) {
+        setRowHeight(rowIndex, rowRef.current.clientHeight);
+      }
+    }, [item, updateRowHeights]);
+
     return (
       <div key={`${rowIndex}-${columnIndex}`} style={style} className="virtual-table-cell">
-        {content}
+        {item && render ? <div ref={rowRef}>{render(<></>, item)}</div> : <div ref={rowRef}></div>}
       </div>
     );
   };
@@ -72,6 +125,7 @@ const VTable: React.FC<{
       <AutoSizer
         onResize={() => {
           resetColumnWidth();
+          resetHeightWidth();
         }}
       >
         {({ width }) => {
@@ -123,7 +177,7 @@ const VTable: React.FC<{
                         : w;
                     }}
                     rowCount={rawData.length}
-                    rowHeight={() => rowHeight}
+                    rowHeight={getRowHeight}
                     height={height}
                     width={width}
                     onScroll={({ scrollLeft }) => {
@@ -146,8 +200,8 @@ const VTable: React.FC<{
   return (
     <div ref={wrapperRef} style={{ height: '100%' }}>
       <Table
-        loading={loading}
-        dataSource={dataSource}
+        loading={initItemsReq.loading}
+        dataSource={items}
         scroll={{
           y: height,
           x: '100vw',

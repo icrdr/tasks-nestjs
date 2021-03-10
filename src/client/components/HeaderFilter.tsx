@@ -138,7 +138,7 @@ const HeaderFilter: React.FC<{
               const property = properties.filter(
                 (p) => p.id === parseInt(header.title.split(":")[1])
               )[0];
-              switch (property.form) {
+              switch (property?.form) {
                 case "string":
                   return (
                     <Input.Search

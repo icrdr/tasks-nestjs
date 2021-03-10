@@ -35,16 +35,7 @@ export class SpaceController {
   @Access('common.space.view')
   @Get('/:id')
   async getSpace(@TargetSpace() space: Space, @CurrentUser() user: User) {
-    const accessPriority = [AccessLevel.VIEW, AccessLevel.EDIT, AccessLevel.FULL];
-    const userAccess = [accessPriority.indexOf(space.access)];
-    const assignements = (await this.assignmentService.getAssignments({ space, user }))[0];
-
-    for (const assignement of assignements) {
-      userAccess.push(accessPriority.indexOf(assignement.role.access));
-    }
-    const index = Math.max(...userAccess);
-    space['userAccess'] = index >= 0 ? accessPriority[index] : null;
-    return new SpaceDetailRes(space);
+    return new SpaceDetailRes(space, user);
   }
 
   @UseGuards(SpaceAccessGuard)
@@ -59,15 +50,7 @@ export class SpaceController {
       name: body.name,
       access: body.access,
     });
-    const accessPriority = [AccessLevel.VIEW, AccessLevel.EDIT, AccessLevel.FULL];
-    const userAccess = [accessPriority.indexOf(space.access)];
-    const assignements = (await this.assignmentService.getAssignments({ space, user }))[0];
-    for (const assignement of assignements) {
-      userAccess.push(accessPriority.indexOf(assignement.role.access));
-    }
-    const index = Math.max(...userAccess);
-    space['userAccess'] = index >= 0 ? accessPriority[index] : null;
-    return new SpaceDetailRes(space);
+    return new SpaceDetailRes(space, user);
   }
 
   @Access('common.space.view')
@@ -89,7 +72,6 @@ export class SpaceController {
       access: AccessLevel.VIEW,
     };
     const space = await this.spaceService.addSpace(body.name, user, options);
-    space['userAccess'] = 'full';
-    return new SpaceDetailRes(space);
+    return new SpaceDetailRes(space, user);
   }
 }

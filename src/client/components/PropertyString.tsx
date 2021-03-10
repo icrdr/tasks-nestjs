@@ -1,5 +1,6 @@
-import { Typography } from "antd";
-import React from "react";
+import { EditOutlined } from '@ant-design/icons';
+import { Button, Input, Typography } from 'antd';
+import React, { useState } from 'react';
 const { Text } = Typography;
 
 const PropertyString: React.FC<{
@@ -7,20 +8,24 @@ const PropertyString: React.FC<{
   editable?: boolean;
   onChange?: (v: any) => void;
 }> = ({ value, editable = false, onChange = () => {} }) => {
-  return (
-    <Text
-      editable={
-        editable
-          ? {
-              onChange: (v) => {
-                onChange(v);
-              },
-            }
-          : false
-      }
-    >
+  const [isEditing, setEditing] = useState(false);
+  return isEditing ? (
+    <Input
+      defaultValue={value}
+      onPressEnter={(e) => {
+        e.preventDefault();
+        const v = e.currentTarget.value;
+        setEditing(false);
+        onChange(v);
+      }}
+    />
+  ) : (
+    <span>
+      {editable && (
+        <Button type={'link'} icon={<EditOutlined />} onClick={() => setEditing(true)} />
+      )}
       {value}
-    </Text>
+    </span>
   );
 };
 

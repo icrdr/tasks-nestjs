@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useModel, useParams, useRequest } from 'umi';
-import { Button, Card, message, Spin } from 'antd';
+import { Button, Card, Input, message, Spin } from 'antd';
 import DragDrop from 'editorjs-drag-drop';
 import EditorJS, { LogLevels, OutputData } from '@editorjs/editorjs';
 import { Paragraph, Header, Image } from './editorTools';
@@ -8,13 +8,13 @@ import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 // import { IndexeddbPersistence } from "y-indexeddb";
 import { EditorBinding } from './EditorBinding';
+import { nanoid } from 'nanoid';
 
 const { IndexeddbPersistence } = require('y-indexeddb/dist/y-indexeddb.cjs');
 
 const Editor: React.FC<{
   wsRoom?: string;
   data?: OutputData;
-  currentUser?: { id: number; username: string };
   editable?: boolean;
   update?: boolean;
   loading?: boolean;
@@ -23,7 +23,6 @@ const Editor: React.FC<{
 }> = ({
   wsRoom,
   data,
-  currentUser = { id: 0, username: 'unkown' },
   update = false,
   editable = false,
   loading = false,
@@ -31,22 +30,28 @@ const Editor: React.FC<{
   onChange = () => {},
 }) => {
   const bindingRef = useRef<EditorBinding>();
-  const editorRef = useRef<EditorJS>();
+  const editorMapRef = useRef<Map<string, EditorJS>>(new Map());
   const yDocRef = useRef<Y.Doc>();
   const [isReady, setReady] = useState(false);
 
   const [isConnect, setConnect] = useState(false);
   const isReadyRef = useRef<boolean>();
   const isConnectRef = useRef<boolean>();
-  const dragDropRef = useRef();
+
   isReadyRef.current = isReady;
   isConnectRef.current = isConnect;
   const websocketProviderRef = useRef<WebsocketProvider>();
   const indexeddbProviderRef = useRef<any>();
+  const [uuid, setUuid] = useState(undefined);
+  const [holderUpdate, setHolderUpdate] = useState(0);
 
   //editor init
   useEffect(() => {
-    if (debug) console.log('creating editor');
+    const _uuid = nanoid();
+    setUuid(_uuid);
+    //force recreate holder rather than just change id
+    setHolderUpdate(holderUpdate + 1);
+    if (debug) console.log('creating editor', _uuid);
     const tools = {
       header: {
         class: Header,
@@ -75,24 +80,26 @@ const Editor: React.FC<{
     };
 
     const editor = new EditorJS({
-      holder: 'editorjs',
+      holder: `editorjs-${_uuid}`,
       data: data,
       tools: tools,
       logLevel: 'ERROR' as LogLevels,
       readOnly: !editable || !wsRoom,
       onReady: () => {
-        const holder = document.getElementById('editorjs');
-        if (data) setReady(true);
-        if (editable && wsRoom && holder) new DragDrop(editor);
+        if (debug) console.log('editor is ready', _uuid);
+        const holder = document.getElementById(`editorjs`);
+        if (holder) {
+          if (data) setReady(true);
+          if (editable && wsRoom) new DragDrop(editor);
+        }
       },
       onChange: () => {
         onChange();
       },
     });
-    editorRef.current = editor;
+    editorMapRef.current.set(_uuid, editor);
+
     if (wsRoom) {
-      // wss://demos.yjs.dev
-      // ws://localhost:3000
       const ydoc = new Y.Doc();
       const yArray = ydoc.getArray('editorjs');
       const indexeddbProvider = new IndexeddbPersistence(wsRoom, ydoc);
@@ -108,37 +115,41 @@ const Editor: React.FC<{
       );
       indexeddbProvider.on('synced', async () => {
         await editor.isReady;
-        const binding = new EditorBinding(editor, yArray);
-        bindingRef.current = binding;
-        await binding.isReady;
-        setReady(true);
+        const holder = document.getElementById(`editorjs-${_uuid}`);
+        if (holder) {
+          const binding = new EditorBinding(editor, yArray, debug);
+          bindingRef.current = binding;
+          await binding.isReady;
+          setReady(true);
+        }
       });
+
       websocketProvider.on('sync', async (isSynced: boolean) => {
-        if (debug) console.log(`wsProvider state: ${isSynced}`);
+        // if (debug) console.log(`wsProvider state: ${isSynced}`);
         setConnect(isSynced);
       });
+
       yDocRef.current = ydoc;
       websocketProviderRef.current = websocketProvider;
       indexeddbProviderRef.current = indexeddbProvider;
     }
-
     return () => {
-      if (debug) console.log('destroy editor');
-      if (editorRef.current.destroy) editorRef.current.destroy();
+      if (debug) console.log('destroy editor', _uuid);
+      const editorInstance = editorMapRef.current.get(_uuid);
+
+      if (editorInstance.destroy) {
+        editorInstance.destroy();
+      } else {
+        editorInstance.isReady.then(() => {
+          editorInstance.destroy();
+        });
+      }
+
       if (websocketProviderRef.current) websocketProviderRef.current.destroy();
       if (indexeddbProviderRef.current) indexeddbProviderRef.current.destroy();
     };
-  }, [update]);
+  }, [update, data, wsRoom]);
 
-  // useEffect(() => {
-  //   if (data) {
-  //     console.log(data)
-  //     editorRef.current.isReady.then(async () => {
-  //       if (data.blocks.length > 0) await editorRef.current.render(data);
-  //       setReady(true);
-  //     });
-  //   }
-  // }, [data]);
 
   const showSaved = () => {
     console.log(
@@ -151,9 +162,12 @@ const Editor: React.FC<{
 
   return (
     <div style={{ padding: 10 }}>
-      {/* <Button onClick={showSaved}>showSaved</Button> */}
       {(loading || !isReady) && <Spin />}
-      <div id="editorjs" style={{ visibility: loading || !isReady ? 'hidden' : 'visible' }}></div>
+      <div
+        key={holderUpdate}
+        id={`editorjs-${uuid}`}
+        style={{ visibility: loading || !isReady ? 'hidden' : 'visible' }}
+      ></div>
     </div>
   );
 };

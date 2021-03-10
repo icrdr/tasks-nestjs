@@ -1,5 +1,5 @@
-import { Badge, InputNumber } from "antd";
-import React from "react";
+import { Badge, InputNumber, Space } from 'antd';
+import React from 'react';
 
 const PropertyNumber: React.FC<{
   value: number;
@@ -14,7 +14,9 @@ const PropertyNumber: React.FC<{
       }}
     />
   ) : (
-    <Badge className="badge-priority" count={value} />
+    <Space size={0} wrap align="start">
+      <Badge className="badge-priority" count={value} />
+    </Space>
   );
 };
 
