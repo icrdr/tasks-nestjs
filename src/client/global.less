@@ -148,16 +148,18 @@ ol {
   }
 }
 
+.virtual-grid {
+  background: @table-bg;
+}
 .virtual-table .ant-table-container:before,
 .virtual-table .ant-table-container:after {
   display: none;
 }
 .virtual-table-cell {
   box-sizing: border-box;
-  padding: 12px;
   border-bottom: @table-border-color solid 1px;
-  line-height: 32px;
   background: @table-bg;
+  overflow: hidden;
 }
 
 .center-container {

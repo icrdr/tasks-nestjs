@@ -27,156 +27,151 @@ const HeaderFilter: React.FC<{
 }) => {
   return (
     <Space wrap>
-      {headers
-        ?.filter((header) => !header.hidden)
-        .map((header, index: number) => {
-          const type = header.title.split(":")[0];
-          switch (type) {
-            case "username":
-              return (
-                <Input.Search
-                  key={index}
-                  style={{ width: 120 }}
-                  placeholder="用户名"
-                  onSearch={(v) => onChange(index, v)}
-                  defaultValue={header.filter || ""}
-                  allowClear
-                />
-              );
-            case "name":
-              return (
-                <Input.Search
-                  key={index}
-                  style={{ width: 120 }}
-                  placeholder="名称"
-                  onSearch={(v) => onChange(index, v)}
-                  defaultValue={header.filter || ""}
-                  allowClear
-                />
-              );
-            case "state":
-              return (
-                <Select
-                  key={index}
-                  style={{ width: 100 }}
-                  placeholder={"状态"}
-                  defaultValue={header.filter || undefined}
-                  onChange={(v) => onChange(index, v)}
-                  allowClear
-                >
-                  <Select.Option value="suspended">
-                    <Badge status="default" text="暂停中" />
-                  </Select.Option>
-                  <Select.Option value="inProgress">
-                    <Badge status="processing" text="进行中" />
-                  </Select.Option>
-                  <Select.Option value="unconfirmed">
-                    <Badge status="warning" text="待确认" />
-                  </Select.Option>
-                  <Select.Option value="completed">
-                    <Badge status="success" text="已完成" />
-                  </Select.Option>
-                </Select>
-              );
-            case "dueAt":
-              return (
-                <DatePicker
-                  key={index}
-                  style={{ width: 120 }}
-                  placeholder={"死线之前"}
-                  defaultValue={
-                    header.filter ? moment(header.filter) : undefined
-                  }
-                  onChange={(v) => onChange(index, v?.toDate() || undefined)}
-                />
-              );
-            case "createAt":
-              return (
-                <DatePicker
-                  key={index}
-                  placeholder={"创建之前"}
-                  defaultValue={
-                    header.filter ? moment(header.filter) : undefined
-                  }
-                  onChange={(v) => onChange(index, v?.toDate() || undefined)}
-                />
-              );
-            case "format":
-              return (
-                <Input.Search
-                  key={index}
-                  style={{ width: 120 }}
-                  placeholder="格式"
-                  onSearch={(v) => onChange(index, v)}
-                  defaultValue={header.filter || ""}
-                  allowClear
-                />
-              );
-            case "role":
-              const role = roles.filter(
-                (r) => r.id === parseInt(header.title.split(":")[1])
-              )[0];
-              return (
-                <Select
-                  key={index}
-                  style={{ width: 100 }}
-                  placeholder={role.name}
-                  defaultValue={header.filter || undefined}
-                  onChange={(v) => onChange(index, v)}
-                  onSearch={onSearchMember}
-                  options={memberOptions}
-                  showSearch
-                  showArrow={false}
-                  filterOption={false}
-                  notFoundContent={
-                    serachMemberLoading ? <Spin size="small" /> : null
-                  }
-                  allowClear
-                />
-              );
-            case "prop":
-              const property = properties.filter(
-                (p) => p.id === parseInt(header.title.split(":")[1])
-              )[0];
-              switch (property?.form) {
-                case "string":
-                  return (
-                    <Input.Search
-                      key={index}
-                      style={{ width: 120 }}
-                      placeholder={property.name}
-                      defaultValue={header.filter || undefined}
-                      onSearch={(v) => onChange(index, v)}
-                      allowClear
-                    />
-                  );
-                case "select":
-                  return (
-                    <Select
-                      key={index}
-                      style={{ width: 100 }}
-                      placeholder={property.name}
-                      defaultValue={header.filter || undefined}
-                      onChange={(v) => onChange(index, v)}
-                      allowClear
-                    >
-                      {property.items &&
-                        Object.entries(property.items).map(
-                          (item: [string, { color: string }]) => {
-                            return (
-                              <Select.Option key={item[0]} value={item[0]}>
-                                {item[0]}
-                              </Select.Option>
-                            );
-                          }
-                        )}
-                    </Select>
-                  );
-              }
-            default:
-              <div></div>;
-          }
-        })}
+      {headers.map((header, index: number) => {
+        const type = header.title.split(":")[0];
+        if (header.hidden) return false;
+        switch (type) {
+          case "username":
+            return (
+              <Input.Search
+                key={index}
+                style={{ width: 120 }}
+                placeholder="用户名"
+                onSearch={(v) => onChange(index, v)}
+                defaultValue={header.filter || ""}
+                allowClear
+              />
+            );
+          case "name":
+            return (
+              <Input.Search
+                key={index}
+                style={{ width: 120 }}
+                placeholder="名称"
+                onSearch={(v) => onChange(index, v)}
+                defaultValue={header.filter || ""}
+                allowClear
+              />
+            );
+          case "state":
+            return (
+              <Select
+                key={index}
+                style={{ width: 100 }}
+                placeholder={"状态"}
+                defaultValue={header.filter || undefined}
+                onChange={(v) => onChange(index, v)}
+                allowClear
+              >
+                <Select.Option value="suspended">
+                  <Badge status="default" text="暂停中" />
+                </Select.Option>
+                <Select.Option value="inProgress">
+                  <Badge status="processing" text="进行中" />
+                </Select.Option>
+                <Select.Option value="unconfirmed">
+                  <Badge status="warning" text="待确认" />
+                </Select.Option>
+                <Select.Option value="completed">
+                  <Badge status="success" text="已完成" />
+                </Select.Option>
+              </Select>
+            );
+          case "dueAt":
+            return (
+              <DatePicker
+                key={index}
+                style={{ width: 120 }}
+                placeholder={"死线之前"}
+                defaultValue={header.filter ? moment(header.filter) : undefined}
+                onChange={(v) => onChange(index, v?.toDate() || undefined)}
+              />
+            );
+          case "createAt":
+            return (
+              <DatePicker
+                key={index}
+                placeholder={"创建之前"}
+                defaultValue={header.filter ? moment(header.filter) : undefined}
+                onChange={(v) => onChange(index, v?.toDate() || undefined)}
+              />
+            );
+          case "format":
+            return (
+              <Input.Search
+                key={index}
+                style={{ width: 120 }}
+                placeholder="格式"
+                onSearch={(v) => onChange(index, v)}
+                defaultValue={header.filter || ""}
+                allowClear
+              />
+            );
+          case "role":
+            const role = roles.filter(
+              (r) => r.id === parseInt(header.title.split(":")[1])
+            )[0];
+            return (
+              <Select
+                key={index}
+                style={{ width: 100 }}
+                placeholder={role.name}
+                defaultValue={header.filter || undefined}
+                onChange={(v) => onChange(index, v)}
+                onSearch={onSearchMember}
+                options={memberOptions}
+                showSearch
+                showArrow={false}
+                filterOption={false}
+                notFoundContent={
+                  serachMemberLoading ? <Spin size="small" /> : null
+                }
+                allowClear
+              />
+            );
+          case "prop":
+            const property = properties.filter(
+              (p) => p.id === parseInt(header.title.split(":")[1])
+            )[0];
+            switch (property?.form) {
+              case "string":
+                return (
+                  <Input.Search
+                    key={index}
+                    style={{ width: 120 }}
+                    placeholder={property.name}
+                    defaultValue={header.filter || undefined}
+                    onSearch={(v) => onChange(index, v)}
+                    allowClear
+                  />
+                );
+              case "select":
+                return (
+                  <Select
+                    key={index}
+                    style={{ width: 100 }}
+                    placeholder={property.name}
+                    defaultValue={header.filter || undefined}
+                    onChange={(v) => onChange(index, v)}
+                    allowClear
+                  >
+                    {property.items &&
+                      Object.entries(property.items).map(
+                        (item: [string, { color: string }]) => {
+                          return (
+                            <Select.Option key={item[0]} value={item[0]}>
+                              {item[0]}
+                            </Select.Option>
+                          );
+                        }
+                      )}
+                  </Select>
+                );
+            }
+          default:
+            return false;
+        }
+      })}
     </Space>
   );
 };

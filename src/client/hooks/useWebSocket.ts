@@ -130,7 +130,7 @@ export default function useWebSocket(socketUrl: string, options: Options = {}): 
     reconnectTimesRef.current = reconnectLimit;
     websocketRef.current?.close();
   });
-  console.log('vvvvvv')
+
   useEffect(() => {
     // 初始连接
     if (!manual) {

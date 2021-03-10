@@ -23,7 +23,7 @@ const PropertyAvatar: React.FC<{
   onRemove?: (userId: number) => void;
   onSearch?: (v) => void;
 }> = ({
-  users=[],
+  users = [],
   editable = false,
   options = [],
   searchLoading = false,
@@ -40,8 +40,8 @@ const PropertyAvatar: React.FC<{
     </Menu>
   );
   return (
-    <Space size={"small"} align="start">
-      <Avatar.Group>
+    <Space>
+      <Avatar.Group style={{ display: "block" }}>
         {users?.map((user, i: number) => (
           <Dropdown
             disabled={(lockLastItem && users.length <= 1) || !editable}
@@ -56,23 +56,17 @@ const PropertyAvatar: React.FC<{
         ))}
       </Avatar.Group>
       {editable && (
-        <Popover
-          placement="right"
-          content={
-            <Select
-              style={{ width: 100 }}
-              onChange={(v) => onAdd(v)}
-              onSearch={(v) => onSearch(v)}
-              options={options}
-              showSearch
-              showArrow={false}
-              filterOption={false}
-              notFoundContent={searchLoading ? <Spin size="small" /> : null}
-            />
-          }
-        >
-          <Button icon={<PlusOutlined />} type="primary" shape="circle" />
-        </Popover>
+        <Select
+          style={{ width: 100 }}
+          placeholder={"添加"}
+          onChange={(v) => onAdd(v)}
+          onSearch={(v) => onSearch(v)}
+          options={options}
+          showSearch
+          showArrow={false}
+          filterOption={false}
+          notFoundContent={searchLoading ? <Spin size="small" /> : null}
+        />
       )}
     </Space>
   );
