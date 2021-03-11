@@ -10,7 +10,7 @@ import {
   Modal,
   Form,
   Input,
-} from "antd";
+} from 'antd';
 import {
   AppstoreAddOutlined,
   DownOutlined,
@@ -18,31 +18,23 @@ import {
   HomeOutlined,
   LogoutOutlined,
   SettingOutlined,
-} from "@ant-design/icons";
-import React, { useState } from "react";
-import {
-  useAccess,
-  Access,
-  useHistory,
-  useLocation,
-  useModel,
-  useRequest,
-} from "umi";
-import { addSpace, getSpace, getSpaces } from "../layout.service";
-import { SpaceDetailRes } from "@dtos/space.dto";
-import Cookies from "js-cookie";
-import { SiderMenuProps } from "@ant-design/pro-layout/lib/components/SiderMenu/SiderMenu";
-import { RouteContext } from "@ant-design/pro-layout";
+} from '@ant-design/icons';
+import React, { useState } from 'react';
+import { useAccess, Access, useHistory, useLocation, useModel, useRequest } from 'umi';
+import { addSpace, getSpace, getSpaces } from '../layout.service';
+import { SpaceDetailRes } from '@dtos/space.dto';
+import Cookies from 'js-cookie';
+import { SiderMenuProps } from '@ant-design/pro-layout/lib/components/SiderMenu/SiderMenu';
+import { RouteContext } from '@ant-design/pro-layout';
 
 const SpaceMenu: React.FC<{}> = () => {
-  const { initialState, setInitialState } = useModel("@@initialState");
+  const { initialState, setInitialState } = useModel('@@initialState');
   const { currentSpace, currentUser } = initialState;
   const history = useHistory();
   const location = useLocation();
 
   if (!currentUser) {
-    if (["/login", "/signup"].indexOf(location.pathname) < 0)
-      history.push("/login");
+    if (['/login', '/signup'].indexOf(location.pathname) < 0) history.push('/login');
   }
 
   const [isModalVisible, setModalVisible] = useState(false);
@@ -54,12 +46,12 @@ const SpaceMenu: React.FC<{}> = () => {
     manual: true,
     onSuccess: (res) => {
       setInitialState({ ...initialState, currentSpace: res });
-      localStorage.setItem("currentSpaceId", res.id.toString());
+      localStorage.setItem('currentSpaceId', res.id.toString());
       console.log(res);
-      if (location.pathname === "/task") {
+      if (location.pathname === '/task') {
         history.go(0);
       } else {
-        history.push("/task");
+        history.push('/task');
       }
     },
   });
@@ -77,11 +69,11 @@ const SpaceMenu: React.FC<{}> = () => {
     onSuccess: (res) => {
       console.log(res);
       setInitialState({ ...initialState, currentSpace: res });
-      localStorage.setItem("currentSpaceId", res.id.toString());
-      if (location.pathname === "/task") {
+      localStorage.setItem('currentSpaceId', res.id.toString());
+      if (location.pathname === '/task') {
         history.go(0);
       } else {
-        history.push("/task");
+        history.push('/task');
       }
     },
   });
@@ -90,7 +82,7 @@ const SpaceMenu: React.FC<{}> = () => {
     <Menu.Item
       key="me"
       onClick={() => {
-        history.push("/me");
+        history.push('/me');
       }}
       icon={<SettingOutlined />}
     >
@@ -99,8 +91,8 @@ const SpaceMenu: React.FC<{}> = () => {
     <Menu.Item
       key="logout"
       onClick={() => {
-        Cookies.remove("token");
-        history.push("/login");
+        Cookies.remove('token');
+        history.push('/login');
       }}
       icon={<LogoutOutlined />}
     >
@@ -112,10 +104,7 @@ const SpaceMenu: React.FC<{}> = () => {
     !getSpacesReq.loading ? (
       spaceList.map((space, index) => (
         <Menu.Item key={space.id}>
-          <a
-            style={{ textAlign: "center" }}
-            onClick={() => handleSetSpace(space.id)}
-          >
+          <a style={{ textAlign: 'center' }} onClick={() => handleSetSpace(space.id)}>
             {space.name}
           </a>
         </Menu.Item>
@@ -125,13 +114,9 @@ const SpaceMenu: React.FC<{}> = () => {
         <Spin />
       </Menu.Item>
     ),
-    currentUser?.role === "admin" && [
+    currentUser?.role === 'admin' && [
       <Menu.Divider key="d" />,
-      <Menu.Item
-        key="out"
-        icon={<AppstoreAddOutlined />}
-        onClick={() => setModalVisible(true)}
-      >
+      <Menu.Item key="out" icon={<AppstoreAddOutlined />} onClick={() => setModalVisible(true)}>
         新空间
       </Menu.Item>,
     ],
@@ -142,7 +127,7 @@ const SpaceMenu: React.FC<{}> = () => {
   };
 
   const handleDropdown = (visible: boolean) => {
-    if (visible) getSpacesReq.run();
+    if (visible) getSpacesReq.run({ all: true });
   };
 
   return (
@@ -154,7 +139,7 @@ const SpaceMenu: React.FC<{}> = () => {
               <Menu.SubMenu
                 key="user"
                 icon={
-                  <Avatar size="small" style={{ left: "-4px" }}>
+                  <Avatar size="small" style={{ left: '-4px' }}>
                     {currentUser?.username}
                   </Avatar>
                 }
@@ -169,11 +154,8 @@ const SpaceMenu: React.FC<{}> = () => {
                 >
                   {spaceMenus}
                 </Menu.SubMenu>
-              ) : currentUser?.role === "admin" ? (
-                <Menu.Item
-                  icon={<AppstoreAddOutlined />}
-                  onClick={() => setModalVisible(true)}
-                >
+              ) : currentUser?.role === 'admin' ? (
+                <Menu.Item icon={<AppstoreAddOutlined />} onClick={() => setModalVisible(true)}>
                   新空间
                 </Menu.Item>
               ) : (
@@ -181,38 +163,23 @@ const SpaceMenu: React.FC<{}> = () => {
               )}
             </Menu>
           ) : (
-            <Space
-              align="center"
-              direction={"vertical"}
-              size={"middle"}
-              style={{ width: "100%" }}
-            >
-              <Dropdown
-                overlay={<Menu>{userMenus}</Menu>}
-                placement="bottomCenter"
-              >
-                <Space direction={"vertical"}>
+            <Space align="center" direction={'vertical'} size={'middle'} style={{ width: '100%' }}>
+              <Dropdown overlay={<Menu>{userMenus}</Menu>} placement="bottomCenter">
+                <Space direction={'vertical'}>
                   <Avatar size="large">{currentUser?.username}</Avatar>
                   <div>{currentUser?.username}</div>
                 </Space>
               </Dropdown>
               {currentSpace ? (
                 <Dropdown
-                  overlay={
-                    <Menu selectedKeys={[currentSpace.id.toString()]}>
-                      {spaceMenus}
-                    </Menu>
-                  }
+                  overlay={<Menu selectedKeys={[currentSpace.id.toString()]}>{spaceMenus}</Menu>}
                   onVisibleChange={handleDropdown}
                   placement="bottomCenter"
                 >
                   <Button icon={<HomeOutlined />}>{currentSpace?.name}</Button>
                 </Dropdown>
-              ) : currentUser?.role === "admin" ? (
-                <Button
-                  icon={<AppstoreAddOutlined />}
-                  onClick={() => setModalVisible(true)}
-                >
+              ) : currentUser?.role === 'admin' ? (
+                <Button icon={<AppstoreAddOutlined />} onClick={() => setModalVisible(true)}>
                   新空间
                 </Button>
               ) : (
@@ -240,7 +207,7 @@ const SpaceMenu: React.FC<{}> = () => {
               <Form.Item
                 label="空间名"
                 name="name"
-                rules={[{ required: true, message: "空间名是必须的" }]}
+                rules={[{ required: true, message: '空间名是必须的' }]}
               >
                 <Input />
               </Form.Item>

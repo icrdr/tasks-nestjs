@@ -1,9 +1,9 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Empty, Spin } from "antd";
-import InfiniteLoader from "react-window-infinite-loader";
-import { VariableSizeGrid } from "react-window";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { useRequest } from "umi";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Empty, Spin } from 'antd';
+import InfiniteLoader from 'react-window-infinite-loader';
+import { VariableSizeGrid } from 'react-window';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { useRequest } from 'umi';
 
 const VGallery: React.FC<{
   request: (body: any) => Promise<any>;
@@ -11,19 +11,18 @@ const VGallery: React.FC<{
   columnCount?: number;
   gutter?: [number, number];
   beforeItemRender?: (item) => Promise<any>;
-  itemRender: (
-    item: any,
-    columnIndex?: number,
-    rowIndex?: number
-  ) => React.ReactNode;
-}> = ({
-  request,
-  update = false,
-  columnCount = 3,
-  itemRender,
-  beforeItemRender = async (item) => item,
-  gutter = [10, 10],
-}) => {
+  itemRender: (item: any, columnIndex?: number, rowIndex?: number) => React.ReactNode;
+}> = (
+  {
+    request,
+    update = false,
+    columnCount = 3,
+    itemRender,
+    beforeItemRender = async (item) => item,
+    gutter = [10, 10],
+  },
+  ref,
+) => {
   const vGridRef = useRef(null);
   const infiniteLoaderRef = useRef(null);
   const fetchCountRef = useRef(0);
@@ -46,22 +45,27 @@ const VGallery: React.FC<{
   const getItemsReq = useRequest(request, {
     manual: true,
     onSuccess: async (res, params) => {
-      for (
-        let index = params[0].skip;
-        index < params[0].skip + params[0].take;
-        index++
-      ) {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         const item = res.list[index - params[0].skip];
         items[index] = item;
-        // items[index] = await beforeItemRender(item);
+        items[index] = await beforeItemRender(item);
       }
+      if (vGridRef.current) vGridRef.current.resetAfterRowIndex(params[0].skip);
       setItems(items);
     },
   });
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      items,
+      setGridItem,
+    }),
+    [items],
+  );
+
   const resetLoadMore = () => {
-    if (infiniteLoaderRef.current)
-      infiniteLoaderRef.current.resetloadMoreItemsCache(true);
+    if (infiniteLoaderRef.current) infiniteLoaderRef.current.resetloadMoreItemsCache(true);
   };
 
   const resetCellSize = () => {
@@ -74,8 +78,8 @@ const VGallery: React.FC<{
   };
 
   const loadMoreItems = (startIndex: number, stopIndex: number) => {
-    console.log(startIndex);
-    console.log(stopIndex);
+    // console.log(startIndex);
+    // console.log(stopIndex);
     return getItemsReq.run({
       skip: startIndex,
       take: stopIndex - startIndex + 1,
@@ -91,16 +95,18 @@ const VGallery: React.FC<{
   };
 
   const setRowHeight = (index: number, size: number) => {
+    const _size = Math.max(size, rowHeightsRef.current[index] || 0);
+    rowHeightsRef.current = { ...rowHeightsRef.current, [index]: _size };
     vGridRef.current.resetAfterRowIndex(0);
-    rowHeightsRef.current = { ...rowHeightsRef.current, [index]: size };
   };
 
-  const resetColumnWidth = () => {
-    if (vGridRef.current) vGridRef.current.resetAfterColumnIndex(0);
-  };
-
-  const resetHeightWidth = () => {
-    setUpdateRowHeights(!updateRowHeights);
+  const setGridItem = (index: number, item) => {
+    items[index] = item;
+    setItems(items);
+    const columnIndex = items.length % columnCount;
+    const rowIndex = Math.ceil(items.length / columnCount) - 1;
+    vGridRef.current.resetAfterIndices(columnIndex, rowIndex);
+    resetCellSize();
   };
 
   const Cell = ({ columnIndex, rowIndex, style }) => {
@@ -138,8 +144,7 @@ const VGallery: React.FC<{
     <>
       <AutoSizer
         onResize={() => {
-          resetColumnWidth();
-          resetHeightWidth();
+          resetCellSize();
         }}
       >
         {({ width, height }) => (
@@ -172,7 +177,7 @@ const VGallery: React.FC<{
                     //@ts-ignore
                     return ref(r);
                   }}
-                  style={{ overflowX: "hidden" }}
+                  style={{ overflowX: 'hidden' }}
                   className="virtual-grid"
                   onItemsRendered={newItemsRendered}
                   columnCount={columnCount}
@@ -191,12 +196,12 @@ const VGallery: React.FC<{
         )}
       </AutoSizer>
       {initItemsReq.loading && (
-        <div className="center-container" style={{ height: "100%" }}>
+        <div className="center-container" style={{ height: '100%' }}>
           <Spin className="center-item" />
         </div>
       )}
       {items.length === 0 && (
-        <div className="center-container" style={{ height: "100%" }}>
+        <div className="center-container" style={{ height: '100%' }}>
           <Empty className="center-item" />
         </div>
       )}
@@ -204,4 +209,5 @@ const VGallery: React.FC<{
   );
 };
 
-export default VGallery;
+//@ts-ignore
+export default forwardRef(VGallery);

@@ -17,7 +17,7 @@ const PropertySelect: React.FC<{
       mode="multiple"
       value={value ? value.split(',') : undefined}
       onChange={(v) => {
-        onChange(v.join(','));
+        onChange(v.length > 0 ? v.join(',') : null);
       }}
       options={options}
       allowClear

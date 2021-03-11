@@ -1,19 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useModel } from 'umi';
-import {
-  Button,
-  Dropdown,
-  Input,
-  Switch,
-  Menu,
-  Select,
-  Space,
-  DatePicker,
-  Upload,
-  message,
-  Progress,
-} from 'antd';
-import { PictureOutlined, SettingOutlined } from '@ant-design/icons';
+import { Button, Select, Space, Upload, message, Progress, Input, Badge } from 'antd';
+import { PictureOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import AssetGallery from './AssetGallery';
 import { getOssClient } from '../../layout/layout.service';
@@ -23,6 +11,10 @@ import { ViewOption } from '@server/common/common.entity';
 import { TaskMoreDetailRes } from '@dtos/task.dto';
 import HeaderSetting from '@components/HeaderSetting';
 import HeaderFilter from '@components/HeaderFilter';
+import AssetTable from './AssetTable';
+import FilterDateRange from '../../../components/FilterDateRange';
+import FilterString from '../../../components/FilterString';
+
 const defaultOption = {
   form: 'gallery',
   headers: [
@@ -34,51 +26,99 @@ const defaultOption = {
     },
     {
       title: 'format',
-      width: 150,
+      width: 100,
       filter: undefined,
       hidden: false,
     },
     {
       title: 'createAt',
-      width: 200,
+      width: 100,
       filter: undefined,
       hidden: false,
     },
   ],
 };
 
+const labelRender = (type) => {
+  switch (type) {
+    case 'name':
+      return '文件名';
+    case 'format':
+      return '格式名';
+    case 'createAt':
+      return '上传日期';
+    default:
+      return type;
+  }
+};
+
+const filterRender = (type, filter, index, onChange) => {
+  switch (type) {
+    case 'name':
+      return (
+        <FilterString
+          key={index}
+          placeholder="文件名"
+          onChange={(v) => onChange(index, v)}
+          value={filter || ''}
+        />
+      );
+    case 'format':
+      return (
+        <FilterString
+          key={index}
+          placeholder="格式名"
+          onChange={(v) => onChange(index, v)}
+          value={filter || ''}
+        />
+      );
+    case 'createAt':
+      return (
+        <FilterDateRange
+          key={index}
+          placeholder={['上传起始', '上传结束']}
+          value={filter || undefined}
+          onChange={(dates) => onChange(index, dates)}
+        />
+      );
+  }
+};
+
 const AssetView: React.FC<{ task?: TaskMoreDetailRes; update?: boolean }> = ({ task, update }) => {
   const { initialState } = useModel('@@initialState');
   const { currentSpace } = initialState;
-  const [viewUpdate, setViewUpdate] = useState(false);
-  const [viewOption, setViewOption] = useState<ViewOption>(null);
-  const [isUploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-
   const viewOptionKey = task
     ? `task${task.id}AssetViewOption`
     : `space${currentSpace.id}AssetViewOption`;
 
-  const isFull = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
-  const isEdit = isFull || (task ? task.userAccess === 'edit' : currentSpace.userAccess === 'edit');
-
-  useEffect(() => {
-    const initViewOption = getInitViewOption(
+  const [childUpdate, setChildUpdate] = useState(false);
+  const [viewOption, setViewOption] = useState<ViewOption>(
+    getInitViewOption(
       JSON.parse(localStorage.getItem(viewOptionKey)),
       defaultOption,
       currentSpace.assetProperties,
-    );
+    ),
+  );
 
-    setViewOption(initViewOption);
-  }, [update,viewUpdate]);
+  const [isUploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+
+  const isFull = currentSpace?.userAccess === 'full' || task?.userAccess === 'full';
+  const isEdit = isFull || (task ? task.userAccess === 'edit' : currentSpace.userAccess === 'edit');
 
   const saveOption = (option) => {
     setViewOption(option);
     localStorage.setItem(viewOptionKey, JSON.stringify(option));
+    setChildUpdate(!childUpdate);
+  };
+
+  const resetOption = () => {
+    localStorage.removeItem(viewOptionKey);
+    setViewOption(getInitViewOption(undefined, defaultOption, currentSpace.assetProperties));
+    setChildUpdate(!childUpdate);
   };
 
   const handleSeletForm = (v) => {
-    console.log(v);
     saveOption({ ...viewOption, form: v });
   };
 
@@ -145,7 +185,7 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes; update?: boolean }> = ({ t
       }
 
       console.log('ok');
-      setViewUpdate(!viewUpdate);
+      setChildUpdate(!childUpdate);
       setUploadProgress(100);
     } catch (err) {
       console.log(err);
@@ -184,6 +224,7 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes; update?: boolean }> = ({ t
             <Select.Option value="gallery">画廊</Select.Option>
           </Select>
           <HeaderSetting
+            labelRender={labelRender}
             headers={viewOption?.headers}
             properties={currentSpace.assetProperties}
             onChange={(index, v) => {
@@ -191,25 +232,27 @@ const AssetView: React.FC<{ task?: TaskMoreDetailRes; update?: boolean }> = ({ t
               headers[index].hidden = !v;
               saveOption({ ...viewOption, headers });
             }}
-            onReset={() => {
-              setViewUpdate(!viewUpdate);
-              localStorage.removeItem(viewOptionKey);
-            }}
+            onReset={resetOption}
           />
         </Space>
         <HeaderFilter
+          filterRender={filterRender}
           headers={viewOption?.headers}
-          roles={currentSpace.roles}
-          properties={currentSpace.taskProperties}
+          properties={currentSpace.assetProperties}
           onChange={(index, v) => {
-            const headers = viewOption.headers.filter((header) => !header.hidden);
+            const headers = viewOption.headers;
             headers[index].filter = v;
             saveOption({ ...viewOption, headers });
           }}
         />
       </div>
       <div style={{ height: 'calc(100vh - 100px)' }}>
-        <AssetGallery headers={viewOption?.headers} update={viewUpdate} task={task} />
+        {viewOption?.form === 'table' && (
+          <AssetTable task={task} headers={viewOption.headers} update={childUpdate} />
+        )}
+        {viewOption?.form === 'gallery' && (
+          <AssetGallery task={task} headers={viewOption.headers} update={childUpdate} />
+        )}
       </div>
     </Space>
   );

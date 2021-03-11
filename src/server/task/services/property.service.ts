@@ -32,7 +32,7 @@ export class PropertyService {
   ) {
     //check if space and prop are exsited
     space = space instanceof Space ? space : await this.spaceService.getSpace(space, false);
-    let property = await this.getPropertyByName(space.id, name, false);
+    let property = await this.getPropertyByName(space.id, name, type, false);
     if (property) return property;
 
     property = new Property();
@@ -44,12 +44,18 @@ export class PropertyService {
     return await this.manager.save(property);
   }
 
-  async getPropertyByName(space: Space | number, name: string, exception = true) {
+  async getPropertyByName(
+    space: Space | number,
+    name: string,
+    type: PropertyType,
+    exception = true,
+  ) {
     const spaceId = await this.spaceService.getSpaceId(space);
     let query = this.propertyQuery
       .clone()
       .andWhere('space.id = :spaceId', { spaceId })
-      .andWhere('property.name = :name', { name });
+      .andWhere('property.name = :name', { name })
+      .andWhere('property.type = :type', { type });
     const property = await query.getOne();
     if (!property && exception) throw new NotFoundException('Property was not found.');
     return property;

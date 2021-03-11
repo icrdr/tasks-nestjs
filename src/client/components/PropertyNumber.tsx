@@ -8,7 +8,7 @@ const PropertyNumber: React.FC<{
 }> = ({ value, editable = false, onChange = () => {} }) => {
   return editable ? (
     <InputNumber
-      value={value}
+      value={value || 0}
       onChange={(v) => {
         onChange(v);
       }}

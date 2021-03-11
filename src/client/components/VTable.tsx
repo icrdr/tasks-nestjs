@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState } from "react";
-import { VariableSizeGrid } from "react-window";
-import { Table } from "antd";
-import InfiniteLoader from "react-window-infinite-loader";
-import AutoSizer from "react-virtualized-auto-sizer";
-import { useRequest } from "umi";
-import { useUpdateEffect } from "ahooks";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { VariableSizeGrid } from 'react-window';
+import { Table } from 'antd';
+import InfiniteLoader from 'react-window-infinite-loader';
+import AutoSizer from 'react-virtualized-auto-sizer';
+import { useRequest } from 'umi';
+import { useUpdateEffect } from 'ahooks';
 
 const VTable: React.FC<{
   request: (body: any) => Promise<any>;
@@ -14,14 +14,17 @@ const VTable: React.FC<{
   defaultRowHeight?: number;
   defaultColumnWidth?: number;
   defaultHeight?: number;
-}> = ({
-  request,
-  columns,
-  update = false,
-  cellPadding = 12,
-  defaultRowHeight = 32,
-  defaultHeight = 700,
-}) => {
+}> = (
+  {
+    request,
+    columns,
+    update = false,
+    cellPadding = 12,
+    defaultRowHeight = 32,
+    defaultHeight = 700,
+  },
+  ref,
+) => {
   const vGridRef = useRef(null);
   const wrapperRef = useRef(null);
   const infiniteLoaderRef = useRef(null);
@@ -36,6 +39,7 @@ const VTable: React.FC<{
     onSuccess: (res, params) => {
       setItems(Array(res.total).fill(undefined));
       if (fetchCountRef.current !== 0) {
+        //FIXME: may cause double update
         resetLoadMore();
         resetCellSize();
       }
@@ -46,11 +50,7 @@ const VTable: React.FC<{
   const getItemsReq = useRequest(request, {
     manual: true,
     onSuccess: (res, params) => {
-      for (
-        let index = params[0].skip;
-        index < params[0].skip + params[0].take;
-        index++
-      ) {
+      for (let index = params[0].skip; index < params[0].skip + params[0].take; index++) {
         const item = res.list[index - params[0].skip];
         items[index] = item;
       }
@@ -58,9 +58,18 @@ const VTable: React.FC<{
     },
   });
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      items,
+      setRowItem,
+    }),
+    [items],
+  );
+
   const loadMoreItems = (startIndex: number, stopIndex: number) => {
-    console.log(startIndex);
-    console.log(stopIndex);
+    // console.log(startIndex);
+    // console.log(stopIndex);
     return getItemsReq.run({
       skip: startIndex,
       take: stopIndex - startIndex + 1,
@@ -72,8 +81,7 @@ const VTable: React.FC<{
   };
 
   const resetLoadMore = () => {
-    if (infiniteLoaderRef.current)
-      infiniteLoaderRef.current.resetloadMoreItemsCache(true);
+    if (infiniteLoaderRef.current) infiniteLoaderRef.current.resetloadMoreItemsCache(true);
   };
 
   const resetCellSize = () => {
@@ -85,16 +93,21 @@ const VTable: React.FC<{
     setUpdateRowHeights(!updateRowHeights);
   };
 
+  const setRowItem = (index: number, item) => {
+    items[index] = item;
+    setItems(items);
+    vGridRef.current.resetAfterRowIndex(index);
+    resetCellSize();
+  };
+
   const getRowHeight = (index: number) => {
-    return (
-      rowHeightsRef.current[index] || defaultRowHeight + cellPadding * 2 + 1
-    );
+    return rowHeightsRef.current[index] || defaultRowHeight + cellPadding * 2 + 1;
   };
 
   const setRowHeight = (index: number, size: number) => {
-    vGridRef.current.resetAfterRowIndex(0);
     const _size = Math.max(size, rowHeightsRef.current[index] || 0);
     rowHeightsRef.current = { ...rowHeightsRef.current, [index]: _size };
+    vGridRef.current.resetAfterRowIndex(0);
   };
 
   const Cell = ({ columnIndex, rowIndex, style }) => {
@@ -109,11 +122,7 @@ const VTable: React.FC<{
     }, [item, updateRowHeights]);
 
     return (
-      <div
-        key={`${rowIndex}-${columnIndex}`}
-        style={style}
-        className="virtual-table-cell"
-      >
+      <div key={`${rowIndex}-${columnIndex}`} style={style} className="virtual-table-cell">
         {item && itemRender ? (
           <div
             ref={rowRef}
@@ -122,7 +131,7 @@ const VTable: React.FC<{
               lineHeight: `${defaultRowHeight}px`,
             }}
           >
-            {itemRender(item)}
+            {itemRender(item, columnIndex, rowIndex)}
           </div>
         ) : (
           <div ref={rowRef}></div>
@@ -132,8 +141,7 @@ const VTable: React.FC<{
   };
 
   const renderVirtualList = (rawData, { scrollbarSize, onScroll }) => {
-    const totalHeight =
-      rawData.length * (defaultRowHeight + cellPadding * 2 + 1);
+    const totalHeight = rawData.length * (defaultRowHeight + cellPadding * 2 + 1);
     return (
       <AutoSizer
         onResize={() => {
@@ -184,8 +192,7 @@ const VTable: React.FC<{
                           ? columns[index].width
                           : (columns[index].width / fixedWidth) * width;
 
-                      return index === columns.length - 1 &&
-                        totalHeight > height
+                      return index === columns.length - 1 && totalHeight > height
                         ? w - scrollbarSize - 1
                         : w;
                     }}
@@ -194,9 +201,7 @@ const VTable: React.FC<{
                     height={height}
                     width={width}
                     onScroll={({ scrollLeft }) => {
-                      onScroll({
-                        scrollLeft,
-                      });
+                      onScroll({ scrollLeft });
                     }}
                   >
                     {Cell}
@@ -211,13 +216,13 @@ const VTable: React.FC<{
   };
 
   return (
-    <div ref={wrapperRef} style={{ height: "100%" }}>
+    <div ref={wrapperRef} style={{ height: '100%' }}>
       <Table
         loading={initItemsReq.loading}
         dataSource={items}
         scroll={{
           y: height,
-          x: "100vw",
+          x: '100vw',
         }}
         columns={columns}
         pagination={false}
@@ -229,4 +234,5 @@ const VTable: React.FC<{
   );
 };
 
-export default VTable;
+//@ts-ignore
+export default forwardRef(VTable);

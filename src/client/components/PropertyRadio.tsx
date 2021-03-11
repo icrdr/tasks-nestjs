@@ -1,16 +1,18 @@
-import { Select, Space, Tag } from 'antd';
+import { Badge, Select, Space, Tag } from 'antd';
 import React from 'react';
 
 const PropertyRadio: React.FC<{
-  options: { label: string; value: string; color?: string }[];
+  options: { label: string; value: string; color?: string; status?: string }[];
   value: string;
   editable?: boolean;
+  mode?: 'tag' | 'badge';
   onChange?: (v: any) => void;
-}> = ({ options, value, editable = false, onChange = () => {} }) => {
-  const optionColorMap = new Map();
+}> = ({ options, value, editable = false, mode = 'tag', onChange = () => {} }) => {
+  const optionDataMap = new Map();
   for (const option of options) {
-    optionColorMap.set(option.value, option.color);
+    optionDataMap.set(option.value, option);
   }
+
   return editable ? (
     <Select
       style={{ minWidth: '100px' }}
@@ -23,7 +25,13 @@ const PropertyRadio: React.FC<{
     />
   ) : (
     <Space size={0} wrap align="start">
-      <Tag color={optionColorMap.get(value)?.color || 'blue'}>{value}</Tag>
+      {mode === 'tag' && <Tag color={optionDataMap.get(value)?.color || 'blue'}>{value}</Tag>}
+      {mode === 'badge' && (
+        <Badge
+          status={optionDataMap.get(value)?.status || 'default'}
+          text={optionDataMap.get(value)?.label}
+        />
+      )}
     </Space>
   );
 };

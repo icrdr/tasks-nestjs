@@ -62,12 +62,24 @@ export class GetTasksDTO extends ListDTO {
   state?: TaskState[];
 
   @IsOptional()
-  @IsDate()
-  dueAfter?: Date;
+  @Type(() => Date)
+  @IsDate({ each: true })
+  beginAt?: [Date?, Date?];
 
   @IsOptional()
-  @IsDate()
-  dueBefore?: Date;
+  @Type(() => Date)
+  @IsDate({ each: true })
+  dueAt?: [Date?, Date?];
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate({ each: true })
+  completeAt?: [Date?, Date?];
+
+  @IsOptional()
+  @Type(() => Date)
+  @IsDate({ each: true })
+  createAt?: [Date?, Date?];
 
   @IsOptional()
   properties?: any;
@@ -148,7 +160,7 @@ export class TaskDetailRes {
   beginAt: Date;
 
   @Expose()
-  endAt: Date;
+  completeAt: Date;
 
   @Expose()
   dueAt: Date;

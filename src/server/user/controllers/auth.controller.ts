@@ -22,7 +22,7 @@ export class AuthController {
   @Get('/currentUser')
   async getMe(@CurrentUser() currentUser: User) {
     const user = await this.userService.getUser(currentUser.id);
-    user['spaces'] = (await this.spaceService.getSpaces({ user: user }))[0];
+    user['spaces'] = (await this.spaceService.getSpaces({ user: user, all: true}))[0];
     return new CurrentUserRes(user);
   }
 }

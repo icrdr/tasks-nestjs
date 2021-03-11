@@ -4,11 +4,12 @@ import moment from 'moment';
 import React from 'react';
 
 const PropertyDateRange: React.FC<{
-  startDate: Date;
-  endDate: Date;
+  value: [Date?, Date?];
   editable?: boolean;
   onChange?: (dates: [Date, Date]) => void;
-}> = ({ startDate, endDate, editable = false, onChange = () => {} }) => {
+}> = ({ value, editable = false, onChange = () => {} }) => {
+  const startDate = value[0];
+  const endDate = value[1];
   return editable ? (
     <DatePicker.RangePicker
       ranges={{

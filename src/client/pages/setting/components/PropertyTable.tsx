@@ -48,7 +48,7 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
     {
       title: '属性名',
       dataIndex: 'name',
-      key: 'name',
+      width: 150,
       render: (_, property) => {
         return (
           <Text
@@ -66,7 +66,6 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
     {
       title: '类型',
       dataIndex: 'form',
-      key: 'form',
       render: (_, property: PropertyRes) => {
         return (
           <Select
@@ -86,13 +85,12 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
     {
       title: '选项',
       dataIndex: 'item',
-      key: 'item',
       render: (_, property: PropertyRes) => {
         return (
           ['radio', 'select'].indexOf(property.form) >= 0 && (
             <Dropdown overlay={itemsMenu(property)}>
               <Input
-                style={{ width: '200px' }}
+                style={{ maxWidth: '200px' }}
                 onPressEnter={(e) => {
                   const items = property.items || {};
                   items[e.currentTarget.value] = { color: 'blue' };
@@ -132,7 +130,7 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
 
   const actionMenu = (property: PropertyRes) => (
     <Menu>
-      <Menu.Item disabled={list.map((r) => r.id).indexOf(property.id) === 0} key="1">
+      <Menu.Item key="1">
         <Popconfirm
           title="你确定要删除该属性么？"
           onConfirm={() => removeSpacePropertyReq.run(currentSpace.id, property.id)}
@@ -148,7 +146,7 @@ const PropertyTable: React.FC<{ list: PropertyRes[]; type: PropertyType; update?
   columns.push({
     dataIndex: 'action',
     title: '操作',
-    key: 'action',
+    width: 50,
     render: (_, property: PropertyRes) => (
       <Dropdown overlay={actionMenu(property)}>
         <Button icon={<EllipsisOutlined />}></Button>

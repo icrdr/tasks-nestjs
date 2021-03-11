@@ -22,6 +22,8 @@ import * as moment from 'moment';
 import { unlinkSync } from 'fs';
 import { InjectQueue } from '@nestjs/bull';
 import { Queue } from 'bull';
+import { Property } from '../entities/property.entity';
+import { PropertyService } from './property.service';
 
 @Injectable()
 export class AssetService {
@@ -29,6 +31,7 @@ export class AssetService {
   constructor(
     private taskService: TaskService,
     private spaceService: SpaceService,
+    private propertyService: PropertyService,
     private userService: UserService,
     private commonService: CommonService,
     private manager: EntityManager,
@@ -65,9 +68,10 @@ export class AssetService {
     unlinkSync(previewPath);
   }
 
-  async changeAsset(asset: Asset | number, options: { name?: string } = {}) {
+  async changeAsset(asset: Asset | number, options: { name?: string; properties?: any } = {}) {
     asset = asset instanceof Asset ? asset : await this.getAsset(asset);
     if (options.name) asset.name = options.name;
+    if (options.properties !== undefined) asset.properties = options.properties;
     return await this.manager.save(asset);
   }
 
@@ -174,8 +178,8 @@ export class AssetService {
       isRoot?: boolean;
       name?: string;
       format?: string;
-      uploadAfter?: Date;
-      uploadBefore?: Date;
+      properties?: any;
+      createAt?: [Date?, Date?];
       uploader?: User | number;
       pageSize?: number;
       current?: number;
@@ -213,14 +217,28 @@ export class AssetService {
       });
     }
 
-    if (options.uploadAfter) {
-      const after = options.uploadAfter;
-      query = query.andWhere('asset.createAt >= :after', { after });
+    if (options.properties) {
+      for (const prop of options.properties) {
+        const property =
+          prop.property instanceof Property
+            ? prop.property
+            : await this.propertyService.getProperty(prop.property);
+
+        query = query.andWhere(
+          `asset.properties ->'$.prop${property.id}' LIKE CONCAT('%','${prop.value}','%')`,
+        );
+      }
     }
 
-    if (options.uploadBefore) {
-      const before = options.uploadBefore;
-      query = query.andWhere('asset.createAt < :before', { before });
+    if (options.createAt) {
+      if (options.createAt[0]) {
+        const after = options.createAt[0];
+        query = query.andWhere('asset.createAt >= :after', { after });
+      }
+      if (options.createAt[1]) {
+        const before = options.createAt[1];
+        query = query.andWhere('asset.createAt < :before', { before });
+      }
     }
 
     query = query.orderBy('asset.id', 'DESC');

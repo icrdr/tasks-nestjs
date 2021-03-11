@@ -43,12 +43,9 @@ export class GetAssetsDTO extends ListDTO {
   format?: string;
 
   @IsOptional()
-  @IsDate()
-  uploadAfter?: Date;
-
-  @IsOptional()
-  @IsDate()
-  uploadBefore?: Date;
+  @Type(() => Date)
+  @IsDate({ each: true })
+  createAt?: [Date?, Date?];
 
   @IsOptional()
   @IsNumber()
@@ -57,6 +54,9 @@ export class GetAssetsDTO extends ListDTO {
   @IsOptional()
   @IsNumber()
   spaceId?: number;
+
+  @IsOptional()
+  properties?: any;
 
   @Type(() => String)
   @IsOptional()
@@ -69,6 +69,9 @@ export class ChangeAssetDTO {
   @IsOptional()
   @IsString()
   name?: string;
+
+  @IsOptional()
+  properties?: any;
 }
 
 @Exclude()
@@ -100,6 +103,9 @@ export class AssetRes {
 
   @Expose()
   preview: string;
+
+  @Expose()
+  properties: any;
 
   constructor(partial: Partial<AssetRes>) {
     Object.assign(this, partial);

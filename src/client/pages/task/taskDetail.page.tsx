@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { PageContainer } from '@ant-design/pro-layout';
 import { Link, useParams, useRequest, useModel, useLocation, useHistory } from 'umi';
 import {
@@ -11,32 +11,11 @@ import {
   saveTaskContent,
 } from './task.service';
 import { getTask } from './task.service';
-import {
-  Space,
-  Button,
-  Dropdown,
-  Menu,
-  Select,
-  Avatar,
-  DatePicker,
-  Typography,
-  Popover,
-  Spin,
-  Descriptions,
-  Tooltip,
-  InputNumber,
-  Input,
-  Badge,
-  Popconfirm,
-  Divider,
-  Tag,
-} from 'antd';
+import { Space, Button, Dropdown, Menu, Typography, Descriptions, Popconfirm } from 'antd';
 import TaskState from '../../components/TaskState';
-import { EditOutlined, EllipsisOutlined, PlusOutlined } from '@ant-design/icons';
+import { EllipsisOutlined } from '@ant-design/icons';
 import { TaskMoreDetailRes } from '@dtos/task.dto';
-import moment from 'moment';
 import { getSpaceMembers } from '../member/member.service';
-import { UserRes } from '@dtos/user.dto';
 import { AssignmentRes } from '@dtos/assignment.dto';
 import PropertyItem from '@components/PropertyItem';
 import PropertyAvatar from '@components/PropertyAvatar';
@@ -44,7 +23,6 @@ import { RoleRes } from '@dtos/role.dto';
 import TaskContent from './taskContent.page';
 import AssetView from '../asset/components/AssetView';
 import TaskView from './components/TaskView';
-import { useUpdateEffect } from 'ahooks';
 import PropertyNumber from '@components/PropertyNumber';
 import PropertyRadio from '@components/PropertyRadio';
 import PropertyDateRange from '@components/PropertyDateRange';
@@ -259,8 +237,7 @@ const taskDetail: React.FC<{}> = (props) => {
     >
       <Descriptions.Item key="due" label="计划日期">
         <PropertyDateRange
-          startDate={task?.beginAt}
-          endDate={task?.dueAt}
+          value={[task?.beginAt, task?.dueAt]}
           editable={isFull}
           onChange={(dates) =>
             changeTaskReq.run(currentTaskId, {
@@ -320,7 +297,6 @@ const taskDetail: React.FC<{}> = (props) => {
             <PropertyAvatar
               users={users}
               editable={isFull}
-              searchLoading={getSpaceMembersReq.loading}
               options={memberOptions}
               onAdd={(v) => {
                 const type = v.split(':')[0];
@@ -336,6 +312,7 @@ const taskDetail: React.FC<{}> = (props) => {
                   });
                 }
               }}
+              searchLoading={getSpaceMembersReq.loading}
               onRemove={(id) => removeAssignmentReq.run(currentTaskId, id)}
               onSearch={(v) => getSpaceMembersReq.run(currentSpace.id, { username: v })}
             />

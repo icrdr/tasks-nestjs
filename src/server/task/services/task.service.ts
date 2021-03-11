@@ -4,23 +4,23 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-} from "@nestjs/common";
-import { Brackets, EntityManager, SelectQueryBuilder } from "typeorm";
-import { User } from "@server/user/entities/user.entity";
-import { UserService } from "@server/user/services/user.service";
-import { Task, Content } from "../entities/task.entity";
-import { OutputData } from "@editorjs/editorjs";
-import { Role, Space } from "../entities/space.entity";
-import { unionArrays } from "@utils/utils";
-import { ConfigService } from "@nestjs/config";
-import { SpaceService } from "./space.service";
-import { Comment } from "../entities/comment.entity";
-import { AccessLevel, TaskState } from "../../common/common.entity";
-import { AssignmentService } from "./assignment.service";
-import { MemberService } from "./member.service";
-import { RoleService } from "./role.service";
-import { Property } from "../entities/property.entity";
-import { PropertyService } from "./property.service";
+} from '@nestjs/common';
+import { Brackets, EntityManager, SelectQueryBuilder } from 'typeorm';
+import { User } from '@server/user/entities/user.entity';
+import { UserService } from '@server/user/services/user.service';
+import { Task, Content } from '../entities/task.entity';
+import { OutputData } from '@editorjs/editorjs';
+import { Role, Space } from '../entities/space.entity';
+import { unionArrays } from '@utils/utils';
+import { ConfigService } from '@nestjs/config';
+import { SpaceService } from './space.service';
+import { Comment } from '../entities/comment.entity';
+import { AccessLevel, TaskState } from '../../common/common.entity';
+import { AssignmentService } from './assignment.service';
+import { MemberService } from './member.service';
+import { RoleService } from './role.service';
+import { Property } from '../entities/property.entity';
+import { PropertyService } from './property.service';
 
 @Injectable()
 export class TaskService {
@@ -36,18 +36,18 @@ export class TaskService {
     private propertyService: PropertyService,
     private memberService: MemberService,
     private roleService: RoleService,
-    private manager: EntityManager
+    private manager: EntityManager,
   ) {
     this.taskQuery = this.manager
-      .createQueryBuilder(Task, "task")
-      .leftJoinAndSelect("task.assignments", "assignment")
-      .leftJoinAndSelect("assignment.users", "user")
-      .leftJoinAndSelect("assignment.role", "role")
-      .leftJoinAndSelect("task.space", "space")
-      .leftJoinAndSelect("space.roles", "sRole")
-      .leftJoinAndSelect("task.contents", "content")
-      .leftJoinAndSelect("task.superTask", "superTask")
-      .leftJoinAndSelect("task.subTasks", "subTask");
+      .createQueryBuilder(Task, 'task')
+      .leftJoinAndSelect('task.assignments', 'assignment')
+      .leftJoinAndSelect('assignment.users', 'user')
+      .leftJoinAndSelect('assignment.role', 'role')
+      .leftJoinAndSelect('task.space', 'space')
+      .leftJoinAndSelect('space.roles', 'sRole')
+      .leftJoinAndSelect('task.contents', 'content')
+      .leftJoinAndSelect('task.superTask', 'superTask')
+      .leftJoinAndSelect('task.subTasks', 'subTask');
   }
 
   async checkParentTaskNotInStates(task: Task | number, states: TaskState[]) {
@@ -55,9 +55,7 @@ export class TaskService {
     let superTask = task.superTask;
     if (superTask) {
       if (!states.includes(superTask.state))
-        throw new ForbiddenException(
-          `Parent task is restricted, forbidden action.`
-        );
+        throw new ForbiddenException(`Parent task is restricted, forbidden action.`);
       this.checkParentTaskNotInStates(superTask, states);
     }
   }
@@ -70,10 +68,9 @@ export class TaskService {
       admins?: User[] | number[];
       state?: TaskState;
       access?: AccessLevel;
-    } = {}
+    } = {},
   ) {
-    space =
-      space instanceof Space ? space : await this.spaceService.getSpace(space);
+    space = space instanceof Space ? space : await this.spaceService.getSpace(space);
     let task = new Task();
     task.space = space;
     task.name = name;
@@ -86,9 +83,7 @@ export class TaskService {
       for (const admin of options.admins) {
         adminMembers.push(await this.memberService.addMember(space, admin));
       }
-      const roles = (
-        await this.roleService.getRoles({ space, access: AccessLevel.FULL })
-      )[0];
+      const roles = (await this.roleService.getRoles({ space, access: AccessLevel.FULL }))[0];
       await this.assignmentService.addAssignment(options.admins, roles[0], {
         task,
       });
@@ -103,22 +98,16 @@ export class TaskService {
     executor?: User | number,
     options: {
       state?: TaskState;
-    } = {}
+    } = {},
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
-    if (
-      task.state === TaskState.UNCONFIRMED ||
-      task.state === TaskState.COMPLETED
-    )
+    if (task.state === TaskState.UNCONFIRMED || task.state === TaskState.COMPLETED)
       throw new ForbiddenException(
-        "Task is freezed (completed or unconfirmed), \
-        forbidden subtask creation."
+        'Task is freezed (completed or unconfirmed), \
+        forbidden subtask creation.',
       );
 
-    await this.checkParentTaskNotInStates(task, [
-      TaskState.SUSPENDED,
-      TaskState.IN_PROGRESS,
-    ]);
+    await this.checkParentTaskNotInStates(task, [TaskState.SUSPENDED, TaskState.IN_PROGRESS]);
 
     const subTask = await this.addTask(task.space, name, executor, options);
     subTask.superTask = task;
@@ -137,21 +126,15 @@ export class TaskService {
     if (!(await this.memberService.getMember(task.space, user))) return [];
 
     // 2. cheack if is scope admin
-    if (await this.assignmentService.isScopeAdmin(task, user))
-      return ["common.*"];
+    if (await this.assignmentService.isScopeAdmin(task, user)) return ['common.*'];
 
     // 3. cheack all assignments of task and task default access
-    const assignments = (
-      await this.assignmentService.getAssignments({ task, user, all: true })
-    )[0];
-    let access = this.configService.get("taskAccess")[task.access];
+    const assignments = (await this.assignmentService.getAssignments({ task, user, all: true }))[0];
+    let access = this.configService.get('taskAccess')[task.access];
     access = access ? [access] : [];
 
     assignments.forEach(
-      (a) =>
-        (access = access.concat(
-          this.configService.get("taskAccess")[a.role.access]
-        ))
+      (a) => (access = access.concat(this.configService.get('taskAccess')[a.role.access])),
     );
 
     return unionArrays(access);
@@ -163,9 +146,9 @@ export class TaskService {
   }
 
   async getTask(id: number, exception = true) {
-    const query = this.taskQuery.clone().where("task.id = :id", { id });
+    const query = this.taskQuery.clone().where('task.id = :id', { id });
     const task = await query.getOne();
-    if (!task && exception) throw new NotFoundException("Task was not found.");
+    if (!task && exception) throw new NotFoundException('Task was not found.');
     return task;
   }
 
@@ -179,28 +162,30 @@ export class TaskService {
       name?: string;
       properties?: { property: Property | number; value: any }[];
       state?: TaskState[] | TaskState;
-      dueAfter?: Date;
-      dueBefore?: Date;
+      beginAt?: [Date?, Date?];
+      dueAt?: [Date?, Date?];
+      completeAt?: [Date?, Date?];
+      createAt?: [Date?, Date?];
       pageSize?: number;
       current?: number;
       skip?: number;
       take?: number;
-    } = {}
+    } = {},
   ) {
     let query = this.taskQuery.clone();
 
     if (options.space) {
       const spaceId = await this.spaceService.getSpaceId(options.space);
-      query = query.andWhere("space.id = :spaceId", { spaceId });
+      query = query.andWhere('space.id = :spaceId', { spaceId });
     }
     if (options.user) {
       const userId = await this.userService.getUserId(options.user);
       query = query.andWhere(
         new Brackets((qb) => {
-          qb.where("user.id = :userId", { userId })
-            .orWhere("space.access IS NOT NULL")
-            .orWhere("task.access IS NOT NULL");
-        })
+          qb.where('user.id = :userId', { userId })
+            .orWhere('space.access IS NOT NULL')
+            .orWhere('task.access IS NOT NULL');
+        }),
       );
     }
 
@@ -209,8 +194,8 @@ export class TaskService {
         const userId = await this.userService.getUserId(role.user);
         const roleId = await this.roleService.getRoleId(role.role);
         query = query
-          .andWhere("user.id = :userId", { userId })
-          .andWhere("role.id = :roleId", { roleId });
+          .andWhere('user.id = :userId', { userId })
+          .andWhere('role.id = :roleId', { roleId });
       }
     }
 
@@ -222,54 +207,86 @@ export class TaskService {
             : await this.propertyService.getProperty(prop.property);
 
         query = query.andWhere(
-          `task.properties ->'$.prop${property.id}' LIKE CONCAT('%','${prop.value}','%')`
+          `task.properties ->'$.prop${property.id}' LIKE CONCAT('%','${prop.value}','%')`,
         );
       }
     }
 
     if (options.superTask) {
       const superTaskId = await this.getTaskId(options.superTask);
-      query = query.andWhere("superTask.id = :superTaskId", { superTaskId });
+      query = query.andWhere('superTask.id = :superTaskId', { superTaskId });
     }
 
     if (options.isRoot) {
-      query = query.andWhere("task.superTask IS NULL");
+      query = query.andWhere('task.superTask IS NULL');
     }
 
     if (options.name !== undefined) {
-      query = query.andWhere("task.name LIKE :name", {
+      query = query.andWhere('task.name LIKE :name', {
         name: `%${options.name}%`,
       });
     }
 
     if (options.state) {
-      query = query.andWhere("task.state IN (:...states)", {
+      query = query.andWhere('task.state IN (:...states)', {
         states: unionArrays([options.state]),
       });
     }
 
-    if (options.dueAfter) {
-      const after = options.dueAfter;
-      query = query.andWhere("task.dueAt >= :after", { after });
+    if (options.beginAt) {
+      if (options.beginAt[0]) {
+        const after = options.beginAt[0];
+        query = query.andWhere('task.beginAt >= :after', { after });
+      }
+      if (options.beginAt[1]) {
+        const before = options.beginAt[1];
+        query = query.andWhere('task.beginAt < :before', { before });
+      }
     }
 
-    if (options.dueBefore) {
-      const before = options.dueBefore;
-      query = query.andWhere("task.dueAt < :before", { before });
+    if (options.dueAt) {
+      if (options.dueAt[0]) {
+        const after = options.dueAt[0];
+        query = query.andWhere('task.dueAt >= :after', { after });
+      }
+      if (options.dueAt[1]) {
+        const before = options.dueAt[1];
+        query = query.andWhere('task.dueAt < :before', { before });
+      }
+    }
+
+    if (options.createAt) {
+      if (options.createAt[0]) {
+        const after = options.createAt[0];
+        query = query.andWhere('task.createAt >= :after', { after });
+      }
+      if (options.createAt[1]) {
+        const before = options.createAt[1];
+        query = query.andWhere('task.createAt < :before', { before });
+      }
+    }
+
+    if (options.completeAt) {
+      if (options.completeAt[0]) {
+        const after = options.completeAt[0];
+        query = query.andWhere('task.completeAt >= :after', { after });
+      }
+      if (options.completeAt[1]) {
+        const before = options.completeAt[1];
+        query = query.andWhere('task.completeAt < :before', { before });
+      }
     }
 
     query = query
-      .leftJoinAndSelect("task.assignments", "_assignment")
-      .leftJoinAndSelect("_assignment.users", "_user")
-      .leftJoinAndSelect("_assignment.role", "_role");
+      .leftJoinAndSelect('task.assignments', '_assignment')
+      .leftJoinAndSelect('_assignment.users', '_user')
+      .leftJoinAndSelect('_assignment.role', '_role');
 
-    query = query.addOrderBy("task.priority", "DESC");
-    query = query.addOrderBy("task.id", "DESC");
+    query = query.addOrderBy('task.priority', 'DESC');
+    query = query.addOrderBy('task.id', 'DESC');
 
     if (!options.skip || !options.take) {
-      query = query
-        .skip((options.current - 1) * options.pageSize || 0)
-        .take(options.pageSize || 5);
+      query = query.skip((options.current - 1) * options.pageSize || 0).take(options.pageSize || 5);
     }
 
     if (options.skip !== undefined && options.take) {
@@ -287,11 +304,7 @@ export class TaskService {
     return comment instanceof Comment ? comment.id : comment;
   }
 
-  async changeTaskState(
-    task: Task | number,
-    state: TaskState,
-    executor?: User | number
-  ) {
+  async changeTaskState(task: Task | number, state: TaskState, executor?: User | number) {
     task = task instanceof Task ? task : await this.getTask(task);
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     if (state === TaskState.COMPLETED) this.completeSubTask(task, executor);
@@ -304,7 +317,7 @@ export class TaskService {
   async changeTask(
     task: Task | number,
     executor?: User | number,
-    option: {
+    options: {
       priority?: number;
       properties?: any;
       name?: string;
@@ -312,17 +325,17 @@ export class TaskService {
       access?: AccessLevel;
       beginAt?: Date;
       dueAt?: Date;
-    } = {}
+    } = {},
   ) {
     task = task instanceof Task ? task : await this.getTask(task);
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
 
-    if (option.name) task.name = option.name;
-    if (option.priority !== undefined) task.priority = option.priority;
-    if (option.properties !== undefined) task.properties = option.properties;
-    if (option.access !== undefined) task.access = option.access;
-    if (option.beginAt !== undefined) task.beginAt = option.beginAt;
-    if (option.dueAt !== undefined) task.dueAt = option.dueAt;
+    if (options.name) task.name = options.name;
+    if (options.priority !== undefined) task.priority = options.priority;
+    if (options.properties !== undefined) task.properties = options.properties;
+    if (options.access !== undefined) task.access = options.access;
+    if (options.beginAt !== undefined) task.beginAt = options.beginAt;
+    if (options.dueAt !== undefined) task.dueAt = options.dueAt;
 
     await this.manager.save(task);
     return await this.getTask(task.id);
@@ -338,17 +351,11 @@ export class TaskService {
     }
   }
 
-  async changeTaskContent(
-    task: Task | number,
-    content: OutputData,
-    executor?: User | number
-  ) {
+  async changeTaskContent(task: Task | number, content: OutputData, executor?: User | number) {
     task = task instanceof Task ? task : await this.getTask(task);
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     if (task.state !== TaskState.IN_PROGRESS)
-      throw new ForbiddenException(
-        "Task is not in progress, forbidden suspension."
-      );
+      throw new ForbiddenException('Task is not in progress, forbidden suspension.');
 
     if (task.contents.length === 0) {
       const content = new Content();
@@ -365,9 +372,7 @@ export class TaskService {
   async commitOnTask(task: Task | number, executor?: User | number) {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
-      throw new ForbiddenException(
-        "Task is not in progress, forbidden submittion."
-      );
+      throw new ForbiddenException('Task is not in progress, forbidden submittion.');
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.UNCONFIRMED;
     await this.manager.save(task);
@@ -378,9 +383,7 @@ export class TaskService {
   async refuseToCommit(task: Task | number, executor?: User | number) {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.UNCONFIRMED)
-      throw new ForbiddenException(
-        "Task does not wait for comfirmtion, forbidden response."
-      );
+      throw new ForbiddenException('Task does not wait for comfirmtion, forbidden response.');
 
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
     task.state = TaskState.IN_PROGRESS;
@@ -398,9 +401,7 @@ export class TaskService {
   async saveTaskContent(task: Task | number, executor?: User | number) {
     task = task instanceof Task ? task : await this.getTask(task);
     if (task.state !== TaskState.IN_PROGRESS)
-      throw new ForbiddenException(
-        "Task does not in progress, forbidden response."
-      );
+      throw new ForbiddenException('Task does not in progress, forbidden response.');
 
     await this.checkParentTaskNotInStates(task, [TaskState.IN_PROGRESS]);
 

@@ -14,6 +14,11 @@ export class GetMembersDTO extends ListDTO {
   nickname?: string;
 }
 
+export class ChangeMemberDTO extends ListDTO {
+  @IsOptional()
+  properties?: any;
+}
+
 @Exclude()
 export class MemberRes {
   user: User;
@@ -27,6 +32,9 @@ export class MemberRes {
   get username(): string {
     return this.user.username;
   }
+  
+  @Expose()
+  properties?: any;
 
   constructor(partial: Partial<MemberRes>) {
     Object.assign(this, partial);

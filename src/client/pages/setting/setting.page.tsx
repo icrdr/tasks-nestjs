@@ -1,6 +1,18 @@
 import React, { useState } from 'react';
 import { useModel, useRequest } from 'umi';
-import { Button, Card, Descriptions, Form, Input, Modal, Select, Space, Typography } from 'antd';
+import {
+  Button,
+  Card,
+  Col,
+  Descriptions,
+  Form,
+  Input,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Typography,
+} from 'antd';
 import RoleTable from './components/RoleTable';
 import { addSpaceProperty, addSpaceRole, changeSpace } from './setting.service';
 import { getSpace } from '../layout/layout.service';
@@ -62,75 +74,100 @@ const Setting: React.FC<{}> = (props) => {
     },
   });
 
+  const commonSetting = (
+    <Card>
+      <Descriptions labelStyle={{ lineHeight: '32px' }}>
+        <Descriptions.Item key="name" label="空间名">
+          <Input
+            style={{ maxWidth: '200px' }}
+            defaultValue={currentSpace?.name}
+            onPressEnter={(e) => {
+              e.preventDefault();
+              changeSpaceReq.run(currentSpace.id, {
+                name: e.currentTarget.value,
+              });
+            }}
+          />
+        </Descriptions.Item>
+        <Descriptions.Item key="access" label="空间默认权限">
+          <Select
+            value={currentSpace.access}
+            onChange={(v) => changeSpaceReq.run(currentSpace.id, { access: v })}
+          >
+            <Select.Option value="full">完全</Select.Option>
+            <Select.Option value="edit">编辑</Select.Option>
+            <Select.Option value="view">浏览</Select.Option>
+          </Select>
+        </Descriptions.Item>
+      </Descriptions>
+    </Card>
+  );
+  const taskProperty = (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Button
+        type="primary"
+        style={{ marginRight: '20px' }}
+        onClick={() => setAddTaskPropVisible(true)}
+      >
+        新任务属性
+      </Button>
+      <PropertyTable type={'task' as PropertyType} list={currentSpace.taskProperties} />
+    </Space>
+  );
+
+  const assetProperty = (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Button
+        type="primary"
+        style={{ marginRight: '20px' }}
+        onClick={() => setAddMemberPropVisible(true)}
+      >
+        新成员属性
+      </Button>
+      <PropertyTable type={'member' as PropertyType} list={currentSpace.memberProperties} />
+    </Space>
+  );
+
+  const memberProperty = (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Button
+        type="primary"
+        style={{ marginRight: '20px' }}
+        onClick={() => setAddAssetPropVisible(true)}
+      >
+        新资源属性
+      </Button>
+      <PropertyTable type={'asset' as PropertyType} list={currentSpace.assetProperties} />
+    </Space>
+  );
+  const roleTable = (
+    <Space direction="vertical" style={{ width: '100%' }}>
+      <Button
+        type="primary"
+        style={{ marginRight: '20px' }}
+        onClick={() => setAddRoleVisible(true)}
+      >
+        新角色
+      </Button>
+      <RoleTable list={currentSpace.roles} />
+    </Space>
+  );
   return (
     <div style={{ padding: 20 }}>
       <Space size="middle" direction="vertical" style={{ width: '100%' }}>
-        <Card>
-          <Descriptions labelStyle={{ lineHeight: '32px' }} column={2}>
-            <Descriptions.Item key="name" label="空间名">
-              <Input
-                style={{ width: '200px' }}
-                defaultValue={currentSpace?.name}
-                onPressEnter={(e) => {
-                  e.preventDefault();
-                  changeSpaceReq.run(currentSpace.id, {
-                    name: e.currentTarget.value,
-                  });
-                }}
-              />
-            </Descriptions.Item>
-            <Descriptions.Item key="access" label="空间默认权限">
-              <Select
-                value={currentSpace.access}
-                onChange={(v) => changeSpaceReq.run(currentSpace.id, { access: v })}
-              >
-                <Select.Option value="full">完全</Select.Option>
-                <Select.Option value="edit">编辑</Select.Option>
-                <Select.Option value="view">浏览</Select.Option>
-              </Select>
-            </Descriptions.Item>
-          </Descriptions>
-        </Card>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button
-            type="primary"
-            style={{ marginRight: '20px' }}
-            onClick={() => setAddTaskPropVisible(true)}
-          >
-            新任务属性
-          </Button>
-          <PropertyTable type={'task' as PropertyType} list={currentSpace.taskProperties} />
-        </Space>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button
-            type="primary"
-            style={{ marginRight: '20px' }}
-            onClick={() => setAddMemberPropVisible(true)}
-          >
-            新成员属性
-          </Button>
-          <PropertyTable type={'member' as PropertyType} list={currentSpace.memberProperties} />
-        </Space>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button
-            type="primary"
-            style={{ marginRight: '20px' }}
-            onClick={() => setAddAssetPropVisible(true)}
-          >
-            新资源属性
-          </Button>
-          <PropertyTable type={'asset' as PropertyType} list={currentSpace.assetProperties} />
-        </Space>
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Button
-            type="primary"
-            style={{ marginRight: '20px' }}
-            onClick={() => setAddRoleVisible(true)}
-          >
-            新角色
-          </Button>
-          <RoleTable list={currentSpace.roles} />
-        </Space>
+        {commonSetting}
+        <Row gutter={[16, 20]}>
+          <Col span={24} lg={8}>
+            {taskProperty}
+          </Col>
+          <Col span={24} lg={8}>
+            {assetProperty}
+          </Col>
+          <Col span={24} lg={8}>
+            {memberProperty}
+          </Col>
+        </Row>
+        {roleTable}
       </Space>
       <Modal
         closable={false}

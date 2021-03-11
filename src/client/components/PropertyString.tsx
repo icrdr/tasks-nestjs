@@ -1,31 +1,32 @@
 import { EditOutlined } from '@ant-design/icons';
 import { Button, Input, Typography } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link } from 'umi';
 const { Text } = Typography;
 
 const PropertyString: React.FC<{
   value: string;
   editable?: boolean;
+  link?: string;
   onChange?: (v: any) => void;
-}> = ({ value, editable = false, onChange = () => {} }) => {
-  const [isEditing, setEditing] = useState(false);
-  return isEditing ? (
+}> = ({ value, link, editable = false, onChange = () => {} }) => {
+  const [_value, setValue] = useState(value);
+  useEffect(() => {
+    console.log(value);
+    setValue(_value);
+  }, [value]);
+  return editable ? (
     <Input
-      defaultValue={value}
+      value={_value}
+      onChange={(e) => setValue(e.currentTarget.value)}
       onPressEnter={(e) => {
         e.preventDefault();
         const v = e.currentTarget.value;
-        setEditing(false);
         onChange(v);
       }}
     />
   ) : (
-    <span>
-      {editable && (
-        <Button type={'link'} icon={<EditOutlined />} onClick={() => setEditing(true)} />
-      )}
-      {value}
-    </span>
+    <span>{link ? <Link to={link}>{value}</Link> : <span>{value}</span>}</span>
   );
 };
 

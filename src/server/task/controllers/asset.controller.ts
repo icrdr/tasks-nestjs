@@ -9,10 +9,11 @@ import { AssetService } from '../services/asset.service';
 import { TaskAccessGuard } from '../../user/taskAccess.guard';
 import { Task } from '../entities/task.entity';
 import { AddAssetDTO, AssetListRes, AssetRes, ChangeAssetDTO, GetAssetsDTO } from '@dtos/asset.dto';
+import { PropertyService } from '../services/property.service';
 
 @Controller('api/spaces')
 export class SpaceAssetController {
-  constructor(private assetService: AssetService) {}
+  constructor(private assetService: AssetService, private propertyService: PropertyService) {}
 
   @UseGuards(SpaceAccessGuard)
   @Access('common.space.change')
@@ -25,8 +26,22 @@ export class SpaceAssetController {
   @Access('common.space.view')
   @Get('/:id/assets')
   async getSpaceAssets(@TargetSpace() space: Space, @Query() query: GetAssetsDTO) {
+    const properties = [];
+    for (const key in query) {
+      const type = key.split(':')[0];
+      if (type === 'prop') {
+        const property = await this.propertyService.getProperty(parseInt(key.split(':')[1]), true);
+        const value = query[key];
+        properties.push({
+          property,
+          value,
+        });
+      }
+    }
+
     const assets = await this.assetService.getAssets({
-      space: space,
+      space,
+      properties,
       ...query,
     });
     return ListResSerialize(assets, AssetListRes);
@@ -58,7 +73,14 @@ export class SpaceAssetController {
 
 @Controller('api/tasks')
 export class TaskAssetController {
-  constructor(private assetService: AssetService) {}
+  constructor(private assetService: AssetService, private propertyService: PropertyService) {}
+
+  @UseGuards(TaskAccessGuard)
+  @Access('common.space.change')
+  @Put('/:id/assets/:assetId')
+  async changeAsset(@Body() body: ChangeAssetDTO, @Param('assetId') roleId: number) {
+    return new AssetRes(await this.assetService.changeAsset(roleId, body));
+  }
 
   @UseGuards(TaskAccessGuard)
   @Access('common.task.add')
@@ -83,8 +105,21 @@ export class TaskAssetController {
     @Query() query: GetAssetsDTO,
     @CurrentUser() user: User,
   ) {
+    const properties = [];
+    for (const key in query) {
+      const type = key.split(':')[0];
+      if (type === 'prop') {
+        const property = await this.propertyService.getProperty(parseInt(key.split(':')[1]), true);
+        const value = query[key];
+        properties.push({
+          property,
+          value,
+        });
+      }
+    }
     const assets = await this.assetService.getAssets({
-      task: task,
+      task,
+      properties,
       ...query,
     });
     return ListResSerialize(assets, AssetListRes);

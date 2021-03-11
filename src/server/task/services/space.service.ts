@@ -6,10 +6,11 @@ import { Assignment, Member, Role, Space } from '../entities/space.entity';
 import { unionArrays } from '@utils/utils';
 import { ConfigService } from '@nestjs/config';
 import { Task } from '../entities/task.entity';
-import { AccessLevel } from '../../common/common.entity';
+import { AccessLevel, PropertyForm, PropertyType } from '../../common/common.entity';
 import { MemberService } from './member.service';
 import { AssignmentService } from './assignment.service';
 import { RoleService } from './role.service';
+import { PropertyService } from './property.service';
 
 @Injectable()
 export class SpaceService {
@@ -20,6 +21,7 @@ export class SpaceService {
     private userService: UserService,
     private configService: ConfigService,
     private assignmentService: AssignmentService,
+    private propertyService: PropertyService,
     private memberService: MemberService,
     private roleService: RoleService,
     private manager: EntityManager,
@@ -41,6 +43,9 @@ export class SpaceService {
     options: {
       admins?: User[] | number[];
       members?: User[] | number[];
+      taskProperties?: { name: string; form: PropertyForm; items?: any }[];
+      memberProperties?: { name: string; form: PropertyForm; items?: any }[];
+      assetProperties?: { name: string; form: PropertyForm; items?: any }[];
       access?: AccessLevel;
     } = {},
   ) {
@@ -70,6 +75,43 @@ export class SpaceService {
         await this.memberService.addMember(space, member);
       }
     }
+
+    if (options.taskProperties) {
+      for (const property of options.taskProperties) {
+        await this.propertyService.addProperty(
+          space,
+          property.name,
+          PropertyType.TASK,
+          property.form,
+          property.items,
+        );
+      }
+    }
+
+    if (options.memberProperties) {
+      for (const property of options.memberProperties) {
+        await this.propertyService.addProperty(
+          space,
+          property.name,
+          PropertyType.MEMBER,
+          property.form,
+          property.items,
+        );
+      }
+    }
+
+    if (options.assetProperties) {
+      for (const property of options.assetProperties) {
+        await this.propertyService.addProperty(
+          space,
+          property.name,
+          PropertyType.ASSET,
+          property.form,
+          property.items,
+        );
+      }
+    }
+
     return await this.getSpace(space.id);
   }
 
@@ -128,6 +170,7 @@ export class SpaceService {
       user?: User | number;
       pageSize?: number;
       current?: number;
+      all?: boolean;
     } = {},
   ) {
     let query = this.spaceQuery.clone();
@@ -142,10 +185,11 @@ export class SpaceService {
       .leftJoinAndSelect('space.members', '_member')
       .leftJoinAndSelect('_member.user', '_user');
 
-    query = query
-      .orderBy('space.id', 'DESC')
-      .skip((options.current - 1) * options.pageSize || 0)
-      .take(options.pageSize || 5);
+    query = query.orderBy('space.id', 'DESC');
+
+    if (!options.all) {
+      query = query.skip((options.current - 1) * options.pageSize || 0).take(options.pageSize || 5);
+    }
 
     return await query.getManyAndCount();
   }

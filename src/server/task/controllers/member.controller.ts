@@ -1,4 +1,4 @@
-import { Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { Access } from '@server/user/access.decorator';
 import { TargetSpace } from '@server/user/user.decorator';
 import { GetTasksDTO } from '@dtos/task.dto';
@@ -6,11 +6,12 @@ import { ListResSerialize, UserIdDTO } from '@dtos/misc.dto';
 import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
 import { Space } from '../entities/space.entity';
 import { MemberService } from '../services/member.service';
-import { MemberListRes, MemberRes } from '@dtos/member.dto';
+import { ChangeMemberDTO, MemberListRes, MemberRes } from '@dtos/member.dto';
+import { PropertyService } from '../services/property.service';
 
 @Controller('api/spaces')
 export class MemberController {
-  constructor(private memberService: MemberService) {}
+  constructor(private memberService: MemberService, private propertyService: PropertyService) {}
 
   @UseGuards(SpaceAccessGuard)
   @Access('common.space.add')
@@ -20,11 +21,35 @@ export class MemberController {
   }
 
   @UseGuards(SpaceAccessGuard)
+  @Access('common.space.change')
+  @Put('/:id/members/:userId')
+  async changeSpaceMember(
+    @Body() body: ChangeMemberDTO,
+    @Param('userId') userId: number,
+    @TargetSpace() space: Space,
+  ) {
+    return new MemberRes(await this.memberService.changeMember(space, userId, body));
+  }
+
+  @UseGuards(SpaceAccessGuard)
   @Access('common.space.view')
   @Get('/:id/members')
   async getSpaceMembers(@TargetSpace() space: Space, @Query() query: GetTasksDTO) {
+    const properties = [];
+    for (const key in query) {
+      const type = key.split(':')[0];
+      if (type === 'prop') {
+        const property = await this.propertyService.getProperty(parseInt(key.split(':')[1]), true);
+        const value = query[key];
+        properties.push({
+          property,
+          value,
+        });
+      }
+    }
     const members = await this.memberService.getMembers({
-      space: space,
+      space,
+      properties,
       ...query,
     });
     return ListResSerialize(members, MemberListRes);

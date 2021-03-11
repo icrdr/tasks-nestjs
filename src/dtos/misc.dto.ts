@@ -1,5 +1,6 @@
 import { ClassType } from 'react';
-import { IsDate, IsNumber, IsNumberString, IsOptional } from 'class-validator';
+import { IsBoolean, IsDate, IsNumber, IsNumberString, IsOptional } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 
 export class ListDTO {
   @IsOptional()
@@ -17,15 +18,12 @@ export class ListDTO {
   @IsOptional()
   @IsNumber()
   take?: number;
-}
-export class DateRange {
-  @IsOptional()
-  @IsDate()
-  after?: Date;
 
   @IsOptional()
-  @IsDate()
-  before?: Date;
+  @Type(() => String)
+  @Transform((v) => v === 'true')
+  @IsBoolean()
+  all?: boolean;
 }
 
 export class ListRes {

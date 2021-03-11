@@ -1,5 +1,5 @@
 import { request } from 'umi';
-import { GetMembersDTO, MemberListRes, MemberRes } from '@dtos/member.dto';
+import { ChangeMemberDTO, GetMembersDTO, MemberListRes, MemberRes } from '@dtos/member.dto';
 import { AddAssignmentDTO, AssignmentRes, ChangeAssignmentDTO } from '@dtos/assignment.dto';
 
 export async function getSpaceMembers(id: number, params?: GetMembersDTO): Promise<MemberListRes> {
@@ -32,6 +32,17 @@ export async function addSpaceGroupMember(
 ): Promise<AssignmentRes> {
   return request(`/api/spaces/${id}/groups/${groupId}/members/${userId}`, {
     method: 'POST',
+  });
+}
+
+export async function changeSpaceMember(
+  id: number,
+  userId: number,
+  body: ChangeMemberDTO,
+): Promise<MemberRes> {
+  return request(`/api/spaces/${id}/members/${userId}`, {
+    method: 'PUT',
+    data: body,
   });
 }
 

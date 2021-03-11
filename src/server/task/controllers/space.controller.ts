@@ -17,9 +17,10 @@ import {
 import { SpaceAccessGuard } from '@server/user/spaceAccess.guard';
 import { Space } from '../entities/space.entity';
 import { UserService } from '../../user/services/user.service';
-import { AccessLevel } from '../../common/common.entity';
+import { AccessLevel, PropertyForm } from '../../common/common.entity';
 import { AssignmentService } from '../services/assignment.service';
 import { RoleService } from '../services/role.service';
+import { blue } from 'chalk';
 
 @Controller('api/spaces')
 export class SpaceController {
@@ -57,7 +58,7 @@ export class SpaceController {
   @Get()
   async getSpaces(@Query() query: GetSpacesDTO, @CurrentUser() user: User) {
     const spaces = await this.spaceService.getSpaces({
-      user: user,
+      user,
       ...query,
     });
     return ListResSerialize(spaces, SpaceListRes);
@@ -70,6 +71,20 @@ export class SpaceController {
       members: body.memberId ? unionArrays([...[body.memberId]]) : undefined,
       admins: body.adminId ? unionArrays([...[body.adminId], user]) : [user],
       access: AccessLevel.VIEW,
+      taskProperties: [
+        {
+          name: '标签',
+          form: PropertyForm.SELECT,
+          items: { 标签a: { color: 'blue' }, 标签b: { color: 'blue' } },
+        },
+      ],
+      assetProperties: [
+        {
+          name: '标签',
+          form: PropertyForm.SELECT,
+          items: { 标签a: { color: 'blue' }, 标签b: { color: 'blue' } },
+        },
+      ],
     };
     const space = await this.spaceService.addSpace(body.name, user, options);
     return new SpaceDetailRes(space, user);

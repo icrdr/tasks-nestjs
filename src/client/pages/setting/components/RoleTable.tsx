@@ -41,7 +41,7 @@ const RoleTable: React.FC<{ list: RoleRes[]; update?: boolean }> = ({ list, upda
     {
       title: '角色名',
       dataIndex: 'name',
-      key: 'name',
+      width: 150,
       render: (_, role) => {
         return (
           <Text
@@ -59,7 +59,6 @@ const RoleTable: React.FC<{ list: RoleRes[]; update?: boolean }> = ({ list, upda
     {
       title: '权限',
       dataIndex: 'access',
-      key: 'access',
       render: (_, role) => {
         return (
           <Select
@@ -101,7 +100,7 @@ const RoleTable: React.FC<{ list: RoleRes[]; update?: boolean }> = ({ list, upda
   columns.push({
     dataIndex: 'action',
     title: '操作',
-    key: 'action',
+    width: 50,
     render: (_, role: RoleRes) => (
       <Dropdown overlay={actionMenu(role)}>
         <Button icon={<EllipsisOutlined />}></Button>
